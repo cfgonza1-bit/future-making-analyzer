@@ -238,7 +238,7 @@ def main():
     Classify a consumer comment into one of four **Future-Making Orientations**
     based on the framework from  
     *"Futures in the Making: How Consumers Respond to Future-Oriented Interventions"*  
-    *(Scaraboto, Joubert & Gonzalez-Arcos — Journal of Marketing)*
+    *(Joubert, Gonzalez-Arcos, Scaraboto & Sandberg, Journal of Marketing)*
     """)
     st.divider()
 
