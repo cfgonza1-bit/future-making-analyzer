@@ -17,7 +17,7 @@ st.set_page_config(
 SYSTEM_PROMPT = """
 You are an expert analyst specialized in the Future-Making Orientations framework
 from the paper "Futures in the Making: How Consumers Respond to Future-Oriented
-Interventions" (Scaraboto, Joubert & Gonzalez-Arcos, Journal of Marketing).
+Interventions" (Joubert, Gonzalez-Arcos, Scaraboto & Sandberg, Journal of Marketing).
 
 Analyze the given consumer comment and classify it into ONE orientation:
 
