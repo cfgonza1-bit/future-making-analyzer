@@ -222,7 +222,7 @@ def show_results(result: dict):
     # ── SOURCE ──
     st.markdown("---")
     st.caption(
-        "📚 *Scaraboto, Joubert & Gonzalez-Arcos — Futures in the Making — "
+        "📚 *Joubert, Gonzalez-Arcos, Scaraboto & Sandberg — Futures in the Making — "
         "Journal of Marketing* | "
         "[Read the paper](REPLACE_WITH_YOUR_DOI_OR_URL)"
     )
