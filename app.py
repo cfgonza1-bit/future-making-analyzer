@@ -17,7 +17,7 @@ st.set_page_config(
 SYSTEM_PROMPT = """
 You are an expert analyst specialized in the Future-Making Orientations framework
 from the paper "Futures in the Making: How Consumers Respond to Future-Oriented
-Interventions" (Scaraboto, Joubert & Gonzalez-Arcos, Journal of Marketing).
+Interventions" (Journal of Marketing).
 
 You will be given:
 1. A PRESCRIBED FUTURE: the future that an intervention seeks to bring about
@@ -629,7 +629,7 @@ def show_results(result: dict, prescribed_future: str):
     # ── SOURCE ──
     st.markdown("---")
     st.caption(
-        "📚 *Scaraboto, Joubert & Gonzalez-Arcos — Futures in the Making — Journal of Marketing* | "
+        "📚 *Journal of Marketing* | "
         "[Read the paper](REPLACE_WITH_YOUR_DOI_OR_URL)"
     )
 
@@ -644,7 +644,7 @@ def main():
     Identify **consumer orientations**, **future-making activities**, **challenges**,
     and get tailored **policy & managerial recommendations** — all from a single comment.
 
-    *Based on: Scaraboto, Joubert & Gonzalez-Arcos — "Futures in the Making" — Journal of Marketing*
+    *Based on: "Futures in the Making" — Journal of Marketing*
     """)
     st.divider()
 
