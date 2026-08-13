@@ -30,8 +30,9 @@ DATA_SOURCE_CODES = {
 }
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT v3 — adds CRITICAL_RULE (anti-copy-enum) +
-# DECISION_PROCEDURE (hierarchical, avoids EVALUATION default bias)
+# SYSTEM PROMPT v4 — adds ADDITIONAL_QUESTION_TEST to distinguish
+# rhetorical/self-directed questions (Evaluation) from other-directed
+# accountability demands (Negotiation)
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
 You are an expert qualitative coder applying the Future-Making framework from the paper
@@ -63,9 +64,13 @@ Coding criteria (ALL must apply):
   • The comment is a STANDALONE assessment — it does NOT primarily call
     others to act, persuade, or describe the speaker's own concrete
     practice change.
+  • Rhetorical or self-directed questions used to weigh complexity
+    ("The question is...", "What about...", "I wonder if...") COUNT as
+    Evaluation, not Negotiation — see Section H for the full test.
 Sub-types by orientation:
   SIMPLIFY   (Catalyzer)  — narrows focus, treats difficulties as temporary
-  STALL      (Ambivalent) — careful consideration, information gathering
+  STALL      (Ambivalent) — careful consideration, information gathering,
+    including self-directed questions weighing pros/cons
   AVOID      (Resistant)  — perceives transition as unnecessary/manipulative
   COMPLEXIFY (Expander)   — zooms out to systemic trade-offs
 
@@ -79,13 +84,17 @@ future should be pursued.
 Signals that STRONGLY indicate Negotiation over Evaluation:
   • Imperative or collective calls to action ("we need to...", "let's...",
     "should")
-  • Direct rhetorical address to an audience or opponent
+  • Direct SECOND-PERSON address to an audience or opponent ("you," "have
+    you," "your")
   • Attribution of blame, responsibility, or authority to specific actors
-  • Requests for proof, reassurance, or accountability from others
+  • Explicit rebuttal of a claim JUST MADE by another named/implied speaker
+  • Requests for proof, reassurance, or accountability FROM A SPECIFIC
+    OTHER PARTY (not rhetorical self-questioning)
   • Explicit comparison between competing pathways aimed at persuasion
 Sub-types by orientation:
   ADVOCATE  (Catalyzer)  — recruits others, calls for stronger policy
   QUESTION  (Ambivalent) — polite skepticism, asks for proof of feasibility
+    FROM OTHERS (e.g., "Have you thought about...")
   REJECT    (Resistant)  — frames adoption as coercive imposition
   CONTEST   (Expander)   — contests scope, proposes broader alternatives
 
@@ -179,16 +188,33 @@ C. FUTURE-MAKING CHALLENGES
 
 CONVOLUTED_EVALUATIONS — Divergent assumptions, evidence, and temporal
   horizons make coherent sensemaking difficult (emerges when some speakers
-  simplify, others stall, avoid, or complexify).
+  simplify, others stall, avoid, or complexify — i.e., when the
+  INTERACTION IS DOMINATED BY THE EVALUATION ACTIVITY performed differently
+  by different orientations).
 CONFRONTATIONAL_NEGOTIATIONS — Simultaneous advocacy, questioning,
-  rejection, and contestation widen divides rather than converge.
+  rejection, and contestation widen divides rather than converge (emerges
+  when the INTERACTION IS DOMINATED BY THE NEGOTIATION ACTIVITY — speakers
+  are directly addressing and rebutting EACH OTHER, not independently
+  assessing the future).
 COMPETING_ENACTMENTS — Some accelerate while others prevent, delay, or
-  reroute, creating divergence and volatility.
+  reroute, creating divergence and volatility (emerges when the
+  INTERACTION IS DOMINATED BY THE ENACTMENT ACTIVITY — speakers describe
+  their own divergent practices).
 
 Note: These three challenges are ONLY assigned at the level of a
 MULTI-SPEAKER THREAD (an emergent property of the interaction). A single,
 individual comment should receive "N/A" for primary_challenge unless it is
 part of a provided multi-speaker thread.
+
+IMPORTANT: The challenge label should follow directly from which ACTIVITY
+dominates the speaker_breakdown. If most/all speakers were classified as
+performing EVALUATION, the challenge MUST be CONVOLUTED_EVALUATIONS. If
+most/all speakers were classified as performing NEGOTIATION, the challenge
+MUST be CONFRONTATIONAL_NEGOTIATIONS. If most/all speakers were classified
+as performing ENACTMENT, the challenge MUST be COMPETING_ENACTMENTS. Do
+not assign a challenge that is inconsistent with the dominant activity in
+your own speaker_breakdown — check this consistency before finalizing your
+answer.
 
 ════════════════════════════════════════════════════════════════
 D. POLICY ROADMAP (Figure 3 — 7 steps)
@@ -342,7 +368,9 @@ you MUST:
      applying the DECISION PROCEDURE in Section H to each speaker
      individually.
   2. Determine which of the three challenges (Section C) best characterizes
-     the interaction AS A WHOLE — not any single speaker.
+     the interaction AS A WHOLE — not any single speaker. Follow the
+     consistency rule in Section C: the challenge must match the dominant
+     activity across speakers.
   3. Populate the "speaker_breakdown" array in the JSON output with one
      object per speaker: {"speaker": "...", "orientation": "...",
      "activity": "...", "subtype": "...", "key_phrase": "..."}.
@@ -400,14 +428,45 @@ others and no standalone abstract judgment.
 EXPECTED OUTPUT: main_activity="ENACTMENT", activity_subtype="REROUTE",
 main_orientation="EXPANDER"
 
-Example 5 (multi-speaker thread → challenge):
-INPUT: User 1 (Catalyzer/simplify) + User 2 (Ambivalent/stall) +
-User 3 (Resistant/avoid) + User 4 (Expander/complexify), all evaluating
-whether EVs are "zero emission."
+Example 5 (single comment — EVALUATION despite containing questions,
+NOT Negotiation — this is the critical rhetorical-question distinction):
+COMMENT: "The question is: what is the difference pollution-wise between
+making an EV and making an ICE car? And, if the EV is more polluting to
+make, how many miles would it take to get rid of that difference? If the
+EV was charged with 'dirty' electricity, is it then polluting or not?
+What about the cost of recycling? It's a complex issue... Articles and
+information that claim one over the other are always sponsored by
+someone." (Source: YT)
+Why EVALUATION and not NEGOTIATION: the questions are self-directed and
+exploratory — there is no second-person address ("you"), no rebuttal of a
+specific claim just made by another named speaker, and no demand for
+accountability FROM a particular other party. The speaker is weighing
+complexity out loud, which is the definition of Ambivalent/Stall.
+Contrast with a TRUE Negotiation/Question example below.
+EXPECTED OUTPUT: main_activity="EVALUATION", activity_subtype="STALL",
+main_orientation="AMBIVALENT"
+
+Example 6 (single comment — NEGOTIATION via a genuine other-directed
+question, contrast with Example 5):
+COMMENT: "Have you thought about what they are gonna do with all the
+batteries once they expire because they aren't recyclable?" (Source: FG)
+Why NEGOTIATION and not EVALUATION: direct second-person address ("Have
+you") demanding accountability from a specific other party (implicitly,
+policymakers/proponents) — the communicative function is to put others on
+the spot, not to weigh complexity independently.
+EXPECTED OUTPUT: main_activity="NEGOTIATION", activity_subtype="QUESTION",
+main_orientation="AMBIVALENT"
+
+Example 7 (multi-speaker thread → challenge, ALL EVALUATION):
+INPUT: User 1 (Catalyzer/Evaluation-Simplify) + User 2 (Ambivalent/
+Evaluation-Stall) + User 3 (Resistant/Evaluation-Avoid) + User 4 (Expander/
+Evaluation-Complexify), all independently assessing whether EVs are "zero
+emission," without directly addressing or rebutting each other by name.
 EXPECTED OUTPUT (key fields):
   main_orientation: "MIXED"
   main_activity: "MIXED"
-  primary_challenge: "CONVOLUTED_EVALUATIONS"
+  primary_challenge: "CONVOLUTED_EVALUATIONS"   (because ALL FOUR speakers
+    were independently classified as performing EVALUATION)
   speaker_breakdown: [4 objects, one per speaker, each with ONE
     orientation/activity/subtype — never combined]
 
@@ -426,20 +485,40 @@ STEP 1 — Check ENACTMENT first:
   bike...").
   → If YES: classify as ENACTMENT. Stop here. Do not proceed to Step 2.
 
-STEP 2 — If NOT Enactment, check NEGOTIATION:
+STEP 2 — If NOT Enactment, check NEGOTIATION using the RHETORICAL-QUESTION
+TEST below, then the general criteria:
+
+  ─── RHETORICAL-QUESTION TEST (apply FIRST if the comment contains
+  question marks) ───
+  If I removed any second-person address ("you", "have you") and any
+  explicit rebuttal of a SPECIFIC claim just made by another named/implied
+  speaker, would the statement still stand as an independent,
+  self-contained judgment about the prescribed future?
+    → If YES (the question is exploratory, rhetorical, or self-reflective,
+      e.g., "The question is...", "What about...", "I wonder if...",
+      embedded within a broader statement weighing trade-offs) → this is
+      EVALUATION, not Negotiation. Proceed to Step 3.
+    → If NO (the entire communicative point depends on holding a specific
+      other party accountable, demanding proof from "you," or rebutting a
+      claim just made by another speaker, e.g., "Have you thought
+      about...", "Better tell that to...") → this is NEGOTIATION. Continue
+      below.
+
+  ─── GENERAL NEGOTIATION CRITERIA ───
   Does the text respond to another position, persuade others, issue a
   collective call to action, or make a relational/comparative claim about
   what OTHERS should do or believe?
   Look for: imperative language ("we need to...", "let's...", "should"),
-  direct address to other actors or an audience, comparisons between
-  pathways aimed at persuasion, attribution of responsibility/blame,
-  requests for proof or reassurance from others.
+  direct second-person address to other actors or an audience, comparisons
+  between pathways aimed at persuasion, attribution of responsibility/
+  blame, requests for proof or reassurance FROM a specific other party.
   → If YES: classify as NEGOTIATION. Stop here. Do not proceed to Step 3.
 
 STEP 3 — If neither Enactment nor Negotiation, classify as EVALUATION:
   The text is a standalone judgment or assessment (of costs, risks,
   likelihood, desirability) WITHOUT a call to action, a directed appeal to
-  others, or a description of the consumer's own concrete practice.
+  a specific other party, or a description of the consumer's own concrete
+  practice.
 
 IMPORTANT: A comment that BOTH evaluates AND calls others to act (e.g.,
 "EVs are clearly better [evaluative], so let's get moving [negotiation]")
@@ -447,7 +526,9 @@ must be coded as NEGOTIATION, because the call to action / persuasive
 intent is the DOMINANT communicative function. Evaluative language
 frequently serves as supporting evidence WITHIN a negotiation or
 enactment move — do not let the presence of evaluative language override
-a clear negotiation or enactment signal higher in the hierarchy.
+a clear negotiation or enactment signal higher in the hierarchy. However,
+the presence of QUESTION MARKS alone does NOT automatically indicate
+Negotiation — always apply the Rhetorical-Question Test above first.
 
 ════════════════════════════════════════════════════════════════
 CRITICAL OUTPUT RULE — READ BEFORE RESPONDING
@@ -470,9 +551,12 @@ CORRECT: "main_activity": "NEGOTIATION"
 CORRECT: "main_orientation": "EXPANDER"
 CORRECT: "activity_subtype": "CONTEST"
 
-Before finalizing your answer, silently re-run the DECISION PROCEDURE
-(Section H) to confirm your chosen activity is the single best fit, and
-verify that no field below contains more than one value.
+Before finalizing your answer, silently:
+  1. Re-run the DECISION PROCEDURE (Section H) for each speaker, applying
+     the Rhetorical-Question Test wherever a question mark appears.
+  2. Verify that the primary_challenge (if a thread) is consistent with
+     the dominant activity across speakers, per the rule in Section C.
+  3. Verify that no field below contains more than one value.
 
 ════════════════════════════════════════════════════════════════
 OUTPUT FORMAT — Return ONLY valid JSON
@@ -483,7 +567,7 @@ OUTPUT FORMAT — Return ONLY valid JSON
 
   "main_activity": "one single value, exactly one of: EVALUATION, NEGOTIATION, ENACTMENT (or MIXED only for multi-speaker threads)",
   "activity_subtype": "one single value, exactly one of: SIMPLIFY, STALL, AVOID, COMPLEXIFY, ADVOCATE, QUESTION, REJECT, CONTEST, ACCELERATE, DELAY, PREVENT, REROUTE",
-  "activity_rationale": "State which Decision Procedure step (1, 2, or 3) matched, and cite the specific phrase(s) that triggered this classification",
+  "activity_rationale": "State which Decision Procedure step matched (including result of the Rhetorical-Question Test if applicable), and cite the specific phrase(s) that triggered this classification",
   "secondary_activities": ["list any other activities weakly present, if any — this field MAY contain multiple values, unlike main_activity"],
 
   "main_orientation": "one single value, exactly one of: CATALYZER, AMBIVALENT, RESISTANT, EXPANDER (or MIXED only for multi-speaker threads)",
@@ -494,7 +578,7 @@ OUTPUT FORMAT — Return ONLY valid JSON
   "temporality_expressed": "...",
   "notable_conditions_of_adoption": "Which single condition from Section B applies, if evident",
 
-  "primary_challenge": "one single value: CONVOLUTED_EVALUATIONS, CONFRONTATIONAL_NEGOTIATIONS, COMPETING_ENACTMENTS, or N/A (use N/A for single comments; use MIXED only if a multi-speaker thread genuinely shows more than one challenge simultaneously)",
+  "primary_challenge": "one single value: CONVOLUTED_EVALUATIONS, CONFRONTATIONAL_NEGOTIATIONS, COMPETING_ENACTMENTS, or N/A (use N/A for single comments; must be consistent with the dominant activity across speaker_breakdown per Section C)",
   "challenge_rationale": "...",
 
   "speaker_breakdown": [
@@ -761,26 +845,26 @@ EXAMPLES = {
             "hybrid vehicles instead of EVs until 2030 (PC)."
         )
     },
-"⚖️ AMBIVALENT  |  ⚙️ Enactment  →  Delay": {
-    "prescribed": PF_EV,
-    "activity":   "ENACTMENT",
-    "subtype":    "DELAY",
-    "orientation":"AMBIVALENT",
-    "comment": (
-        "Really good and interesting report! I am wanting to upgrade the car at a "
-        "not too distant time and I am umming and aahing over PHEV or EV. EV would "
-        "be magic but such a jump in price! PHEV seems great as a midway point as "
-        "most of my driving is around town (YT). "
-        "Yep, the cost is indeed a huge hurdle. I think I'll be running my 12 year "
-        "old Subaru Outback a bit longer! (YT). "
-        "Just bought a new petrol car as the infrastructure still isn't in place (FG). "
-        "Hopefully, by the time my car does need to be replaced, EVs are a lot "
-        "cheaper and the inconveniences are worked out (R). "
-        "I plan to drive my current 10 year old hybrid as long as I can. The next "
-        "car I buy will probably be electric, but I'm expecting many of these "
-        "issues to be resolved by then (R)."
-    )
-},
+    "⚖️ AMBIVALENT  |  ⚙️ Enactment  →  Delay": {
+        "prescribed": PF_EV,
+        "activity":   "ENACTMENT",
+        "subtype":    "DELAY",
+        "orientation":"AMBIVALENT",
+        "comment": (
+            "Really good and interesting report! I am wanting to upgrade the car at a "
+            "not too distant time and I am umming and aahing over PHEV or EV. EV would "
+            "be magic but such a jump in price! PHEV seems great as a midway point as "
+            "most of my driving is around town (YT). "
+            "Yep, the cost is indeed a huge hurdle. I think I'll be running my 12 year "
+            "old Subaru Outback a bit longer! (YT). "
+            "Just bought a new petrol car as the infrastructure still isn't in place (FG). "
+            "Hopefully, by the time my car does need to be replaced, EVs are a lot "
+            "cheaper and the inconveniences are worked out (R). "
+            "I plan to drive my current 10 year old hybrid as long as I can. The next "
+            "car I buy will probably be electric, but I'm expecting many of these "
+            "issues to be resolved by then (R)."
+        )
+    },
 
     # ══════ 🛡️ RESISTANT ══════
     "🛡️ RESISTANT  |  📊 Evaluation  →  Avoid": {
@@ -885,11 +969,11 @@ EXAMPLES = {
 
 # ─────────────────────────────────────────
 # THREAD_EXAMPLES — multi-speaker illustrations of the 3 challenges
-# (Figures WE1, WE2, WE3)
+# (Figures WE1, WE2, WE3), NOW WITH FULL GROUND TRUTH per speaker
 # ─────────────────────────────────────────
 THREAD_EXAMPLES = {
     "— Select a thread example —": {
-        "prescribed": "", "challenge": "", "thread": []
+        "prescribed": "", "challenge": "", "thread": [], "expected_speakers": []
     },
     "🌀 Convoluted Evaluations (YouTube, n=408 comments — Fig. WE1)": {
         "prescribed": PF_EV,
@@ -910,6 +994,12 @@ THREAD_EXAMPLES = {
              "noise emissions and particle emissions from tires, roads and brake "
              "dust... EVs are NOT the solution. Electric trains and buses plus "
              "accessible walking and cycling infrastructure."),
+        ],
+        "expected_speakers": [
+            {"speaker": "User 1", "orientation": "CATALYZER",  "activity": "EVALUATION", "subtype": "SIMPLIFY"},
+            {"speaker": "User 2", "orientation": "AMBIVALENT", "activity": "EVALUATION", "subtype": "STALL"},
+            {"speaker": "User 3", "orientation": "RESISTANT",  "activity": "EVALUATION", "subtype": "AVOID"},
+            {"speaker": "User 4", "orientation": "EXPANDER",   "activity": "EVALUATION", "subtype": "COMPLEXIFY"},
         ]
     },
     "⚔️ Confrontational Negotiations (Whirlpool, 91 pages — Fig. WE2)": {
@@ -939,6 +1029,12 @@ THREAD_EXAMPLES = {
              "I'm an idiot… I'd like to see passenger cars filled with "
              "passengers, less cars on the road, less money spent on new "
              "roads!... Where people may simply drive less."),
+        ],
+        "expected_speakers": [
+            {"speaker": "User 1", "orientation": "CATALYZER",  "activity": "NEGOTIATION", "subtype": "ADVOCATE"},
+            {"speaker": "User 2", "orientation": "AMBIVALENT", "activity": "NEGOTIATION", "subtype": "QUESTION"},
+            {"speaker": "User 3", "orientation": "RESISTANT",  "activity": "NEGOTIATION", "subtype": "REJECT"},
+            {"speaker": "User 4", "orientation": "EXPANDER",   "activity": "NEGOTIATION", "subtype": "CONTEST"},
         ]
     },
     "🔀 Competing Enactments (Facebook, 954 comments — Fig. WE3)": {
@@ -960,6 +1056,12 @@ THREAD_EXAMPLES = {
              "diesel 4x4..."),
             ("User 4", "Maybe some reliable public transport would be an "
              "answer."),
+        ],
+        "expected_speakers": [
+            {"speaker": "User 1", "orientation": "CATALYZER",  "activity": "ENACTMENT", "subtype": "ACCELERATE"},
+            {"speaker": "User 2", "orientation": "AMBIVALENT", "activity": "ENACTMENT", "subtype": "DELAY"},
+            {"speaker": "User 3", "orientation": "RESISTANT",  "activity": "ENACTMENT", "subtype": "PREVENT"},
+            {"speaker": "User 4", "orientation": "EXPANDER",   "activity": "ENACTMENT", "subtype": "REROUTE"},
         ]
     },
 }
@@ -977,8 +1079,9 @@ PRESCRIBED FUTURE:
 CONSUMER COMMENT TO ANALYZE:
 {comment}
 
-Remember: apply the DECISION PROCEDURE (Section H) in order, and return
-EXACTLY ONE value per enum field, per the CRITICAL OUTPUT RULE.
+Remember: apply the DECISION PROCEDURE (Section H) in order — including the
+Rhetorical-Question Test if question marks are present — and return EXACTLY
+ONE value per enum field, per the CRITICAL OUTPUT RULE.
 """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -1011,8 +1114,9 @@ def _clean_enum(value: str) -> str:
 
 
 def run_validation_suite(api_key: str) -> dict:
-    """Runs all labeled EXAMPLES and compares predictions against the
-    ground-truth orientation/activity/subtype assigned in the paper."""
+    """Runs all labeled single-comment EXAMPLES and compares predictions
+    against the ground-truth orientation/activity/subtype assigned in the
+    paper (Table WE1)."""
     results = []
     for name, ex in EXAMPLES.items():
         if not ex.get("comment"):
@@ -1047,6 +1151,72 @@ def run_validation_suite(api_key: str) -> dict:
     if not results:
         return {"results": [], "overall_accuracy": 0.0}
     accuracy = sum(r["match"] for r in results) / len(results)
+    return {"results": results, "overall_accuracy": accuracy}
+
+
+def run_thread_validation_suite(api_key: str) -> dict:
+    """Runs all 3 THREAD_EXAMPLES and validates BOTH the primary_challenge
+    AND every entry in speaker_breakdown against the ground truth defined
+    in THREAD_EXAMPLES[...]["expected_speakers"]."""
+    results = []
+    for name, ex in THREAD_EXAMPLES.items():
+        if not ex.get("thread"):
+            continue
+        try:
+            pred = analyze_thread(ex["prescribed"], ex["thread"], api_key)
+        except Exception as e:
+            results.append({
+                "example": name, "error": str(e),
+                "challenge_match": False, "speaker_matches": [],
+                "overall_match": False
+            })
+            continue
+
+        pred_challenge = _clean_enum((pred.get("primary_challenge") or "")).upper()
+        expected_challenge = ex["challenge"]
+        challenge_match = (pred_challenge == expected_challenge)
+
+        pred_speakers = pred.get("speaker_breakdown", []) or []
+        expected_speakers = ex["expected_speakers"]
+
+        speaker_matches = []
+        # Match by speaker label (User 1, User 2, ...) rather than position,
+        # in case the model reorders them.
+        pred_by_label = {
+            (sp.get("speaker") or "").strip(): sp for sp in pred_speakers
+        }
+        for exp_sp in expected_speakers:
+            label = exp_sp["speaker"]
+            pred_sp = pred_by_label.get(label, {})
+            pred_ori = _clean_enum((pred_sp.get("orientation") or "")).upper()
+            pred_act = _clean_enum((pred_sp.get("activity") or "")).upper()
+            pred_sub = _clean_enum((pred_sp.get("subtype") or "")).upper()
+            match = (
+                pred_ori == exp_sp["orientation"]
+                and pred_act == exp_sp["activity"]
+                and pred_sub == exp_sp["subtype"]
+            )
+            speaker_matches.append({
+                "speaker": label,
+                "expected": (exp_sp["orientation"], exp_sp["activity"], exp_sp["subtype"]),
+                "predicted": (pred_ori, pred_act, pred_sub),
+                "match": match
+            })
+
+        overall_match = challenge_match and all(sm["match"] for sm in speaker_matches)
+
+        results.append({
+            "example": name,
+            "expected_challenge": expected_challenge,
+            "predicted_challenge": pred_challenge,
+            "challenge_match": challenge_match,
+            "speaker_matches": speaker_matches,
+            "overall_match": overall_match
+        })
+
+    if not results:
+        return {"results": [], "overall_accuracy": 0.0}
+    accuracy = sum(r["overall_match"] for r in results) / len(results)
     return {"results": results, "overall_accuracy": accuracy}
 
 
@@ -1389,8 +1559,13 @@ def main():
 
     mode = st.radio(
         "Analysis mode:",
-        ["💬 Single Comment", "🗣️ Multi-Speaker Thread (challenge analysis)", "🧪 Validation Suite"],
-        horizontal=True
+        [
+            "💬 Single Comment",
+            "🗣️ Multi-Speaker Thread (challenge analysis)",
+            "🧪 Validation Suite — Single Comments",
+            "🧪 Validation Suite — Threads"
+        ],
+        horizontal=False
     )
 
     # ═══════════════════════════════════════
@@ -1491,7 +1666,9 @@ def main():
             "Built-in thread example (Figures WE1 / WE2 / WE3):",
             list(THREAD_EXAMPLES.keys())
         )
-        thread_data = THREAD_EXAMPLES.get(selected_thread, {"prescribed": "", "challenge": "", "thread": []})
+        thread_data = THREAD_EXAMPLES.get(
+            selected_thread, {"prescribed": "", "challenge": "", "thread": [], "expected_speakers": []}
+        )
 
         if selected_thread != "— Select a thread example —":
             show_thread_badge(thread_data)
@@ -1535,15 +1712,14 @@ def main():
                     st.code(str(e))
 
     # ═══════════════════════════════════════
-    # MODE 3: VALIDATION SUITE
+    # MODE 3: VALIDATION SUITE — SINGLE COMMENTS
     # ═══════════════════════════════════════
-    else:
-        st.markdown("### 🧪 Regression Validation Against the Paper")
+    elif mode == "🧪 Validation Suite — Single Comments":
+        st.markdown("### 🧪 Regression Validation — Single Comments (Table WE1)")
         st.caption(
             "Runs all 12 labeled examples from Table WE1 through the model and "
             "compares the predicted orientation / activity / subtype against the "
-            "categories assigned in the paper. Use this after any change to the "
-            "model, prompt, or temperature."
+            "categories assigned in the paper."
         )
         ready = bool(api_key)
         if not ready:
@@ -1565,6 +1741,42 @@ def main():
                             st.error(r["error"])
             else:
                 st.info("No labeled examples found to validate.")
+
+    # ═══════════════════════════════════════
+    # MODE 4: VALIDATION SUITE — THREADS
+    # ═══════════════════════════════════════
+    else:
+        st.markdown("### 🧪 Regression Validation — Multi-Speaker Threads (Fig. WE1/WE2/WE3)")
+        st.caption(
+            "Runs all 3 multi-speaker thread examples and validates BOTH the "
+            "primary_challenge AND every speaker's orientation/activity/subtype "
+            "against the ground truth from the paper's figures."
+        )
+        ready = bool(api_key)
+        if not ready:
+            st.warning("⚠️ Configure your API key above to run the validation suite.")
+
+        if st.button("▶️ Run Thread Validation Suite", type="primary", disabled=not ready):
+            with st.spinner("Running validation across all thread examples..."):
+                report = run_thread_validation_suite(api_key)
+            if report["results"]:
+                st.metric("Overall Accuracy", f"{report['overall_accuracy']*100:.1f}%")
+                for r in report["results"]:
+                    icon = "✅" if r["overall_match"] else "❌"
+                    with st.expander(f"{icon} {r['example']}"):
+                        if r.get("error"):
+                            st.error(r["error"])
+                            continue
+                        chal_icon = "✅" if r["challenge_match"] else "❌"
+                        st.write(f"{chal_icon} **Challenge** — Expected: `{r['expected_challenge']}` | "
+                                 f"Predicted: `{r['predicted_challenge']}`")
+                        st.markdown("**Speaker-by-speaker breakdown:**")
+                        for sm in r["speaker_matches"]:
+                            sm_icon = "✅" if sm["match"] else "❌"
+                            st.write(f"{sm_icon} **{sm['speaker']}** — "
+                                     f"Expected: `{sm['expected']}` | Predicted: `{sm['predicted']}`")
+            else:
+                st.info("No thread examples found to validate.")
 
 
 if __name__ == "__main__":
