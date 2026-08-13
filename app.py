@@ -75,13 +75,24 @@ Coding criteria (ALL must apply):
     others to act, persuade, or describe the speaker's own concrete
     practice change.
   • Rhetorical or self-directed questions used to weigh complexity
-    ("The question is...", "What about...", "I wonder if...") COUNT as
-    Evaluation, not Negotiation — see Section H for the full test.
+    ("The question is...", "What about...") COUNT as Evaluation.
+  • CRITICAL: STRONG, CATEGORICAL, or NEGATIVE language ("not the
+    solution," "false solution," "not the future," "muddle point") DOES
+    NOT by itself indicate Negotiation. A firmly-worded standalone
+    opinion about the TOPIC is still Evaluation, unless it also meets the
+    Negotiation criteria below (a real interlocutor, a call to action, or
+    a rebuttal of a specific other claim).
+  • CRITICAL: Generic/impersonal "you" (meaning "people in general," "one,"
+    or a hypothetical reader — e.g., "a false solution if you care about
+    the environment at all") does NOT count as second-person address to a
+    real interlocutor. See the GENERIC-YOU TEST in Section H.
 Sub-types by orientation:
   SIMPLIFY   (Catalyzer)  — narrows focus, treats difficulties as temporary
-  STALL      (Ambivalent) — careful consideration, information gathering,
-    including self-directed questions weighing pros/cons
-  AVOID      (Resistant)  — perceives transition as unnecessary/manipulative
+  STALL      (Ambivalent) — careful consideration, information gathering
+  AVOID      (Resistant)  — perceives transition as unnecessary/manipulative;
+    INCLUDES firm, categorical, dismissive standalone judgments ("not the
+    solution," "muddle point") as long as no real interlocutor is
+    addressed and no call to action is made
   COMPLEXIFY (Expander)   — zooms out to systemic trade-offs
 
 ─── NEGOTIATION ──────────────────────────────────────────────
@@ -94,54 +105,49 @@ future should be pursued.
 Signals that STRONGLY indicate Negotiation over Evaluation:
   • Imperative or collective calls to action ("we need to...", "let's...",
     "should")
-  • Direct SECOND-PERSON address to an audience or opponent ("you," "have
-    you," "your")
-  • Attribution of blame, responsibility, or authority to specific actors
+  • Direct SECOND-PERSON address to a SPECIFIC, REAL interlocutor or
+    opponent present in (or implied by) the conversation ("you," "have
+    you," "your") — NOT a generic/impersonal "you" meaning "people in
+    general." See the GENERIC-YOU TEST in Section H before using this
+    signal.
+  • Attribution of blame, responsibility, or authority to specific named
+    actors (e.g., "politicians," "the government," "you" addressing an
+    opposing commenter)
   • Explicit rebuttal of a claim JUST MADE by another named/implied speaker
+    in a visible exchange
   • Requests for proof, reassurance, or accountability FROM A SPECIFIC
     OTHER PARTY (not rhetorical self-questioning)
-  • Explicit comparison between competing pathways aimed at persuasion
+  • Explicit comparison between competing pathways aimed at persuading a
+    real audience
 Sub-types by orientation:
   ADVOCATE  (Catalyzer)  — recruits others, calls for stronger policy
-  QUESTION  (Ambivalent) — polite skepticism, asks for proof of feasibility
-    FROM OTHERS (e.g., "Have you thought about...")
-  REJECT    (Resistant)  — frames adoption as coercive imposition; defends
-    the status quo against an imposed collective demand; often expressed
-    as principled refusal ("no thanks," "we get a say," "is this X?")
-    rather than persuading toward an alternative pathway
+  QUESTION  (Ambivalent) — polite skepticism, asks for proof FROM OTHERS
+  REJECT    (Resistant)  — frames adoption as coercive imposition; refuses
+    a demand made BY a specific authority/actor, typically via direct
+    address ("Is this communism — take away OUR freedom") or naming an
+    actor ("politicians and their cronies")
   CONTEST   (Expander)   — contests scope and proposes a BROADER
-    alternative pathway or systemic reframing (e.g., advocating for public
-    transport, degrowth, or systemic redesign as a superior alternative)
+    alternative pathway, typically addressed to a real audience/opponent
 
-  DISAMBIGUATION — REJECT vs. CONTEST: Both can sound confrontational.
-  Use REJECT when the comment's goal is to preserve the status quo /
-  refuse the imposition itself (no alternative future is proposed, just
-  refusal, mockery of authority, or a defense of personal freedom/autonomy).
-  Use CONTEST when the comment's goal is to propose or defend a DIFFERENT,
-  broader future than the one prescribed (e.g., "does it have to be a
-  car?", proposing public transport, degrowth, or systemic alternatives).
-  A comment that mocks or rejects authority WITHOUT proposing an
-  alternative future is REJECT, even if phrased as a rhetorical question.
+  DISAMBIGUATION — REJECT vs. CONTEST (apply ONLY once Negotiation is
+  already established via the Decision Procedure — do NOT use this to
+  push an Evaluation-level comment into Negotiation):
+  Use REJECT when the comment refuses an imposition without proposing an
+  alternative future. Use CONTEST when it proposes a different, broader
+  future. Both require an already-established Negotiation classification.
 
-Sub-types by orientation:
+Sub-types by orientation (Enactment):
   ACCELERATE (Catalyzer)  — purchases EVs, divests ICE, installs chargers
-  DELAY      (Ambivalent) — continues ICE use, monitors market, waits;
-    explicitly frames the delay as CONDITIONAL and TEMPORARY, tied to
-    unresolved practical factors (price, infrastructure, technology
-    maturing) that the speaker expects to eventually be resolved
-  PREVENT    (Resistant)  — retains ICE vehicles, refuses change;
-    frames the retention as a PERMANENT, identity-based commitment,
-    independent of future price/technology changes (e.g., "no matter
-    what," "I'll stick with," "til it dies")
+  DELAY      (Ambivalent) — continues ICE use, ties non-adoption to
+    SPECIFIC RESOLVABLE conditions (price, infrastructure) with an
+    implied "for now"
+  PREVENT    (Resistant)  — retains ICE vehicles permanently, frames
+    non-adoption as identity-based, independent of future conditions
   REROUTE    (Expander)   — adopts cargo bikes, public transport, relocates
 
-  DISAMBIGUATION — DELAY vs. PREVENT: Both describe NOT adopting an EV
-  right now. Use DELAY when the comment ties the non-adoption to SPECIFIC,
-  RESOLVABLE conditions (cost, infrastructure, tech maturity) with an
-  implied "for now" / "until X changes." Use PREVENT when the comment
-  frames non-adoption as a categorical, identity-based stance independent
-  of any future condition changing (e.g., permanent preference for a V8,
-  diesel, or ICE vehicle regardless of price or infrastructure).
+  DISAMBIGUATION — DELAY vs. PREVENT: DELAY ties non-adoption to a
+  resolvable condition ("until infrastructure improves"); PREVENT frames
+  it as a permanent stance ("no matter what," "til it dies").
 
 ─── ENACTMENT ────────────────────────────────────────────────
 Operational definition: References to how consumers gave form to futures
@@ -151,13 +157,9 @@ Coding criteria: Specifies what the consumer THEMSELVES does, intends,
 expects, or imagines doing in practice. At least ONE practice element must
 be identifiable: an action/routine, a material arrangement/technology, a
 competence, or a temporally situated commitment.
-Signals that STRONGLY indicate Enactment over Evaluation/Negotiation:
-  • First-person accounts of purchases, ownership, or refusals
-    ("I bought...", "we ordered...", "I'm sticking with...")
-  • Descriptions of routines, trips, or habits actually performed
-  • Statements of firm personal intention ("I will...", "I plan to...",
-    "I'm on a waiting list for...")
-  • Relocation, acquisition, or divestment of material objects
+Signals: first-person accounts of purchases/ownership/refusals; described
+routines actually performed; firm personal intentions ("I plan to...");
+relocation or acquisition/divestment of material objects.
 
 ════════════════════════════════════════════════════════════════
 B. FUTURE-MAKING ORIENTATIONS — Select the ONE primary orientation
@@ -169,76 +171,48 @@ necessary, feasible, and already gaining momentum.
 Goal: Accelerate change toward the prescribed future.
 Emotions: Utopian optimism; enthusiasm; confidence; pride.
 Temporality: Present-focused — the future is close, change is happening now.
-Notable conditions of adoption: High degree of alignment between current
-practices and the prescribed future.
-Empirical indicators: urgency, momentum, tipping points, inevitability,
-technological progress. Typical markers: "now," "rapidly," "already,"
-"time to," "let's get moving."
+Empirical indicators: urgency, momentum, tipping points, inevitability.
 
 ─── AMBIVALENT ───────────────────────────────────────────────
 Main narrative: Pragmatic narrative — desirability assessed against
 everyday feasibility (price, range, charging, servicing, grid capacity).
-Goal: Slow or stage movement toward the prescribed future; delay decisions;
-balance risks and benefits.
+Goal: Slow or stage movement; delay decisions; balance risks and benefits.
 Emotions: Curiosity; caution; anxiety; frustration; conditional optimism.
-Temporality: Gradual and contingent — change may occur, timing depends on
-infrastructure, affordability, technology, and other actors.
-Notable conditions of adoption: Limited resources to support change.
+Temporality: Gradual and contingent.
 Empirical indicators: conditional support, information-seeking, waiting
-for prices/technology, preference for hybrids. Markers: "but," "if,"
-"when," "not yet," "hopefully."
+for prices/technology. Markers: "but," "if," "when," "not yet," "hopefully."
 
 ─── RESISTANT ────────────────────────────────────────────────
 Main narrative: Control narrative — interventions framed as coercive,
 inequitable, ideologically motivated, or environmentally misleading.
 Goal: Contest the prescribed future and protect the status quo.
 Emotions: Pessimism; anger; anxiety; fear; defiance; distrust.
-Temporality: Maintenance-oriented — preferred future reproduces the
-present; prescribed future is distant, implausible, or to be prevented.
-Notable conditions of adoption: Low degree of alignment between current
-practices and prescribed future.
+Temporality: Maintenance-oriented.
 Empirical indicators: categorical rejection, distrust of authorities,
-defense of freedom, commitments to retain ICE. Markers: "forced,"
-"agenda," "control," "freedom," "never," "stick with."
+commitments to retain ICE. Markers: "forced," "agenda," "control,"
+"freedom," "never," "stick with," "not the solution," "muddle point."
 
 ─── EXPANDER ─────────────────────────────────────────────────
 Main narrative: Bigger-picture narrative — situates the intervention within
-wider systems of production, consumption, urban design, and car dependence.
-Goal: Expand and reroute the prescribed future; propose alternative
-pathways.
+wider systems of production, consumption, urban design, car dependence.
+Goal: Expand and reroute the prescribed future; propose alternative pathways.
 Emotions: Dystopian optimism; concern; hope; critical urgency.
-Temporality: Envisioned and system-oriented — change must begin now but
-extends beyond the prescribed transition's boundaries.
-Notable conditions of adoption: Mismatch among current practices, normative
-practices, and those directed by the prescribed future.
+Temporality: Envisioned and system-oriented.
 Empirical indicators: zooming out to systemic consequences, challenging
-car-centrality, proposing alternative mobility. Formulations: "EVs are not
-enough," "bigger picture," "less cars," "does it have to be a car?"
+car-centrality. Formulations: "EVs are not enough," "bigger picture,"
+"less cars," "does it have to be a car?", "false solution."
 
 ════════════════════════════════════════════════════════════════
-C. FUTURE-MAKING CHALLENGES (emergent, multi-actor phenomena)
+C. FUTURE-MAKING CHALLENGES
 ════════════════════════════════════════════════════════════════
 
-CONVOLUTED_EVALUATIONS — Divergent assumptions, evidence, and temporal
-  horizons make coherent sensemaking difficult (emerges when EVALUATION
-  is performed differently by different orientations).
-CONFRONTATIONAL_NEGOTIATIONS — Simultaneous advocacy, questioning,
-  rejection, and contestation widen divides rather than converge (emerges
-  when NEGOTIATION dominates the interaction).
-COMPETING_ENACTMENTS — Some accelerate while others prevent, delay, or
-  reroute, creating divergence and volatility (emerges when ENACTMENT
-  dominates the interaction).
+CONVOLUTED_EVALUATIONS ← dominant activity across speakers = EVALUATION
+CONFRONTATIONAL_NEGOTIATIONS ← dominant activity = NEGOTIATION
+COMPETING_ENACTMENTS ← dominant activity = ENACTMENT
 
-Each activity maps directly onto the challenge it feeds:
-  EVALUATION  → CONVOLUTED_EVALUATIONS
-  NEGOTIATION → CONFRONTATIONAL_NEGOTIATIONS
-  ENACTMENT   → COMPETING_ENACTMENTS
-
-Note: A full "primary_challenge" (a realized, emergent property of an
-actual multi-actor interaction) is only meaningfully assigned for
-MULTI-SPEAKER THREADS. For single comments, use "N/A" for
-"primary_challenge" — the forward-looking equivalent for single comments
-is described in Section I below.
+Note: A full "primary_challenge" is only meaningfully assigned for
+MULTI-SPEAKER THREADS. For single comments, use "N/A" — the forward-
+looking equivalent is Section I below.
 
 ════════════════════════════════════════════════════════════════
 D. POLICY ROADMAP (Figure 3 — 7 steps)
@@ -246,128 +220,70 @@ D. POLICY ROADMAP (Figure 3 — 7 steps)
 
 Step 1: Determine the prescribed future — Make explicit what future the
   intervention seeks to prescribe.
-Step 2: Map future-making orientations — Identify how people adopting
-  different orientations evaluate, negotiate, and enact (or not) the
-  prescribed future.
-  CATALYZER — "Urgent, desirable, and already underway." Diagnostics:
-    social listening for urgency/inevitability language; track voluntary
-    early adoption.
-  AMBIVALENT — "Valuable, but conditions are not yet ready." Diagnostics:
-    monitor conditional language ("I would, but") and trials without
-    conversion; diagnose the specific unresolved condition.
-  RESISTANT — "Threatens autonomy, identity, or rights." Diagnostics:
-    monitor coercion/distrust language; track opt-outs, organized
-    opposition.
-  EXPANDER — "The policy problem is framed too narrowly." Diagnostics:
-    look for claims that the intervention doesn't solve the underlying
-    problem; track visions of broader change.
-Step 3: Diagnose key future-making challenges — Are incompatible
-  evidence/assumptions preventing sensemaking (Convoluted Evaluations)?
-  Is disagreement escalating around autonomy/fairness/legitimacy
-  (Confrontational Negotiations)? Are accelerating/delaying/preventing/
-  re-routing practices creating incompatible pathways (Competing
-  Enactments)?
-Step 4: Implement support initiatives (match to orientation):
-  CATALYZER — Objective: enable responsible acceleration only where public
-    value can be demonstrated. Instruments: time-limited regulatory
-    sandboxes; independent evaluation; mandatory reporting of failures;
-    clear exit criteria and powers to pause or reverse.
-  AMBIVALENT — Objective: convert uncertainty into explicit conditions for
-    authorization. Instruments: public impact assessments; staged
-    authorization and sunset clauses; citizen juries; public registers;
-    guaranteed human-service alternatives.
-  RESISTANT — Objective: protect rights and restore legitimacy and
-    accountability. Instruments: statutory prohibitions on unacceptable
-    uses; appeal and human-review rights; independent audits; moratoria
-    where evidence is insufficient.
-  EXPANDER — Objective: broaden the policy focus; consider alternative
-    futures. Instruments: citizen assemblies; public-interest funding and
-    infrastructure; data trusts; competition policy; alternative
-    ownership and governance models.
-Step 5: Facilitate enactment — Provide infrastructure and build
-  capabilities needed to navigate the change in practice.
-Step 6: Measure multiple outcomes — Is the system accurate and fair? Do
-  consumers understand it? Who benefits? Who is excluded? Are alternative
-  pathways emerging?
-Step 7: Revise intervention — Treat the prescribed future as revisable.
+Step 2: Map future-making orientations.
+  CATALYZER — "Urgent, desirable, already underway." Social listening for
+    urgency/inevitability language; track voluntary early adoption.
+  AMBIVALENT — "Valuable, but conditions not yet ready." Monitor
+    conditional language ("I would, but"); trials without conversion.
+  RESISTANT — "Threatens autonomy, identity, or rights." Monitor
+    coercion/distrust language; track opt-outs, organized opposition.
+  EXPANDER — "Policy problem framed too narrowly." Claims intervention
+    doesn't solve the underlying problem; visions of broader change.
+Step 3: Diagnose key future-making challenges.
+Step 4: Implement support initiatives:
+  CATALYZER — Objective: enable responsible acceleration where public
+    value is demonstrated. Instruments: time-limited regulatory sandboxes;
+    independent evaluation; mandatory reporting of failures; exit criteria.
+  AMBIVALENT — Objective: convert uncertainty into explicit conditions.
+    Instruments: public impact assessments; staged authorization and
+    sunset clauses; citizen juries; guaranteed human-service alternatives.
+  RESISTANT — Objective: protect rights and restore legitimacy.
+    Instruments: statutory prohibitions; appeal/human-review rights;
+    independent audits; moratoria where evidence is insufficient.
+  EXPANDER — Objective: broaden the policy focus. Instruments: citizen
+    assemblies; public-interest funding; data trusts; competition policy;
+    alternative governance models.
+Step 5: Facilitate enactment — infrastructure and capability building.
+Step 6: Measure multiple outcomes — accuracy, fairness, who benefits/excluded.
+Step 7: Revise intervention — treat the prescribed future as revisable.
 
 ════════════════════════════════════════════════════════════════
 E. MANAGERIAL ROADMAP (Figure 4 — 6 steps)
 ════════════════════════════════════════════════════════════════
 
-Step 1: Determine the prescribed future — Define the intervention by the
-  future it prescribes, not only its technical features: which consumer
-  practices must change, what competencies/resources/infrastructures does
-  it require? Which elements are fixed vs. open to revision? Who benefits/
-  adapts/bears the costs?
-Step 2: Consider future-making orientations — Use narratives, goals,
-  emotions, temporalities to identify orientations, rather than segments.
-  CATALYZER — "Urgent, desirable, and already underway." Diagnostics:
-    monitor urgency/inevitability language, early pilot participation,
-    advocacy; identify resources enabling early adoption.
-  AMBIVALENT — "Valuable, but conditions are not yet ready." Diagnostics:
-    monitor conditional language ("I would, but…," "not yet"); track
-    hesitation signals; identify trial without conversion.
-  RESISTANT — "Threatens autonomy, identity, or rights." Diagnostics:
-    monitor coercion/surveillance language, opt-outs, organized
-    opposition; distinguish ideological opposition from material
-    disadvantage.
-  EXPANDER — "The policy problem is framed too narrowly." Diagnostics:
-    watch for "this does not solve the real problem," advocacy for
-    collective alternatives.
-Step 3: Monitor key future-making challenges — Are consumers simplifying,
-  stalling, avoiding, complexifying (Convoluted Evaluations)? Are
-  advocacy/questioning/rejection/contestation escalating (Confrontational
-  Negotiations)? Are accelerating/delaying/preventing/re-routing practices
-  incompatible (Competing Enactments)?
+Step 1: Determine the prescribed future — define by the future it
+  prescribes, not just technical features.
+Step 2: Consider future-making orientations (narratives, goals, emotions,
+  temporalities — not segments).
+Step 3: Monitor key future-making challenges.
 Step 4: Select orientation-sensitive response:
-  CATALYZER — Objective: convert enthusiasm into credible and responsible
-    experimentation. Interventions: governed pilots, evidence
-    documentation, peer learning, explicit reporting of limitations.
-    Avoid: inevitability claims; treating early adopters as universal
-    proof.
-  AMBIVALENT — Objective: convert generalized uncertainty into specific,
-    addressable conditions. Interventions: sandboxes, comparison tools,
-    staged adoption, human assistance, transparent performance evidence.
-    Avoid: pressure and artificial urgency; framing hesitation as
-    ignorance.
-  RESISTANT — Objective: restore autonomy, legitimacy, and accountability.
+  CATALYZER — Convert enthusiasm into responsible experimentation.
+    Interventions: governed pilots, evidence documentation, peer learning.
+    Avoid: inevitability claims; treating early adopters as universal proof.
+  AMBIVALENT — Convert uncertainty into addressable conditions.
+    Interventions: sandboxes, comparison tools, staged adoption, human
+    assistance. Avoid: artificial urgency; framing hesitation as ignorance.
+  RESISTANT — Restore autonomy, legitimacy, accountability.
     Interventions: consultation, opt-outs, human review, independent
-    audits, protections against material harms. Avoid: "there is no
-    alternative"; ridicule; hidden automation.
-  EXPANDER — Objective: incorporate systemic critique and explore
-    alternative futures. Interventions: participatory design, futures
-    workshops, broader impact evaluation, alternative governance models.
-    Avoid: presenting the offering as a complete solution; dismissing
-    critique.
-Step 5: Match messaging to key future-making challenges — Do not rely on
-  a single persuasive frame. Universal claims ("the change is inevitable,"
-  "everyone benefits") may mobilize Catalyzers while intensifying
-  resistance and confrontation elsewhere.
-Step 6: Support consumers through enactment — Place support at
-  touchpoints: onboarding, everyday workflows, escalation points,
-  training, appeals. Provide adjustable involvement, human assistance,
-  easy ways to pause/reverse/modify adoption.
+    audits. Avoid: "there is no alternative"; ridicule; hidden automation.
+  EXPANDER — Incorporate systemic critique. Interventions: participatory
+    design, futures workshops, broader impact evaluation. Avoid:
+    presenting the offering as a complete solution; dismissing critique.
+Step 5: Match messaging to key future-making challenges — avoid universal
+  claims; communicate achievements AND limitations.
+Step 6: Support consumers through enactment — onboarding, workflows,
+  escalation points, training, appeals.
 
 ════════════════════════════════════════════════════════════════
 F. MULTI-SPEAKER MODE (advanced / experimental)
 ════════════════════════════════════════════════════════════════
 
 If the input contains multiple labeled speakers (e.g., "User 1:", "User 2:"),
-you MUST:
-  1. Classify EACH speaker's orientation, activity, and subtype separately,
-     applying the DECISION PROCEDURE in Section H to each speaker
-     individually. Each speaker is INDEPENDENT — do not let one speaker's
-     content bias another speaker's classification.
-  2. Determine the "primary_challenge" that best characterizes the
-     interaction AS A WHOLE, consistent with which activity dominates
-     across speakers (per Section C's activity→challenge mapping).
-  3. Populate "speaker_breakdown" with one object per speaker; each field
-     must contain EXACTLY ONE value.
-  4. Set "main_orientation"/"main_activity" at the TOP LEVEL to "MIXED"
-     only when speakers genuinely diverge.
-  5. If NOT a multi-speaker input, return an empty array for
-     "speaker_breakdown."
+classify EACH speaker's orientation/activity/subtype separately (applying
+the Decision Procedure independently to each), determine the aggregate
+"primary_challenge" consistent with the dominant activity, and populate
+"speaker_breakdown" with one object per speaker. If NOT multi-speaker,
+return an empty array for "speaker_breakdown."
 
 ════════════════════════════════════════════════════════════════
 G. FEW-SHOT GROUNDING EXAMPLES
@@ -376,66 +292,73 @@ G. FEW-SHOT GROUNDING EXAMPLES
 Example 1 (EVALUATION, not Negotiation):
 COMMENT: "Once EVs are cheaper to buy than ICE cars the transition will
 happen fast... EVs can stand on their own merits now." (Source: W)
-→ main_activity="EVALUATION", activity_subtype="SIMPLIFY",
-  main_orientation="CATALYZER"
+→ EVALUATION / SIMPLIFY / CATALYZER
 
-Example 2 (NEGOTIATION, not Evaluation):
+Example 2 (NEGOTIATION, not Evaluation — real call to action):
 COMMENT: "We need to act on transport emissions as quickly as possible...
 so let's get moving." (Source: PC)
-→ main_activity="NEGOTIATION", activity_subtype="ADVOCATE",
-  main_orientation="CATALYZER"
+→ NEGOTIATION / ADVOCATE / CATALYZER
 
-Example 3 (ENACTMENT, not Evaluation):
+Example 3 (ENACTMENT, PREVENT not DELAY — permanent stance):
 COMMENT: "I won't be getting one, I'll stick to my V8 and my other diesel
 4x4..." (Source: FG)
-→ main_activity="ENACTMENT", activity_subtype="PREVENT",
-  main_orientation="RESISTANT"
-  (PREVENT, not DELAY: framed as permanent identity commitment, no
-  conditional language about future price/tech changes)
+→ ENACTMENT / PREVENT / RESISTANT
 
-Example 4 (ENACTMENT, not Negotiation, despite critique):
+Example 4 (ENACTMENT, not Negotiation):
 COMMENT: "We tend to do most of our shopping by bike rather than with the
-ute because the ute's inconvenient to park..." (Source: I)
-→ main_activity="ENACTMENT", activity_subtype="REROUTE",
-  main_orientation="EXPANDER"
+ute..." (Source: I)
+→ ENACTMENT / REROUTE / EXPANDER
 
-Example 5 (EVALUATION despite questions, NOT Negotiation):
+Example 5 (EVALUATION despite questions, NOT Negotiation — self-directed):
 COMMENT: "The question is: what is the difference pollution-wise between
-making an EV and making an ICE car?... It's a complex issue..." (Source: YT)
-→ main_activity="EVALUATION", activity_subtype="STALL",
-  main_orientation="AMBIVALENT"
-  (self-directed, exploratory question — no second-person address, no
-  rebuttal of a specific other speaker's claim)
+making an EV and making an ICE car?..." (Source: YT)
+→ EVALUATION / STALL / AMBIVALENT
 
-Example 6 (NEGOTIATION via genuine other-directed question):
+Example 6 (NEGOTIATION via a genuine other-directed question):
 COMMENT: "Have you thought about what they are gonna do with all the
 batteries once they expire because they aren't recyclable?" (Source: FG)
-→ main_activity="NEGOTIATION", activity_subtype="QUESTION",
-  main_orientation="AMBIVALENT"
+→ NEGOTIATION / QUESTION / AMBIVALENT
 
-Example 7 (NEGOTIATION/REJECT, not CONTEST — refusal without alternative):
-COMMENT: "Is this communism — take away our freedom of choice!" (Source: FG)
-→ main_activity="NEGOTIATION", activity_subtype="REJECT",
-  main_orientation="RESISTANT"
-  (mocks/refuses the imposition itself; proposes NO alternative future —
-  this distinguishes it from CONTEST, which would propose a different,
-  broader pathway)
+Example 7 (NEGOTIATION/REJECT — direct address + named actors):
+COMMENT: "We don't need politicians and their cronies telling us what
+sort of car we can have." (Source: YT)
+→ NEGOTIATION / REJECT / RESISTANT
+(names a specific actor — "politicians and their cronies" — being refused)
 
-Example 8 (NEGOTIATION/CONTEST, proposing an alternative future):
+Example 8 (NEGOTIATION/CONTEST — addressed rhetorical challenge):
 COMMENT: "Does it have to be a car?" (Source: FG)
-→ main_activity="NEGOTIATION", activity_subtype="CONTEST",
-  main_orientation="EXPANDER"
-  (implicitly proposes a broader alternative — non-car mobility — rather
-  than simply refusing an imposition)
+→ NEGOTIATION / CONTEST / EXPANDER
 
-Example 9 (ENACTMENT/DELAY, not PREVENT — conditional, resolvable wait):
-COMMENT: "Just bought a new petrol car as the infrastructure still isn't
-in place." (Source: FG)
-→ main_activity="ENACTMENT", activity_subtype="DELAY",
-  main_orientation="AMBIVALENT"
-  (ties non-adoption to a SPECIFIC, RESOLVABLE condition — infrastructure
-  — implying adoption once that condition changes; contrast with Example 3
-  above, which frames non-adoption as permanent/identity-based)
+Example 9 — ⚠️ CRITICAL CONTRAST — EVALUATION, NOT Negotiation, despite
+strong categorical language and NO real interlocutor:
+COMMENT: "Electric vehicles are not the solution, for Australia to take
+this up we are going to have to increase mining of precious minerals...
+Electric vehicles are not the future, just a muddle point." (Source: PC)
+Why EVALUATION/AVOID, not NEGOTIATION/REJECT: this is a standalone,
+categorical opinion about EVs as a topic. There is NO second-person
+address, NO named actor being refused, NO call to action, and NO rebuttal
+of a specific claim just made by another speaker. Strong/negative/
+categorical wording ("not the solution," "muddle point") does NOT by
+itself trigger Negotiation — compare with Example 7, which explicitly
+names and refuses "politicians and their cronies."
+→ EVALUATION / AVOID / RESISTANT
+
+Example 10 — ⚠️ CRITICAL CONTRAST — EVALUATION, NOT Negotiation, despite
+containing the word "you" (GENERIC-YOU, not a real interlocutor):
+COMMENT: "This doesn't cover the destruction of the fabric of cities to
+accommodate cars... Electric vehicle is a false solution if you care
+about the environment at all. The best way to help the environment is to
+buy less stuff and keep older stuff running for longer." (Source: FG/R)
+Why EVALUATION/COMPLEXIFY, not NEGOTIATION/CONTEST: the "you" in "if you
+care about the environment at all" is GENERIC/IMPERSONAL — it means "a
+person in general," NOT a specific interlocutor present in a visible
+exchange. There is no named actor, no rebuttal of a specific prior claim,
+and no call to action directed at a real audience. Apply the GENERIC-YOU
+TEST (Section H): replace "you" with "one" or "a person" — if the sentence
+still makes identical sense, the "you" is generic and does NOT indicate
+Negotiation. Compare with Example 8, which is an actual rhetorical
+challenge posed within a live exchange.
+→ EVALUATION / COMPLEXIFY / EXPANDER
 
 ════════════════════════════════════════════════════════════════
 H. DECISION PROCEDURE — Apply in this exact order, for EVERY comment
@@ -444,83 +367,90 @@ H. DECISION PROCEDURE — Apply in this exact order, for EVERY comment
 STEP 1 — Check ENACTMENT first:
   Does the text describe a concrete action taken, planned, refused, or
   firmly intended BY THE SPEAKER THEMSELVES?
-  → If YES: classify as ENACTMENT. Then apply the DELAY vs. PREVENT
-    disambiguation (Section A) to select the correct subtype if the
-    orientation is Ambivalent or Resistant. Stop here.
+  → If YES: classify as ENACTMENT (apply DELAY vs. PREVENT if needed).
+    Stop here.
 
-STEP 2 — If NOT Enactment, check NEGOTIATION:
-  ─── RHETORICAL-QUESTION TEST (apply FIRST if the comment contains
+STEP 2 — If NOT Enactment, check NEGOTIATION using BOTH tests below:
+
+  ─── TEST A: GENERIC-YOU TEST (apply if the comment contains "you") ───
+  Replace every instance of "you" with "one," "a person," or "people in
+  general." Does the sentence still read naturally and mean the same
+  thing?
+    → If YES → the "you" is GENERIC/IMPERSONAL. It does NOT count as
+      second-person address to a real interlocutor. Do not use it as
+      Negotiation evidence. Proceed to check the remaining Negotiation
+      criteria (calls to action, named actors, rebuttal of a specific
+      prior claim) on their own merits.
+    → If NO (the sentence only makes sense as addressing a SPECIFIC,
+      real person/opponent, e.g., "Have you thought about...", "you're
+      trying to peddle...") → this IS genuine second-person address.
+      Count it as Negotiation evidence.
+
+  ─── TEST B: RHETORICAL-QUESTION TEST (apply if the comment contains
   question marks) ───
-  If I removed any second-person address ("you", "have you") and any
+  If I removed any genuine second-person address (per Test A) and any
   explicit rebuttal of a SPECIFIC claim just made by another named/implied
   speaker, would the statement still stand as an independent,
   self-contained judgment?
     → If YES → this is EVALUATION, not Negotiation. Proceed to Step 3.
     → If NO → this is NEGOTIATION. Continue below.
 
-  ─── GENERAL NEGOTIATION CRITERIA ───
-  Does the text respond to another position, persuade others, issue a
-  collective call to action, or make a relational/comparative claim about
-  what OTHERS should do or believe?
-  → If YES: classify as NEGOTIATION. Then apply the REJECT vs. CONTEST
-    disambiguation (Section A) to select the correct subtype if the
-    orientation is Resistant or Expander. Stop here.
+  ─── TEST C: STANDALONE-JUDGMENT TEST (apply regardless of tone) ───
+  Strong, categorical, or dismissive language about the TOPIC ITSELF
+  ("not the solution," "false solution," "muddle point," "not the
+  future") is NOT sufficient on its own to indicate Negotiation. Ask:
+  "Is this comment refusing/rebutting a SPECIFIC OTHER PARTY or NAMED
+  ACTOR, or is it simply stating a firm opinion about the topic?"
+    → If it only states a firm opinion about the topic (no named actor
+      being refused, no real interlocutor addressed) → EVALUATION.
+    → If it explicitly refuses/rebuts a named actor (e.g., "politicians,"
+      "the government," a specific prior speaker) or issues a collective
+      call to action → NEGOTIATION.
+
+  ─── GENERAL NEGOTIATION CRITERIA (apply only if Tests A-C support it) ───
+  Does the text respond to another position, persuade a real audience,
+  issue a collective call to action, or make a comparative claim about
+  what OTHERS should do?
+  → If YES: classify as NEGOTIATION (apply REJECT vs. CONTEST if needed).
+    Stop here.
 
 STEP 3 — If neither Enactment nor Negotiation, classify as EVALUATION.
 
-IMPORTANT: A comment that BOTH evaluates AND calls others to act must be
-coded as NEGOTIATION — the call-to-action/persuasive intent dominates.
-Question marks alone do NOT automatically indicate Negotiation — always
-apply the Rhetorical-Question Test first.
+IMPORTANT: When in doubt between Evaluation and Negotiation, DEFAULT TO
+EVALUATION unless there is a clear, specific, real interlocutor or named
+actor being addressed/refused/persuaded. Strength of opinion or negative
+tone is NEVER sufficient by itself.
 
 ════════════════════════════════════════════════════════════════
 I. POTENTIAL CHALLENGE CONTRIBUTION (for single comments)
 ════════════════════════════════════════════════════════════════
 
-Even a single, standalone comment can be understood as a potential
-contributor to one of the three future-making challenges (Section C),
-BEFORE it actually meets opposing viewpoints in a real conversation. This
-is a FORWARD-LOOKING, DIAGNOSTIC judgment — useful for a policymaker or
-manager doing social listening on individual, real-world comments who
-wants to anticipate which fragile-futures dynamic a given comment is
-likely to feed into, without needing to observe a full multi-speaker
-conversation directly.
-
 For EVERY single comment (non-thread input), in addition to classifying
-its activity/subtype/orientation, you must also:
-  1. Identify "likely_opposing_orientation": which of the OTHER THREE
-     orientations (not the one you already assigned as main_orientation)
-     holds the MOST CONTRASTING narrative, goal, emotion, or temporality
-     relative to this specific comment, and would therefore be most
-     likely to generate friction with it in a real conversation.
-  2. Write "potential_challenge_rationale": a CONTENT-SPECIFIC explanation
-     (not generic boilerplate) of HOW that friction would likely manifest
-     — quote or closely paraphrase the specific claim, assumption, or
-     emotional stance in THIS comment that would clash with the
-     likely_opposing_orientation's typical stance.
+its activity/subtype/orientation, identify:
+  1. "likely_opposing_orientation": which of the OTHER THREE orientations
+     holds the MOST CONTRASTING narrative/goal/emotion/temporality
+     relative to this comment, and would most likely generate friction.
+  2. "potential_challenge_rationale": a CONTENT-SPECIFIC explanation of
+     HOW that friction would manifest, citing specific phrases from THIS
+     comment.
 
-Do NOT compute "potential_challenge" yourself — this is derived
-deterministically from your "main_activity" classification by the
-calling application (EVALUATION→Convoluted Evaluations, NEGOTIATION→
-Confrontational Negotiations, ENACTMENT→Competing Enactments). Focus your
-effort on steps 1 and 2 above, which require genuine reasoning about this
-comment's specific content.
+Do NOT compute "potential_challenge" yourself — it is derived
+deterministically from "main_activity" by the calling application.
 
 ════════════════════════════════════════════════════════════════
 CRITICAL OUTPUT RULE
 ════════════════════════════════════════════════════════════════
 
-You MUST select EXACTLY ONE value for each enum field, unless explicitly
-instructed otherwise for multi-speaker threads. The "|" characters shown
-in the OUTPUT FORMAT schema are ONLY notation for allowed options — NEVER
-valid output syntax. Do not copy placeholder text or combine values.
+Select EXACTLY ONE value per enum field, unless explicitly instructed
+otherwise for multi-speaker threads. The "|" characters in the OUTPUT
+FORMAT schema are notation only — NEVER valid output syntax.
 
 Before finalizing your answer, silently:
-  1. Re-run the DECISION PROCEDURE (Section H) for each speaker/comment.
-  2. Apply the REJECT vs. CONTEST and DELAY vs. PREVENT disambiguations
-     where relevant.
-  3. For single comments, complete Section I (likely_opposing_orientation
-     + potential_challenge_rationale).
+  1. Re-run the DECISION PROCEDURE (Section H) — including Tests A, B,
+     and C — for each speaker/comment.
+  2. Verify you did NOT classify as Negotiation based solely on strong/
+     negative/categorical tone or a generic "you."
+  3. For single comments, complete Section I.
   4. Verify no field contains more than one value.
 
 ════════════════════════════════════════════════════════════════
@@ -532,7 +462,7 @@ OUTPUT FORMAT — Return ONLY valid JSON
 
   "main_activity": "one single value: EVALUATION, NEGOTIATION, ENACTMENT (or MIXED only for multi-speaker threads)",
   "activity_subtype": "one single value: SIMPLIFY, STALL, AVOID, COMPLEXIFY, ADVOCATE, QUESTION, REJECT, CONTEST, ACCELERATE, DELAY, PREVENT, REROUTE",
-  "activity_rationale": "State which Decision Procedure step matched (including Rhetorical-Question Test result and REJECT/CONTEST or DELAY/PREVENT disambiguation if applicable), citing specific phrases",
+  "activity_rationale": "State which Decision Procedure step/test matched (including Generic-You Test and Standalone-Judgment Test results if applicable), citing specific phrases",
   "secondary_activities": [],
 
   "main_orientation": "one single value: CATALYZER, AMBIVALENT, RESISTANT, EXPANDER (or MIXED only for multi-speaker threads)",
@@ -541,13 +471,13 @@ OUTPUT FORMAT — Return ONLY valid JSON
   "narrative_identified": "Name and description of the single dominant narrative",
   "dominant_emotions": "Comma-separated list of emotions detected",
   "temporality_expressed": "...",
-  "notable_conditions_of_adoption": "Which single condition from Section B applies, if evident",
+  "notable_conditions_of_adoption": "Which single condition applies, if evident",
 
-  "primary_challenge": "CONVOLUTED_EVALUATIONS, CONFRONTATIONAL_NEGOTIATIONS, COMPETING_ENACTMENTS, or N/A (use N/A for single comments; only meaningful for multi-speaker threads)",
-  "challenge_rationale": "Only for threads: why the interaction as a whole reflects this challenge",
+  "primary_challenge": "CONVOLUTED_EVALUATIONS, CONFRONTATIONAL_NEGOTIATIONS, COMPETING_ENACTMENTS, or N/A (use N/A for single comments)",
+  "challenge_rationale": "Only for threads",
 
-  "likely_opposing_orientation": "For single comments ONLY: one single value among CATALYZER, AMBIVALENT, RESISTANT, EXPANDER — whichever is NOT the main_orientation and would most likely clash with this comment",
-  "potential_challenge_rationale": "For single comments ONLY: content-specific explanation of how this comment would likely clash with the likely_opposing_orientation, citing specific phrases from THIS comment",
+  "likely_opposing_orientation": "For single comments ONLY: one value among CATALYZER, AMBIVALENT, RESISTANT, EXPANDER (not the main_orientation)",
+  "potential_challenge_rationale": "For single comments ONLY: content-specific explanation citing THIS comment's phrases",
 
   "speaker_breakdown": [
     {"speaker": "...", "orientation": "one single value", "activity": "one single value", "subtype": "one single value", "key_phrase": "..."}
