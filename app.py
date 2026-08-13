@@ -30,7 +30,8 @@ DATA_SOURCE_CODES = {
 }
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT v2 — full roadmaps + multi-speaker mode + few-shot grounding
+# SYSTEM PROMPT v3 — adds CRITICAL_RULE (anti-copy-enum) +
+# DECISION_PROCEDURE (hierarchical, avoids EVALUATION default bias)
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
 You are an expert qualitative coder applying the Future-Making framework from the paper
@@ -59,6 +60,9 @@ Coding criteria (ALL must apply):
     trade-offs it entails.
   • The assessment must have an identifiable object (EVs, infrastructure,
     regulation, environmental impacts, transition timeline).
+  • The comment is a STANDALONE assessment — it does NOT primarily call
+    others to act, persuade, or describe the speaker's own concrete
+    practice change.
 Sub-types by orientation:
   SIMPLIFY   (Catalyzer)  — narrows focus, treats difficulties as temporary
   STALL      (Ambivalent) — careful consideration, information gathering
@@ -70,8 +74,15 @@ Operational definition: References to how consumers compared, contested,
 defended, or expanded preferred futures.
 Coding criteria: Makes a RELATIONAL claim — responds to another position,
 compares alternative futures, challenges/defends a pathway, attributes
-responsibility or authority, or persuades others about what future should
-be pursued.
+responsibility or authority, or persuades/calls on OTHERS regarding what
+future should be pursued.
+Signals that STRONGLY indicate Negotiation over Evaluation:
+  • Imperative or collective calls to action ("we need to...", "let's...",
+    "should")
+  • Direct rhetorical address to an audience or opponent
+  • Attribution of blame, responsibility, or authority to specific actors
+  • Requests for proof, reassurance, or accountability from others
+  • Explicit comparison between competing pathways aimed at persuasion
 Sub-types by orientation:
   ADVOCATE  (Catalyzer)  — recruits others, calls for stronger policy
   QUESTION  (Ambivalent) — polite skepticism, asks for proof of feasibility
@@ -82,10 +93,17 @@ Sub-types by orientation:
 Operational definition: References to how consumers gave form to futures
 through imagined, planned, or actual changes in everyday practices and
 material arrangements.
-Coding criteria: Specifies what the consumer does, intends, expects, or
-imagines doing in practice. At least ONE practice element must be
-identifiable: an action/routine, a material arrangement/technology, a
+Coding criteria: Specifies what the consumer THEMSELVES does, intends,
+expects, or imagines doing in practice. At least ONE practice element must
+be identifiable: an action/routine, a material arrangement/technology, a
 competence, or a temporally situated commitment.
+Signals that STRONGLY indicate Enactment over Evaluation/Negotiation:
+  • First-person accounts of purchases, ownership, or refusals
+    ("I bought...", "we ordered...", "I'm sticking with...")
+  • Descriptions of routines, trips, or habits actually performed
+  • Statements of firm personal intention ("I will...", "I plan to...",
+    "I'm on a waiting list for...")
+  • Relocation, acquisition, or divestment of material objects
 Sub-types by orientation:
   ACCELERATE (Catalyzer)  — purchases EVs, divests ICE, installs chargers
   DELAY      (Ambivalent) — continues ICE use, monitors market, waits
@@ -166,6 +184,11 @@ CONFRONTATIONAL_NEGOTIATIONS — Simultaneous advocacy, questioning,
   rejection, and contestation widen divides rather than converge.
 COMPETING_ENACTMENTS — Some accelerate while others prevent, delay, or
   reroute, creating divergence and volatility.
+
+Note: These three challenges are ONLY assigned at the level of a
+MULTI-SPEAKER THREAD (an emergent property of the interaction). A single,
+individual comment should receive "N/A" for primary_challenge unless it is
+part of a provided multi-speaker thread.
 
 ════════════════════════════════════════════════════════════════
 D. POLICY ROADMAP (Figure 3 — 7 steps)
@@ -315,52 +338,141 @@ F. MULTI-SPEAKER MODE
 
 If the input contains multiple labeled speakers (e.g., "User 1:", "User 2:"),
 you MUST:
-  1. Classify EACH speaker's orientation, activity, and subtype separately.
+  1. Classify EACH speaker's orientation, activity, and subtype separately,
+     applying the DECISION PROCEDURE in Section H to each speaker
+     individually.
   2. Determine which of the three challenges (Section C) best characterizes
      the interaction AS A WHOLE — not any single speaker.
   3. Populate the "speaker_breakdown" array in the JSON output with one
      object per speaker: {"speaker": "...", "orientation": "...",
      "activity": "...", "subtype": "...", "key_phrase": "..."}.
-  4. Set "main_orientation" and "main_activity" at the top level to "MIXED"
-     when speakers diverge (this is expected and signals convergence
-     toward a genuine future-making challenge).
+     Each of these fields must contain EXACTLY ONE value — never combine
+     multiple values for a single speaker.
+  4. Set "main_orientation" and "main_activity" at the TOP LEVEL to "MIXED"
+     ONLY when speakers genuinely diverge across orientations. This is the
+     ONLY circumstance in which "MIXED" is a valid top-level value.
   5. If NOT a multi-speaker input, return an empty array for
-     "speaker_breakdown".
+     "speaker_breakdown" and NEVER use "MIXED" as a value for
+     main_orientation or main_activity.
 
 ════════════════════════════════════════════════════════════════
 G. FEW-SHOT GROUNDING EXAMPLES
 ════════════════════════════════════════════════════════════════
 
-Example 1 (single comment):
-INPUT — PRESCRIBED FUTURE: "Transition all vehicles to Zero Emission
-Vehicles (EVs) to achieve Australia's net-zero emissions targets."
+Example 1 (single comment — EVALUATION):
 COMMENT: "Once EVs are cheaper to buy than ICE cars the transition will
 happen fast because cost per unit for ICE will rise as sales fall leading
-to the market being almost completely EV by 2030. Attempts to destroy EVs
-have been underway for decades. They're increasingly futile now though.
-EVs can stand on their own merits now." (Source: W)
-EXPECTED OUTPUT (key fields):
-  main_activity: "EVALUATION", activity_subtype: "SIMPLIFY"
-  main_orientation: "CATALYZER", orientation_confidence: "HIGH"
-  dominant_emotions: "confidence, optimism"
-  temporality_expressed: "Present-focused; the transition is already underway"
+to the market being almost completely EV by 2030. EVs can stand on their
+own merits now." (Source: W)
+Why EVALUATION and not NEGOTIATION: this is a standalone forecast/judgment
+about market dynamics; it does not call on any specific other actor to do
+something, nor does it describe the speaker's own practice.
+EXPECTED OUTPUT: main_activity="EVALUATION", activity_subtype="SIMPLIFY",
+main_orientation="CATALYZER"
 
-Example 2 (single comment):
+Example 2 (single comment — NEGOTIATION, NOT Evaluation):
+COMMENT: "We need to act on transport emissions as quickly as possible.
+Australia has demonstrated that it has an appetite for EVs, so let's get
+moving." (Source: PC)
+Why NEGOTIATION and not EVALUATION: contains an explicit collective call
+to action ("we need to," "let's get moving") directed at a broader
+audience/policymakers — the persuasive/mobilizing intent dominates over
+the evaluative claim about Australia's "appetite."
+EXPECTED OUTPUT: main_activity="NEGOTIATION", activity_subtype="ADVOCATE",
+main_orientation="CATALYZER"
+
+Example 3 (single comment — ENACTMENT, NOT Evaluation):
 COMMENT: "I won't be getting one, I'll stick to my V8 and my other diesel
 4x4..." (Source: FG)
-EXPECTED OUTPUT (key fields):
-  main_activity: "ENACTMENT", activity_subtype: "PREVENT"
-  main_orientation: "RESISTANT", orientation_confidence: "HIGH"
+Why ENACTMENT and not EVALUATION: first-person statement of a firm,
+concrete personal commitment regarding the speaker's own vehicle — not a
+general judgment about EVs.
+EXPECTED OUTPUT: main_activity="ENACTMENT", activity_subtype="PREVENT",
+main_orientation="RESISTANT"
 
-Example 3 (multi-speaker thread → challenge):
+Example 4 (single comment — ENACTMENT, NOT Negotiation despite critique):
+COMMENT: "We tend to do most of our shopping by bike rather than with the
+ute because the ute's inconvenient to park and navigate in small car
+parks." (Source: I)
+Why ENACTMENT and not NEGOTIATION or EVALUATION: describes the speaker's
+own actual routine/practice change, with no call to action directed at
+others and no standalone abstract judgment.
+EXPECTED OUTPUT: main_activity="ENACTMENT", activity_subtype="REROUTE",
+main_orientation="EXPANDER"
+
+Example 5 (multi-speaker thread → challenge):
 INPUT: User 1 (Catalyzer/simplify) + User 2 (Ambivalent/stall) +
 User 3 (Resistant/avoid) + User 4 (Expander/complexify), all evaluating
 whether EVs are "zero emission."
 EXPECTED OUTPUT (key fields):
   main_orientation: "MIXED"
-  main_activity: "EVALUATION"
+  main_activity: "MIXED"
   primary_challenge: "CONVOLUTED_EVALUATIONS"
-  speaker_breakdown: [4 objects, one per speaker, as described in Section F]
+  speaker_breakdown: [4 objects, one per speaker, each with ONE
+    orientation/activity/subtype — never combined]
+
+════════════════════════════════════════════════════════════════
+H. DECISION PROCEDURE — Apply in this exact order, for EVERY comment
+════════════════════════════════════════════════════════════════
+
+To avoid defaulting to EVALUATION when a comment could plausibly fit more
+than one activity, apply this hierarchy and STOP at the first match:
+
+STEP 1 — Check ENACTMENT first:
+  Does the text describe a concrete action taken, planned, refused, or
+  firmly intended BY THE SPEAKER THEMSELVES? (e.g., "I bought...", "I'm
+  sticking with...", "we moved to...", "I'm on a waiting list for...",
+  "I plan to drive my current car...", "we tend to do our shopping by
+  bike...").
+  → If YES: classify as ENACTMENT. Stop here. Do not proceed to Step 2.
+
+STEP 2 — If NOT Enactment, check NEGOTIATION:
+  Does the text respond to another position, persuade others, issue a
+  collective call to action, or make a relational/comparative claim about
+  what OTHERS should do or believe?
+  Look for: imperative language ("we need to...", "let's...", "should"),
+  direct address to other actors or an audience, comparisons between
+  pathways aimed at persuasion, attribution of responsibility/blame,
+  requests for proof or reassurance from others.
+  → If YES: classify as NEGOTIATION. Stop here. Do not proceed to Step 3.
+
+STEP 3 — If neither Enactment nor Negotiation, classify as EVALUATION:
+  The text is a standalone judgment or assessment (of costs, risks,
+  likelihood, desirability) WITHOUT a call to action, a directed appeal to
+  others, or a description of the consumer's own concrete practice.
+
+IMPORTANT: A comment that BOTH evaluates AND calls others to act (e.g.,
+"EVs are clearly better [evaluative], so let's get moving [negotiation]")
+must be coded as NEGOTIATION, because the call to action / persuasive
+intent is the DOMINANT communicative function. Evaluative language
+frequently serves as supporting evidence WITHIN a negotiation or
+enactment move — do not let the presence of evaluative language override
+a clear negotiation or enactment signal higher in the hierarchy.
+
+════════════════════════════════════════════════════════════════
+CRITICAL OUTPUT RULE — READ BEFORE RESPONDING
+════════════════════════════════════════════════════════════════
+
+You MUST select EXACTLY ONE value for each enum field in the JSON below,
+UNLESS explicitly instructed otherwise for multi-speaker threads (see
+Section F, point 4).
+
+The "|" characters and angle-bracket placeholders shown in the OUTPUT
+FORMAT schema below are ONLY notation indicating the ALLOWED OPTIONS —
+they are NEVER valid output syntax. Do not copy the placeholder text.
+Do not output more than one value joined by "|", "/", "or", or commas
+inside a single enum field.
+
+WRONG:   "main_activity": "EVALUATION | NEGOTIATION"
+WRONG:   "main_orientation": "EXPANDER | MIXED"
+WRONG:   "activity_subtype": "COMPLEXIFY | CONTEST"
+CORRECT: "main_activity": "NEGOTIATION"
+CORRECT: "main_orientation": "EXPANDER"
+CORRECT: "activity_subtype": "CONTEST"
+
+Before finalizing your answer, silently re-run the DECISION PROCEDURE
+(Section H) to confirm your chosen activity is the single best fit, and
+verify that no field below contains more than one value.
 
 ════════════════════════════════════════════════════════════════
 OUTPUT FORMAT — Return ONLY valid JSON
@@ -369,24 +481,24 @@ OUTPUT FORMAT — Return ONLY valid JSON
 {
   "prescribed_future_acknowledged": "Brief restatement of the prescribed future",
 
-  "main_activity": "EVALUATION | NEGOTIATION | ENACTMENT | MIXED",
-  "activity_subtype": "SIMPLIFY | STALL | AVOID | COMPLEXIFY | ADVOCATE | QUESTION | REJECT | CONTEST | ACCELERATE | DELAY | PREVENT | REROUTE | N/A",
-  "activity_rationale": "Cite specific phrase(s) that triggered this classification",
-  "secondary_activities": [],
+  "main_activity": "one single value, exactly one of: EVALUATION, NEGOTIATION, ENACTMENT (or MIXED only for multi-speaker threads)",
+  "activity_subtype": "one single value, exactly one of: SIMPLIFY, STALL, AVOID, COMPLEXIFY, ADVOCATE, QUESTION, REJECT, CONTEST, ACCELERATE, DELAY, PREVENT, REROUTE",
+  "activity_rationale": "State which Decision Procedure step (1, 2, or 3) matched, and cite the specific phrase(s) that triggered this classification",
+  "secondary_activities": ["list any other activities weakly present, if any — this field MAY contain multiple values, unlike main_activity"],
 
-  "main_orientation": "CATALYZER | AMBIVALENT | RESISTANT | EXPANDER | MIXED",
-  "orientation_confidence": "HIGH | MEDIUM | LOW",
+  "main_orientation": "one single value, exactly one of: CATALYZER, AMBIVALENT, RESISTANT, EXPANDER (or MIXED only for multi-speaker threads)",
+  "orientation_confidence": "one single value: HIGH, MEDIUM, or LOW",
   "orientation_rationale": "Empirical indicators, emotions, temporality, cited phrases",
-  "narrative_identified": "Name and description",
-  "dominant_emotions": "Comma-separated list",
+  "narrative_identified": "Name and description of the single dominant narrative",
+  "dominant_emotions": "Comma-separated list of emotions detected (this field may list several emotions)",
   "temporality_expressed": "...",
-  "notable_conditions_of_adoption": "Which condition from Section B applies, if evident",
+  "notable_conditions_of_adoption": "Which single condition from Section B applies, if evident",
 
-  "primary_challenge": "CONVOLUTED_EVALUATIONS | CONFRONTATIONAL_NEGOTIATIONS | COMPETING_ENACTMENTS | MIXED | N/A",
+  "primary_challenge": "one single value: CONVOLUTED_EVALUATIONS, CONFRONTATIONAL_NEGOTIATIONS, COMPETING_ENACTMENTS, or N/A (use N/A for single comments; use MIXED only if a multi-speaker thread genuinely shows more than one challenge simultaneously)",
   "challenge_rationale": "...",
 
   "speaker_breakdown": [
-    {"speaker": "...", "orientation": "...", "activity": "...", "subtype": "...", "key_phrase": "..."}
+    {"speaker": "...", "orientation": "one single value", "activity": "one single value", "subtype": "one single value", "key_phrase": "..."}
   ],
 
   "policy_recommendations": {
@@ -496,7 +608,7 @@ CHALLENGES = {
         "label": "Multiple Challenges",
         "color": "#555",
         "bg": "#F5F5F5",
-        "description": "This comment/thread reflects elements of multiple future-making challenges"
+        "description": "This thread reflects elements of multiple future-making challenges"
     },
     "N/A": {
         "emoji": "➖",
@@ -510,7 +622,7 @@ CHALLENGES = {
 ACTIVITY_META = {
     "EVALUATION":  {
         "icon": "📊", "color": "#2980B9", "bg": "#EBF5FB",
-        "definition": "Claim or judgment about what the prescribed future means, whether it is likely or desirable, what benefits/costs/risks/trade-offs it entails. Must have an identifiable object (EVs, infrastructure, regulation, environment, timeline).",
+        "definition": "Standalone claim or judgment about what the prescribed future means, whether it is likely or desirable, what benefits/costs/risks/trade-offs it entails — without a call to action or description of own practice.",
         "subtypes": {
             "SIMPLIFY":    ("⚡ Catalyzer", "#27AE60"),
             "STALL":       ("⚖️ Ambivalent", "#D68910"),
@@ -520,7 +632,7 @@ ACTIVITY_META = {
     },
     "NEGOTIATION": {
         "icon": "💬", "color": "#E67E22", "bg": "#FEF9E7",
-        "definition": "Relational claim: responds to another position, compares futures, challenges or defends a pathway, attributes responsibility, or attempts to persuade others about what future should be pursued.",
+        "definition": "Relational claim: responds to another position, compares futures, challenges or defends a pathway, attributes responsibility, or calls on others to act or believe something about the future.",
         "subtypes": {
             "ADVOCATE":  ("⚡ Catalyzer", "#27AE60"),
             "QUESTION":  ("⚖️ Ambivalent", "#D68910"),
@@ -530,7 +642,7 @@ ACTIVITY_META = {
     },
     "ENACTMENT":   {
         "icon": "⚙️", "color": "#8E44AD", "bg": "#F5EEF8",
-        "definition": "Specifies what the consumer does, intends, expects, or imagines doing in practice. At least one practice element must be identifiable: an action/routine, a material arrangement/technology, a competence, or a temporally situated commitment.",
+        "definition": "Specifies what the consumer THEMSELVES does, intends, expects, or imagines doing in practice. At least one practice element must be identifiable.",
         "subtypes": {
             "ACCELERATE": ("⚡ Catalyzer", "#27AE60"),
             "DELAY":      ("⚖️ Ambivalent", "#D68910"),
@@ -540,7 +652,7 @@ ACTIVITY_META = {
     },
     "MIXED": {
         "icon": "🔄", "color": "#555", "bg": "#F5F5F5",
-        "definition": "Multiple speakers perform different activities simultaneously (see speaker_breakdown).",
+        "definition": "Multiple speakers perform different activities simultaneously (see speaker_breakdown). Valid ONLY for multi-speaker threads.",
         "subtypes": {}
     },
 }
@@ -570,17 +682,14 @@ EXAMPLES = {
         "subtype":    "SIMPLIFY",
         "orientation":"CATALYZER",
         "comment": (
-            "We need to move on climate with urgency [...] Boldness will encourage "
-            "innovation here as we more fully join the international efforts towards "
-            "zero fossil fuels (PC). "
             "All the studies I've seen say about 12,000 miles or 3 to 5 years for "
             "lifetime emissions to be better than ICE (FG). "
             "There's no discussion about whether they're better for the environment. "
             "The math and science is extremely clear and it's ridiculous to even "
             "compare them with how much better EVs are (FG). "
-            "Climate change is an urgent threat, and we need to accelerate the "
-            "decarbonisation of transport quickly and efficiently [...] Let's lift "
-            "the ambition (PC)."
+            "Many industry observers believe we have already passed the tipping "
+            "point where sales of electric vehicles will very rapidly overwhelm "
+            "petrol and diesel cars (NM)."
         )
     },
     "⚡ CATALYZER  |  💬 Negotiation  →  Advocate": {
@@ -591,14 +700,13 @@ EXAMPLES = {
         "comment": (
             "#ClimateCrisis is real. It's time to look at #solarenergy and "
             "#ElectricVehicles not the energy sources of the past like #fossilfuels (X). "
-            "When prices drop below $50k and charging times below 15 minutes, you can "
-            "expect a real EV boom (W). "
-            "More or less of a problem than handing my kids a planet that's an "
-            "uninhabitable shithole? (FG). "
-            "We need to act on transport emissions as quickly as possible. People are "
-            "still buying new Internal Combustion Energy vehicles due to the lack of "
-            "choice of Electric Vehicles. Australia has demonstrated that it has an "
-            "appetite for EVs, so let's get moving (PC)."
+            "We are already so far behind! We need to sprint to catch up. We should be "
+            "WORLD LEADERS in solar and battery manufacturing (PC). "
+            "We need to act on transport emissions as quickly as possible. Australia "
+            "has demonstrated that it has an appetite for EVs, so let's get moving (PC). "
+            "Climate change is an urgent threat, and we need to accelerate the "
+            "decarbonisation of transport quickly and efficiently. Let's lift the "
+            "ambition (PC)."
         )
     },
     "⚡ CATALYZER  |  ⚙️ Enactment  →  Accelerate": {
@@ -607,18 +715,16 @@ EXAMPLES = {
         "subtype":    "ACCELERATE",
         "orientation":"CATALYZER",
         "comment": (
+            "We have ordered two Teslas that will be delivered hopefully this year. "
+            "We are selling our Prado and it looks like we are going to sell our last "
+            "Toyota car (FG). "
             "Our family has been living with an EV and a PHEV for 3 years and they are "
-            "fantastic. There are many advantages and few disadvantages, apart from "
-            "fictitious scenarios non-EV owners make up (W). "
-            "Road trips up and down East Coast are simple in a Tesla… with superchargers "
-            "it is easy – just a stop every 2.5 hours or so (W). "
-            "We now both use our EV as our preferred first vehicle… the EV just ends up "
-            "being nicer for road trips too (W). "
-            "Proud owner of Model 3. I'll never own a gas combustion engine again -- "
-            "not even a hybrid (X). "
+            "fantastic (W). "
             "Bought our first EV largely for the environment, partly for fuel cost "
             "savings. Bought our second EV because they're just far better cars to own "
-            "and drive (R)."
+            "and drive (R). "
+            "Proud owner of Model 3. I'll never own a gas combustion engine again -- "
+            "not even a hybrid (X)."
         )
     },
 
@@ -631,14 +737,12 @@ EXAMPLES = {
         "comment": (
             "Range anxiety is overstated… however if you stay somewhere with no "
             "charging and need to drive 200–300km you are stuffed (W). "
-            "I am far from being anti EV (I want one!) but I am also trying to weigh "
-            "up all the facts (FG). "
             "I'm not convinced yet that full EVs are the way to go. They seem to have "
             "quite a few problems, you know, battery disposal and other things (I). "
             "Perhaps these problems are over-exaggerated for views and I realise they "
             "will eventually be resolved with infrastructure and improvements in "
             "technology. I just don't see this happening adequately in the next few "
-            "years. I'm willing to change my mind if my concerns are unfounded (R)."
+            "years (R)."
         )
     },
     "⚖️ AMBIVALENT  |  💬 Negotiation  →  Question": {
@@ -647,20 +751,14 @@ EXAMPLES = {
         "subtype":    "QUESTION",
         "orientation":"AMBIVALENT",
         "comment": (
-            "One of the arguments that is used for full EV's is the lower servicing "
-            "costs but I'm guessing that a plug in hybrid still needs to be serviced "
-            "like an ICE vehicle? I also can't help thinking that in a few years they "
-            "will come out with a cheaper, more efficient or better technology that "
-            "will render all of the current EV's completely worthless (YT). "
-            "Times like this one needs a crystal ball to ascertain how soon Australia "
-            "will get up to speed with EVs. It's doing my head in trying to decide on "
-            "a car that will again last me another 20 years, probably till the end of "
-            "my driving history (FG). "
+            "Have you thought about what they are gonna do with all the batteries once "
+            "they expire because they aren't recyclable? (FG). "
+            "So where do we get the $50k to buy the cheapest new EV? It will not be "
+            "possible for us to make the transition until a huge number of second hand "
+            "EVs hit the market (FG). "
             "We need to invest in infrastructure but at the same time limit the cost of "
-            "doing so by not putting all eggs in the one basket. We should not place "
-            "all our attention on EVs now as most of the electricity used to charge "
-            "them is from burning coal. We should transition to hybrid vehicles "
-            "instead of EVs until 2030 (PC)."
+            "doing so by not putting all eggs in the one basket. We should transition to "
+            "hybrid vehicles instead of EVs until 2030 (PC)."
         )
     },
     "⚖️ AMBIVALENT  |  ⚙️ Enactment  →  Delay": {
@@ -669,19 +767,15 @@ EXAMPLES = {
         "subtype":    "DELAY",
         "orientation":"AMBIVALENT",
         "comment": (
-            "Really good and interesting report! I am wanting to upgrade the car and "
-            "I am umming and ahh-ing over PHEV or EV. EV would be magic but such a jump "
-            "in price! PHEV seems great as a midway point as most frequency of driving "
-            "for me is around town (YT). "
             "Yep, the cost is indeed a huge hurdle. I think I'll be running my 12 year "
             "old Subaru Outback a bit longer! (YT). "
-            "Just bought a new petrol car as the infrastructure still isn't in place "
-            "(FG). "
-            "Hopefully, by the time my car does need to be replaced, EVs are a lot "
-            "cheaper and the inconveniences are worked out (R). "
+            "Just bought a new petrol car as the infrastructure still isn't in place (FG). "
             "My car is doing all right — 13 years and 130,000 km, so good for another "
             "13 years because it's diesel. No matter what the price of an EV it's still "
-            "cheaper to keep the car I own and repair (FG)."
+            "cheaper to keep the car I own and repair (FG). "
+            "I plan to drive my current 10 year old hybrid as long as I can. The next "
+            "car I buy will probably be electric, but I'm expecting many of these "
+            "issues to be resolved by then (R)."
         )
     },
 
@@ -694,21 +788,11 @@ EXAMPLES = {
         "comment": (
             "Electric vehicles are not the solution, for Australia to take this up we "
             "are going to have to increase mining of precious minerals at a "
-            "considerable amount, which in itself will contribute to greenhouse gases. "
-            "I feel this is a lazy policy just appealing to city people and is just "
-            "going to result in expensive car prices (PC). "
+            "considerable amount, which in itself will contribute to greenhouse gases (PC). "
             "EV and hybrid technology has long way to go especially here in Australia. "
             "Petrol and diesel vehicles will be around for many decades to come doing "
-            "the jobs that EVs and Hybrids just can't do. The criminals must be "
-            "laughing their butts off (YT). "
-            "So the EV Council — the national body representing the electric vehicle "
-            "industry in Australia — 'crunched' the numbers? So is this what counts as "
-            "independent research at the ABC? (FG). "
-            "Electric vehicles are not the future, just a muddle point (PC). "
-            "EV cars are not the answer — they take too long to charge and if you need "
-            "to replace the battery it is cheaper to buy a new car which means more "
-            "landfill. So what is the point if we are going to still burn diesel or "
-            "petrol (PC)."
+            "the jobs that EVs and Hybrids just can't do (YT). "
+            "Electric vehicles are not the future, just a muddle point (PC)."
         )
     },
     "🛡️ RESISTANT  |  💬 Negotiation  →  Reject": {
@@ -717,19 +801,14 @@ EXAMPLES = {
         "subtype":    "REJECT",
         "orientation":"RESISTANT",
         "comment": (
-            "The current electricity infrastructure can't keep up with the demand now "
-            "let alone if everyone wants electric cars (AD). "
-            "I would be more concerned about the embarrassment of being seen in one of "
-            "these battery-operated vehicles. Being a normal bloke, I'll stick with a "
-            "normal car — V8. Preferably one with the catalytic converter removed (FG). "
             "Is this communism — take away our freedom of choice! (FG). "
             "Australians are not as ignorant as the politicians think — if this country "
             "is taxed just for an ideology then the potential for even greater social "
             "unrest is likely (PC). "
             "I think it's like being a vegan of the car world. It's social policing "
             "because you're deviating from the norm (FG). "
-            "Yes they are just slapped together on the EV gravy train. And you thought "
-            "you would save money buying an EV? (YT)."
+            "We don't need politicians and their cronies telling us what sort of car we "
+            "can have (YT)."
         )
     },
     "🛡️ RESISTANT  |  ⚙️ Enactment  →  Prevent": {
@@ -740,16 +819,10 @@ EXAMPLES = {
         "comment": (
             "I have had ICE cars for some 37 years and have found them to be very "
             "reliable (W). "
+            "Me, I'm sticking to my petrol vehicle til it dies (YT). "
             "Why buy a new EV when my old car is doing all right — 13 years and "
-            "130,000 km, so good for another 13 years because it's diesel. No matter "
-            "what the price of an EV it's still cheaper to keep the car I own and "
-            "repair (FG). "
-            "From the start of manufacturing to the end of the vehicle's life I'd "
-            "easily put my money on ICE being a far better investment (FG). "
-            "Me, I'm sticking to my petrol vehicle til it dies. At least if it shits "
-            "itself and runs out of petrol I have a good chance of either fixing the "
-            "problem or getting to the nearest help. Make sure you're sitting down "
-            "when they give you the repair bill (YT)."
+            "130,000 km, so good for another 13 years because it's diesel (FG). "
+            "I'll stick to my V8 and my other diesel 4x4... (FG)."
         )
     },
 
@@ -761,19 +834,15 @@ EXAMPLES = {
         "orientation":"EXPANDER",
         "comment": (
             "Facilitating greater use of active, shared and public transport can cut "
-            "climate pollution further and faster than electrifying vehicles, and do "
-            "so this decade, because the effects are seen immediately through reduced "
-            "use of private motor vehicle travel (AD). "
-            "The best way to help the environment is to buy less stuff and keep older "
-            "stuff running for longer (R). "
+            "climate pollution further and faster than electrifying vehicles, because "
+            "the effects are seen immediately through reduced use of private motor "
+            "vehicle travel (AD). "
             "This doesn't cover the destruction of the fabric of cities to accommodate "
             "cars. Gasoline or electric, the most significant environmental destruction "
             "caused by cars is the blight it causes to cities. Electric vehicle is a "
             "false solution if you care about the environment at all (FG). "
-            "More to electric cars, they say. But are we ready to have electric cars "
-            "claiming our public spaces? And what about communities that may not be "
-            "able to afford cars, let alone electric cars? Time to rethink public "
-            "transport! #COP26 #ElectricVehicles (X)."
+            "The best way to help the environment is to buy less stuff and keep older "
+            "stuff running for longer (R)."
         )
     },
     "🌍 EXPANDER  |  💬 Negotiation  →  Contest": {
@@ -782,17 +851,15 @@ EXAMPLES = {
         "subtype":    "CONTEST",
         "orientation":"EXPANDER",
         "comment": (
-            "The idea is this: cars are a tremendously inefficient way of moving "
-            "people at scale and generate congestion (NM). "
+            "Does it have to be a car? (FG). "
+            "If your main priority was the environment, ride a bicycle… you're buying "
+            "a 2-tonne metal box powered by a giant battery — let's not pretend we're "
+            "saving the planet (R). "
+            "Are we ready to have electric cars claiming our public spaces? Time to "
+            "rethink public transport! #COP26 #ElectricVehicles (X). "
             "Consumerism trumps facts. Why save the environment by keeping the car you "
             "already own and using it less, when you can join the Joneses and spend "
-            "money on that flash new hybrid/EV/hydrogen powered four wheeled status "
-            "symbol that shows you earn more money than you need (YT). "
-            "Does it have to be a car? (FG). "
-            "If your main priority was the environment, ride a bicycle… You're buying "
-            "a 2-tonne metal box powered by a giant battery — let's not pretend we're "
-            "saving the planet, we're just picking a lesser evil but it's still not "
-            "good for the planet (R)."
+            "money on that flash new hybrid/EV status symbol (YT)."
         )
     },
     "🌍 EXPANDER  |  ⚙️ Enactment  →  Reroute": {
@@ -801,20 +868,14 @@ EXAMPLES = {
         "subtype":    "REROUTE",
         "orientation":"EXPANDER",
         "comment": (
-            "If you look at the embodied carbon going into a new electric vehicle, "
-            "the embodied carbon in a new vehicle is more than the emissions that are "
-            "going to be produced by the current vehicle over the course of its "
-            "lifetime until it falls apart. So the plan is to extract maximum value "
-            "out of that current vehicle until it is no longer functional (I). "
             "We tend to do most of our shopping by bike rather than with the ute "
             "because the ute's inconvenient to park and navigate in small car parks (I). "
-            "The future is less cars, in higher density pedestrian, bike and "
-            "train-orientated urban environments, where cars are secondary transport "
-            "really only for those who really need it (FG). "
-            "We need more viable alternatives to driving. An investment in bicycle "
-            "infrastructure and public transport will greatly help this cause. If we "
-            "continue to invest in car infrastructure we set ourselves up for failure "
-            "(PC)."
+            "So that's the plan is to extract maximum value out of that current "
+            "vehicle until it is no longer functional. I am at the moment on a waiting "
+            "list for a new electric cargo bike (I). "
+            "I uprooted my life and moved from the Sunshine Coast to Melbourne with "
+            "some of my strongest reasoning being the ability to use public transport, "
+            "ride a bike around and use a car as little as possible (PC)."
         )
     },
 }
@@ -912,6 +973,9 @@ PRESCRIBED FUTURE:
 
 CONSUMER COMMENT TO ANALYZE:
 {comment}
+
+Remember: apply the DECISION PROCEDURE (Section H) in order, and return
+EXACTLY ONE value per enum field, per the CRITICAL OUTPUT RULE.
 """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -932,6 +996,17 @@ def analyze_thread(prescribed_future: str, thread: list, api_key: str) -> dict:
     return analyze_comment(prescribed_future, formatted, api_key)
 
 
+def _clean_enum(value: str) -> str:
+    """Defensive post-processing: if the model still returns a combined
+    value like 'EVALUATION | NEGOTIATION', take the FIRST listed value."""
+    if not value:
+        return value
+    for sep in ["|", "/", " or "]:
+        if sep in value:
+            return value.split(sep)[0].strip()
+    return value.strip()
+
+
 def run_validation_suite(api_key: str) -> dict:
     """Runs all labeled EXAMPLES and compares predictions against the
     ground-truth orientation/activity/subtype assigned in the paper."""
@@ -949,9 +1024,9 @@ def run_validation_suite(api_key: str) -> dict:
                 "match": False
             })
             continue
-        pred_orientation = (pred.get("main_orientation") or "").upper()
-        pred_activity    = (pred.get("main_activity") or "").upper()
-        pred_subtype     = (pred.get("activity_subtype") or "").upper()
+        pred_orientation = _clean_enum((pred.get("main_orientation") or "")).upper()
+        pred_activity    = _clean_enum((pred.get("main_activity") or "")).upper()
+        pred_subtype     = _clean_enum((pred.get("activity_subtype") or "")).upper()
         match = (
             pred_orientation == ex["orientation"]
             and pred_activity == ex["activity"]
@@ -961,6 +1036,9 @@ def run_validation_suite(api_key: str) -> dict:
             "example": name,
             "expected": (ex["orientation"], ex["activity"], ex["subtype"]),
             "predicted": (pred_orientation, pred_activity, pred_subtype),
+            "raw_predicted": (
+                pred.get("main_orientation"), pred.get("main_activity"), pred.get("activity_subtype")
+            ),
             "match": match
         })
     if not results:
@@ -1024,10 +1102,10 @@ def show_thread_badge(ex_data: dict):
 
 
 def show_results(result: dict, prescribed_future: str):
-    orientation = (result.get("main_orientation") or "").upper().strip()
-    challenge   = (result.get("primary_challenge") or "N/A").upper().strip()
-    main_act    = (result.get("main_activity") or "").upper().strip()
-    act_sub     = (result.get("activity_subtype") or "N/A").upper().strip()
+    orientation = _clean_enum((result.get("main_orientation") or "")).upper().strip()
+    challenge   = _clean_enum((result.get("primary_challenge") or "N/A")).upper().strip()
+    main_act    = _clean_enum((result.get("main_activity") or "")).upper().strip()
+    act_sub     = _clean_enum((result.get("activity_subtype") or "N/A")).upper().strip()
     speakers    = result.get("speaker_breakdown", []) or []
 
     chg = CHALLENGES.get(challenge, CHALLENGES["N/A"])
@@ -1046,7 +1124,7 @@ def show_results(result: dict, prescribed_future: str):
         st.markdown("### 🗣️ Speaker Breakdown")
         cols = st.columns(len(speakers)) if len(speakers) <= 4 else st.columns(4)
         for i, sp in enumerate(speakers):
-            sp_ori = (sp.get("orientation") or "").upper()
+            sp_ori = _clean_enum((sp.get("orientation") or "")).upper()
             cfg_sp = ORIENTATIONS.get(sp_ori, {})
             col = cols[i % len(cols)]
             with col:
@@ -1183,7 +1261,7 @@ def show_results(result: dict, prescribed_future: str):
             st.caption(result.get("notable_conditions_of_adoption", "—"))
 
     with tab_act:
-        st.markdown("**Why this activity is primary? (applied coding criteria)**")
+        st.markdown("**Why this activity is primary? (Decision Procedure applied)**")
         st.write(result.get("activity_rationale", "—"))
         sec = result.get("secondary_activities", [])
         if sec:
@@ -1477,7 +1555,9 @@ def main():
                     icon = "✅" if r["match"] else "❌"
                     with st.expander(f"{icon} {r['example']}"):
                         st.write("**Expected (orientation, activity, subtype):**", r["expected"])
-                        st.write("**Predicted:**", r["predicted"])
+                        st.write("**Predicted (cleaned):**", r["predicted"])
+                        if "raw_predicted" in r:
+                            st.caption(f"Raw model output: {r['raw_predicted']}")
                         if r.get("error"):
                             st.error(r["error"])
             else:
