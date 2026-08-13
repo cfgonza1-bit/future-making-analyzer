@@ -25,7 +25,7 @@ DATA_SOURCE_CODES = {
 
 # ─────────────────────────────────────────
 # DETERMINISTIC ACTIVITY → CHALLENGE MAPPING
-# (per the paper's own logic — no LLM guessing needed)
+# (per the paper's own conceptual logic — no LLM guessing needed)
 # ─────────────────────────────────────────
 ACTIVITY_TO_CHALLENGE = {
     "EVALUATION":  "CONVOLUTED_EVALUATIONS",
@@ -34,7 +34,7 @@ ACTIVITY_TO_CHALLENGE = {
 }
 
 def derive_potential_challenge(main_activity: str) -> str:
-    """Deterministically map a comment's activity to the future-making
+    """Deterministically maps a comment's activity to the future-making
     challenge it would most likely contribute to if it met opposing
     orientations — per the paper's own conceptual logic (Section C)."""
     act = _clean_enum(main_activity).upper() if main_activity else ""
@@ -42,24 +42,20 @@ def derive_potential_challenge(main_activity: str) -> str:
 
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT v5 — adds Section I (Potential Challenge Contribution)
-# for single comments; multi-speaker threads remain available but
-# de-emphasized as an experimental/advanced feature.
+# SYSTEM PROMPT v6 — FINAL, single-comment only
+# (Multi-speaker mode fully removed; MIXED no longer a valid value)
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
 You are an expert qualitative coder applying the Future-Making framework from the paper
 "Futures in the Making: How Consumers Respond to Future-Oriented Interventions"
 published in the Journal of Marketing.
 
-You will be given either:
-  (a) a single CONSUMER COMMENT to analyze, or
-  (b) a MULTI-SPEAKER THREAD (multiple labeled speakers, e.g. "User 1:", "User 2:")
-      representing an interaction among consumers with different orientations.
-
-Always classify each individual comment/speaker using the criteria below.
+You will be given a single CONSUMER COMMENT (which may internally contain
+multiple sentences or aggregated quotes from the same speaker/source) and
+must classify it using the criteria below.
 
 ════════════════════════════════════════════════════════════════
-A. FUTURE-MAKING ACTIVITIES — Select the ONE primary activity per comment
+A. FUTURE-MAKING ACTIVITIES — Select the ONE primary activity
 ════════════════════════════════════════════════════════════════
 
 ─── EVALUATION ───────────────────────────────────────────────
@@ -79,7 +75,7 @@ Coding criteria (ALL must apply):
   • CRITICAL: STRONG, CATEGORICAL, or NEGATIVE language ("not the
     solution," "false solution," "not the future," "muddle point") DOES
     NOT by itself indicate Negotiation. A firmly-worded standalone
-    opinion about the TOPIC is still Evaluation, unless it also meets the
+    opinion about the TOPIC is still Evaluation, unless it ALSO meets the
     Negotiation criteria below (a real interlocutor, a call to action, or
     a rebuttal of a specific other claim).
   • CRITICAL: Generic/impersonal "you" (meaning "people in general," "one,"
@@ -106,15 +102,12 @@ Signals that STRONGLY indicate Negotiation over Evaluation:
   • Imperative or collective calls to action ("we need to...", "let's...",
     "should")
   • Direct SECOND-PERSON address to a SPECIFIC, REAL interlocutor or
-    opponent present in (or implied by) the conversation ("you," "have
-    you," "your") — NOT a generic/impersonal "you" meaning "people in
-    general." See the GENERIC-YOU TEST in Section H before using this
-    signal.
+    opponent ("you," "have you," "your") — NOT a generic/impersonal "you"
+    meaning "people in general." See the GENERIC-YOU TEST in Section H
+    before using this signal.
   • Attribution of blame, responsibility, or authority to specific named
-    actors (e.g., "politicians," "the government," "you" addressing an
-    opposing commenter)
+    actors (e.g., "politicians," "the government")
   • Explicit rebuttal of a claim JUST MADE by another named/implied speaker
-    in a visible exchange
   • Requests for proof, reassurance, or accountability FROM A SPECIFIC
     OTHER PARTY (not rhetorical self-questioning)
   • Explicit comparison between competing pathways aimed at persuading a
@@ -122,10 +115,9 @@ Signals that STRONGLY indicate Negotiation over Evaluation:
 Sub-types by orientation:
   ADVOCATE  (Catalyzer)  — recruits others, calls for stronger policy
   QUESTION  (Ambivalent) — polite skepticism, asks for proof FROM OTHERS
-  REJECT    (Resistant)  — frames adoption as coercive imposition; refuses
-    a demand made BY a specific authority/actor, typically via direct
-    address ("Is this communism — take away OUR freedom") or naming an
-    actor ("politicians and their cronies")
+  REJECT    (Resistant)  — refuses a demand made BY a specific authority/
+    actor, typically via direct address or naming an actor (e.g.,
+    "politicians and their cronies"); no alternative future is proposed
   CONTEST   (Expander)   — contests scope and proposes a BROADER
     alternative pathway, typically addressed to a real audience/opponent
 
@@ -134,20 +126,7 @@ Sub-types by orientation:
   push an Evaluation-level comment into Negotiation):
   Use REJECT when the comment refuses an imposition without proposing an
   alternative future. Use CONTEST when it proposes a different, broader
-  future. Both require an already-established Negotiation classification.
-
-Sub-types by orientation (Enactment):
-  ACCELERATE (Catalyzer)  — purchases EVs, divests ICE, installs chargers
-  DELAY      (Ambivalent) — continues ICE use, ties non-adoption to
-    SPECIFIC RESOLVABLE conditions (price, infrastructure) with an
-    implied "for now"
-  PREVENT    (Resistant)  — retains ICE vehicles permanently, frames
-    non-adoption as identity-based, independent of future conditions
-  REROUTE    (Expander)   — adopts cargo bikes, public transport, relocates
-
-  DISAMBIGUATION — DELAY vs. PREVENT: DELAY ties non-adoption to a
-  resolvable condition ("until infrastructure improves"); PREVENT frames
-  it as a permanent stance ("no matter what," "til it dies").
+  future.
 
 ─── ENACTMENT ────────────────────────────────────────────────
 Operational definition: References to how consumers gave form to futures
@@ -160,6 +139,18 @@ competence, or a temporally situated commitment.
 Signals: first-person accounts of purchases/ownership/refusals; described
 routines actually performed; firm personal intentions ("I plan to...");
 relocation or acquisition/divestment of material objects.
+Sub-types by orientation:
+  ACCELERATE (Catalyzer)  — purchases EVs, divests ICE, installs chargers
+  DELAY      (Ambivalent) — continues ICE use, ties non-adoption to
+    SPECIFIC RESOLVABLE conditions (price, infrastructure) with an
+    implied "for now"
+  PREVENT    (Resistant)  — retains ICE vehicles permanently, frames
+    non-adoption as identity-based, independent of future conditions
+  REROUTE    (Expander)   — adopts cargo bikes, public transport, relocates
+
+  DISAMBIGUATION — DELAY vs. PREVENT: DELAY ties non-adoption to a
+  resolvable condition ("until infrastructure improves"); PREVENT frames
+  it as a permanent stance ("no matter what," "til it dies").
 
 ════════════════════════════════════════════════════════════════
 B. FUTURE-MAKING ORIENTATIONS — Select the ONE primary orientation
@@ -171,7 +162,10 @@ necessary, feasible, and already gaining momentum.
 Goal: Accelerate change toward the prescribed future.
 Emotions: Utopian optimism; enthusiasm; confidence; pride.
 Temporality: Present-focused — the future is close, change is happening now.
+Notable conditions of adoption: High degree of alignment between current
+practices and the prescribed future.
 Empirical indicators: urgency, momentum, tipping points, inevitability.
+Markers: "now," "rapidly," "already," "time to," "let's get moving."
 
 ─── AMBIVALENT ───────────────────────────────────────────────
 Main narrative: Pragmatic narrative — desirability assessed against
@@ -179,8 +173,10 @@ everyday feasibility (price, range, charging, servicing, grid capacity).
 Goal: Slow or stage movement; delay decisions; balance risks and benefits.
 Emotions: Curiosity; caution; anxiety; frustration; conditional optimism.
 Temporality: Gradual and contingent.
+Notable conditions of adoption: Limited resources to support change.
 Empirical indicators: conditional support, information-seeking, waiting
-for prices/technology. Markers: "but," "if," "when," "not yet," "hopefully."
+for prices/technology, preference for hybrids. Markers: "but," "if,"
+"when," "not yet," "hopefully."
 
 ─── RESISTANT ────────────────────────────────────────────────
 Main narrative: Control narrative — interventions framed as coercive,
@@ -188,6 +184,8 @@ inequitable, ideologically motivated, or environmentally misleading.
 Goal: Contest the prescribed future and protect the status quo.
 Emotions: Pessimism; anger; anxiety; fear; defiance; distrust.
 Temporality: Maintenance-oriented.
+Notable conditions of adoption: Low degree of alignment between current
+practices and prescribed future.
 Empirical indicators: categorical rejection, distrust of authorities,
 commitments to retain ICE. Markers: "forced," "agenda," "control,"
 "freedom," "never," "stick with," "not the solution," "muddle point."
@@ -198,21 +196,35 @@ wider systems of production, consumption, urban design, car dependence.
 Goal: Expand and reroute the prescribed future; propose alternative pathways.
 Emotions: Dystopian optimism; concern; hope; critical urgency.
 Temporality: Envisioned and system-oriented.
+Notable conditions of adoption: Mismatch among current practices, normative
+practices, and those directed by the prescribed future.
 Empirical indicators: zooming out to systemic consequences, challenging
 car-centrality. Formulations: "EVs are not enough," "bigger picture,"
 "less cars," "does it have to be a car?", "false solution."
 
 ════════════════════════════════════════════════════════════════
-C. FUTURE-MAKING CHALLENGES
+C. FUTURE-MAKING CHALLENGES (conceptual mapping)
 ════════════════════════════════════════════════════════════════
 
-CONVOLUTED_EVALUATIONS ← dominant activity across speakers = EVALUATION
-CONFRONTATIONAL_NEGOTIATIONS ← dominant activity = NEGOTIATION
-COMPETING_ENACTMENTS ← dominant activity = ENACTMENT
+Each future-making activity is conceptually linked, per the paper, to a
+future-making challenge that emerges WHEN THAT ACTIVITY IS PERFORMED
+DIFFERENTLY BY DIFFERENT ORIENTATIONS IN INTERACTION:
 
-Note: A full "primary_challenge" is only meaningfully assigned for
-MULTI-SPEAKER THREADS. For single comments, use "N/A" — the forward-
-looking equivalent is Section I below.
+  EVALUATION  → CONVOLUTED_EVALUATIONS
+    (Divergent assumptions, evidence, and temporal horizons make coherent
+    sensemaking difficult)
+  NEGOTIATION → CONFRONTATIONAL_NEGOTIATIONS
+    (Simultaneous advocacy, questioning, rejection, and contestation widen
+    divides rather than converge)
+  ENACTMENT   → COMPETING_ENACTMENTS
+    (Some accelerate while others prevent, delay, or reroute, creating
+    divergence and volatility)
+
+This mapping is applied automatically by the calling application based on
+your "main_activity" classification — you do not need to output the
+challenge label yourself. Your job is to explain, in Section I below, HOW
+this specific comment's content would likely generate friction with an
+opposing orientation.
 
 ════════════════════════════════════════════════════════════════
 D. POLICY ROADMAP (Figure 3 — 7 steps)
@@ -229,7 +241,12 @@ Step 2: Map future-making orientations.
     coercion/distrust language; track opt-outs, organized opposition.
   EXPANDER — "Policy problem framed too narrowly." Claims intervention
     doesn't solve the underlying problem; visions of broader change.
-Step 3: Diagnose key future-making challenges.
+Step 3: Diagnose key future-making challenges — Are incompatible
+  evidence/assumptions preventing sensemaking (Convoluted Evaluations)?
+  Is disagreement escalating around autonomy/fairness/legitimacy
+  (Confrontational Negotiations)? Are accelerating/delaying/preventing/
+  re-routing practices creating incompatible pathways (Competing
+  Enactments)?
 Step 4: Implement support initiatives:
   CATALYZER — Objective: enable responsible acceleration where public
     value is demonstrated. Instruments: time-limited regulatory sandboxes;
@@ -244,7 +261,8 @@ Step 4: Implement support initiatives:
     assemblies; public-interest funding; data trusts; competition policy;
     alternative governance models.
 Step 5: Facilitate enactment — infrastructure and capability building.
-Step 6: Measure multiple outcomes — accuracy, fairness, who benefits/excluded.
+Step 6: Measure multiple outcomes — accuracy, fairness, who benefits/
+  excluded, are alternative pathways emerging.
 Step 7: Revise intervention — treat the prescribed future as revisable.
 
 ════════════════════════════════════════════════════════════════
@@ -252,41 +270,46 @@ E. MANAGERIAL ROADMAP (Figure 4 — 6 steps)
 ════════════════════════════════════════════════════════════════
 
 Step 1: Determine the prescribed future — define by the future it
-  prescribes, not just technical features.
+  prescribes, not just technical features. Which practices must change?
+  What competencies/resources/infrastructures does it require? Which
+  elements are fixed vs. open to revision? Who benefits/adapts/bears costs?
 Step 2: Consider future-making orientations (narratives, goals, emotions,
   temporalities — not segments).
+  CATALYZER — Monitor urgency/inevitability language, early pilot
+    participation, advocacy; identify resources enabling early adoption.
+  AMBIVALENT — Monitor conditional language ("I would, but…," "not yet");
+    track hesitation signals; identify trial without conversion.
+  RESISTANT — Monitor coercion/surveillance language, opt-outs, organized
+    opposition; distinguish ideological opposition from material
+    disadvantage.
+  EXPANDER — Watch for "this does not solve the real problem," advocacy
+    for collective alternatives.
 Step 3: Monitor key future-making challenges.
 Step 4: Select orientation-sensitive response:
   CATALYZER — Convert enthusiasm into responsible experimentation.
-    Interventions: governed pilots, evidence documentation, peer learning.
-    Avoid: inevitability claims; treating early adopters as universal proof.
+    Interventions: governed pilots, evidence documentation, peer learning,
+    explicit reporting of limitations. Avoid: inevitability claims;
+    treating early adopters as universal proof.
   AMBIVALENT — Convert uncertainty into addressable conditions.
     Interventions: sandboxes, comparison tools, staged adoption, human
-    assistance. Avoid: artificial urgency; framing hesitation as ignorance.
+    assistance, transparent performance evidence. Avoid: artificial
+    urgency; framing hesitation as ignorance.
   RESISTANT — Restore autonomy, legitimacy, accountability.
     Interventions: consultation, opt-outs, human review, independent
-    audits. Avoid: "there is no alternative"; ridicule; hidden automation.
-  EXPANDER — Incorporate systemic critique. Interventions: participatory
-    design, futures workshops, broader impact evaluation. Avoid:
+    audits, protections against material harms. Avoid: "there is no
+    alternative"; ridicule; hidden automation.
+  EXPANDER — Incorporate systemic critique and explore alternative
+    futures. Interventions: participatory design, futures workshops,
+    broader impact evaluation, alternative governance models. Avoid:
     presenting the offering as a complete solution; dismissing critique.
-Step 5: Match messaging to key future-making challenges — avoid universal
-  claims; communicate achievements AND limitations.
+Step 5: Match messaging to key future-making challenges — do not rely on
+  a single persuasive frame; communicate achievements AND limitations.
 Step 6: Support consumers through enactment — onboarding, workflows,
-  escalation points, training, appeals.
+  escalation points, training, appeals; adjustable involvement, human
+  assistance, easy ways to pause/reverse/modify adoption.
 
 ════════════════════════════════════════════════════════════════
-F. MULTI-SPEAKER MODE (advanced / experimental)
-════════════════════════════════════════════════════════════════
-
-If the input contains multiple labeled speakers (e.g., "User 1:", "User 2:"),
-classify EACH speaker's orientation/activity/subtype separately (applying
-the Decision Procedure independently to each), determine the aggregate
-"primary_challenge" consistent with the dominant activity, and populate
-"speaker_breakdown" with one object per speaker. If NOT multi-speaker,
-return an empty array for "speaker_breakdown."
-
-════════════════════════════════════════════════════════════════
-G. FEW-SHOT GROUNDING EXAMPLES
+F. FEW-SHOT GROUNDING EXAMPLES
 ════════════════════════════════════════════════════════════════
 
 Example 1 (EVALUATION, not Negotiation):
@@ -306,12 +329,12 @@ COMMENT: "I won't be getting one, I'll stick to my V8 and my other diesel
 
 Example 4 (ENACTMENT, not Negotiation):
 COMMENT: "We tend to do most of our shopping by bike rather than with the
-ute..." (Source: I)
+ute because the ute's inconvenient to park..." (Source: I)
 → ENACTMENT / REROUTE / EXPANDER
 
 Example 5 (EVALUATION despite questions, NOT Negotiation — self-directed):
 COMMENT: "The question is: what is the difference pollution-wise between
-making an EV and making an ICE car?..." (Source: YT)
+making an EV and making an ICE car?... It's a complex issue..." (Source: YT)
 → EVALUATION / STALL / AMBIVALENT
 
 Example 6 (NEGOTIATION via a genuine other-directed question):
@@ -323,7 +346,6 @@ Example 7 (NEGOTIATION/REJECT — direct address + named actors):
 COMMENT: "We don't need politicians and their cronies telling us what
 sort of car we can have." (Source: YT)
 → NEGOTIATION / REJECT / RESISTANT
-(names a specific actor — "politicians and their cronies" — being refused)
 
 Example 8 (NEGOTIATION/CONTEST — addressed rhetorical challenge):
 COMMENT: "Does it have to be a car?" (Source: FG)
@@ -334,40 +356,58 @@ strong categorical language and NO real interlocutor:
 COMMENT: "Electric vehicles are not the solution, for Australia to take
 this up we are going to have to increase mining of precious minerals...
 Electric vehicles are not the future, just a muddle point." (Source: PC)
-Why EVALUATION/AVOID, not NEGOTIATION/REJECT: this is a standalone,
-categorical opinion about EVs as a topic. There is NO second-person
-address, NO named actor being refused, NO call to action, and NO rebuttal
-of a specific claim just made by another speaker. Strong/negative/
-categorical wording ("not the solution," "muddle point") does NOT by
-itself trigger Negotiation — compare with Example 7, which explicitly
-names and refuses "politicians and their cronies."
+Why EVALUATION/AVOID, not NEGOTIATION/REJECT: standalone, categorical
+opinion about EVs as a topic. NO second-person address, NO named actor
+being refused, NO call to action, NO rebuttal of a specific claim just
+made by another speaker. Strong/negative/categorical wording alone does
+NOT trigger Negotiation — compare with Example 7, which explicitly names
+and refuses "politicians and their cronies."
 → EVALUATION / AVOID / RESISTANT
 
 Example 10 — ⚠️ CRITICAL CONTRAST — EVALUATION, NOT Negotiation, despite
-containing the word "you" (GENERIC-YOU, not a real interlocutor):
+containing "you" (GENERIC-YOU, not a real interlocutor):
 COMMENT: "This doesn't cover the destruction of the fabric of cities to
 accommodate cars... Electric vehicle is a false solution if you care
 about the environment at all. The best way to help the environment is to
 buy less stuff and keep older stuff running for longer." (Source: FG/R)
 Why EVALUATION/COMPLEXIFY, not NEGOTIATION/CONTEST: the "you" in "if you
 care about the environment at all" is GENERIC/IMPERSONAL — it means "a
-person in general," NOT a specific interlocutor present in a visible
-exchange. There is no named actor, no rebuttal of a specific prior claim,
-and no call to action directed at a real audience. Apply the GENERIC-YOU
-TEST (Section H): replace "you" with "one" or "a person" — if the sentence
-still makes identical sense, the "you" is generic and does NOT indicate
-Negotiation. Compare with Example 8, which is an actual rhetorical
-challenge posed within a live exchange.
+person in general," NOT a specific interlocutor. No named actor, no
+rebuttal of a specific prior claim, no call to action directed at a real
+audience. Apply the GENERIC-YOU TEST (Section H): replace "you" with
+"one" — if the sentence still makes identical sense, it is generic.
 → EVALUATION / COMPLEXIFY / EXPANDER
 
+Example 11 — ⚠️ CRITICAL: heterogeneous single input with signals from
+more than one activity — resolve via priority order, never split:
+COMMENT: "I am wanting to upgrade the car and I am umming and aahing over
+PHEV or EV [evaluative language]. Just bought a new petrol car as the
+infrastructure still isn't in place [concrete action]. I plan to drive my
+current 10 year old hybrid as long as I can, but I'm expecting many of
+these issues to be resolved by then [firm intention]."
+Why ENACTMENT (not Evaluation, and NEVER "mixed" or combined): even
+though this input contains evaluative hedging ("umming and aahing"), the
+presence of a concrete first-person action ("Just bought a new petrol
+car") and a firm intention ("I plan to drive...") means ENACTMENT signals
+are present and, per the mandatory tie-breaker in Section H Step 4,
+ALWAYS take priority over Evaluation-like language elsewhere in the same
+input. Never output a combined or "mixed" activity for a single comment —
+always resolve to exactly one via the priority order.
+→ ENACTMENT / DELAY / AMBIVALENT
+(DELAY, not PREVENT: non-adoption tied to a resolvable condition —
+infrastructure, price — with an implied "for now")
+
 ════════════════════════════════════════════════════════════════
-H. DECISION PROCEDURE — Apply in this exact order, for EVERY comment
+G. DECISION PROCEDURE — Apply in this exact order, for EVERY comment
 ════════════════════════════════════════════════════════════════
 
 STEP 1 — Check ENACTMENT first:
-  Does the text describe a concrete action taken, planned, refused, or
-  firmly intended BY THE SPEAKER THEMSELVES?
-  → If YES: classify as ENACTMENT (apply DELAY vs. PREVENT if needed).
+  Does ANY part of the text describe a concrete action taken, planned,
+  refused, or firmly intended BY THE SPEAKER THEMSELVES? (e.g., "I
+  bought...", "I'm sticking with...", "we moved to...", "I plan to...").
+  → If YES: classify as ENACTMENT (apply DELAY vs. PREVENT). This holds
+    EVEN IF other parts of the same input also contain evaluative or
+    negotiation-like language — Enactment signals always take priority.
     Stop here.
 
 STEP 2 — If NOT Enactment, check NEGOTIATION using BOTH tests below:
@@ -376,81 +416,104 @@ STEP 2 — If NOT Enactment, check NEGOTIATION using BOTH tests below:
   Replace every instance of "you" with "one," "a person," or "people in
   general." Does the sentence still read naturally and mean the same
   thing?
-    → If YES → the "you" is GENERIC/IMPERSONAL. It does NOT count as
-      second-person address to a real interlocutor. Do not use it as
-      Negotiation evidence. Proceed to check the remaining Negotiation
+    → If YES → the "you" is GENERIC/IMPERSONAL. Do NOT use it as
+      Negotiation evidence. Proceed to check remaining Negotiation
       criteria (calls to action, named actors, rebuttal of a specific
       prior claim) on their own merits.
-    → If NO (the sentence only makes sense as addressing a SPECIFIC,
-      real person/opponent, e.g., "Have you thought about...", "you're
-      trying to peddle...") → this IS genuine second-person address.
+    → If NO (only makes sense addressing a SPECIFIC real person/opponent,
+      e.g., "Have you thought about...") → genuine second-person address.
       Count it as Negotiation evidence.
 
-  ─── TEST B: RHETORICAL-QUESTION TEST (apply if the comment contains
-  question marks) ───
+  ─── TEST B: RHETORICAL-QUESTION TEST (apply if question marks present) ───
   If I removed any genuine second-person address (per Test A) and any
   explicit rebuttal of a SPECIFIC claim just made by another named/implied
   speaker, would the statement still stand as an independent,
   self-contained judgment?
-    → If YES → this is EVALUATION, not Negotiation. Proceed to Step 3.
-    → If NO → this is NEGOTIATION. Continue below.
+    → If YES → EVALUATION, not Negotiation. Proceed to Step 3.
+    → If NO → NEGOTIATION. Continue below.
 
   ─── TEST C: STANDALONE-JUDGMENT TEST (apply regardless of tone) ───
   Strong, categorical, or dismissive language about the TOPIC ITSELF
-  ("not the solution," "false solution," "muddle point," "not the
-  future") is NOT sufficient on its own to indicate Negotiation. Ask:
-  "Is this comment refusing/rebutting a SPECIFIC OTHER PARTY or NAMED
-  ACTOR, or is it simply stating a firm opinion about the topic?"
-    → If it only states a firm opinion about the topic (no named actor
-      being refused, no real interlocutor addressed) → EVALUATION.
-    → If it explicitly refuses/rebuts a named actor (e.g., "politicians,"
-      "the government," a specific prior speaker) or issues a collective
-      call to action → NEGOTIATION.
+  ("not the solution," "false solution," "muddle point") is NOT
+  sufficient on its own to indicate Negotiation. Ask: "Is this comment
+  refusing/rebutting a SPECIFIC OTHER PARTY or NAMED ACTOR, or is it
+  simply stating a firm opinion about the topic?"
+    → If it only states a firm opinion about the topic → EVALUATION.
+    → If it explicitly refuses/rebuts a named actor or issues a
+      collective call to action → NEGOTIATION.
 
   ─── GENERAL NEGOTIATION CRITERIA (apply only if Tests A-C support it) ───
   Does the text respond to another position, persuade a real audience,
   issue a collective call to action, or make a comparative claim about
   what OTHERS should do?
-  → If YES: classify as NEGOTIATION (apply REJECT vs. CONTEST if needed).
-    Stop here.
+  → If YES: classify as NEGOTIATION (apply REJECT vs. CONTEST). Stop here.
 
 STEP 3 — If neither Enactment nor Negotiation, classify as EVALUATION.
+
+STEP 4 — MANDATORY TIE-BREAKER (applies even if the input contains
+multiple sentences or aggregated quotes with signals from more than one
+activity):
+  If you perceive signals from more than one activity within the SAME
+  input, you MUST NOT output a combined/mixed classification. Resolve
+  using this strict PRIORITY ORDER:
+    1. ENACTMENT signals always win, regardless of other content present.
+    2. If no Enactment, NEGOTIATION signals win over Evaluation.
+    3. Otherwise, EVALUATION.
+  There is only ONE valid activity per comment. Never combine, hedge, or
+  split your answer across multiple activities.
 
 IMPORTANT: When in doubt between Evaluation and Negotiation, DEFAULT TO
 EVALUATION unless there is a clear, specific, real interlocutor or named
 actor being addressed/refused/persuaded. Strength of opinion or negative
-tone is NEVER sufficient by itself.
+tone is NEVER sufficient by itself to indicate Negotiation.
 
 ════════════════════════════════════════════════════════════════
-I. POTENTIAL CHALLENGE CONTRIBUTION (for single comments)
+H. POTENTIAL CHALLENGE CONTRIBUTION
 ════════════════════════════════════════════════════════════════
 
-For EVERY single comment (non-thread input), in addition to classifying
-its activity/subtype/orientation, identify:
-  1. "likely_opposing_orientation": which of the OTHER THREE orientations
-     holds the MOST CONTRASTING narrative/goal/emotion/temporality
-     relative to this comment, and would most likely generate friction.
-  2. "potential_challenge_rationale": a CONTENT-SPECIFIC explanation of
-     HOW that friction would manifest, citing specific phrases from THIS
-     comment.
+Every comment can be understood as a POTENTIAL contributor to one of the
+three future-making challenges (Section C) — a FORWARD-LOOKING, DIAGNOSTIC
+judgment useful for a policymaker or manager doing social listening on
+individual, real-world comments who wants to anticipate which
+fragile-futures dynamic a given comment is likely to feed into.
 
-Do NOT compute "potential_challenge" yourself — it is derived
-deterministically from "main_activity" by the calling application.
+For EVERY comment, in addition to classifying its activity/subtype/
+orientation, you must also:
+  1. Identify "likely_opposing_orientation": which of the OTHER THREE
+     orientations (not the one you assigned as main_orientation) holds
+     the MOST CONTRASTING narrative, goal, emotion, or temporality
+     relative to THIS SPECIFIC comment, and would therefore be most
+     likely to generate friction with it in a real conversation.
+  2. Write "potential_challenge_rationale": a CONTENT-SPECIFIC
+     explanation (not generic boilerplate) of HOW that friction would
+     likely manifest — quote or closely paraphrase the specific claim,
+     assumption, or emotional stance in THIS comment that would clash
+     with the likely_opposing_orientation's typical stance.
+
+Do NOT compute the challenge label yourself — it is derived
+deterministically from your "main_activity" by the calling application
+(EVALUATION→Convoluted Evaluations, NEGOTIATION→Confrontational
+Negotiations, ENACTMENT→Competing Enactments). Focus your reasoning on
+steps 1 and 2 above.
 
 ════════════════════════════════════════════════════════════════
 CRITICAL OUTPUT RULE
 ════════════════════════════════════════════════════════════════
 
-Select EXACTLY ONE value per enum field, unless explicitly instructed
-otherwise for multi-speaker threads. The "|" characters in the OUTPUT
-FORMAT schema are notation only — NEVER valid output syntax.
+Select EXACTLY ONE value for each enum field below. The "|" characters
+shown in the OUTPUT FORMAT schema are notation for allowed options ONLY —
+NEVER valid output syntax. Do not copy placeholder text or combine values
+with "|", "/", "or", or commas. There is no "MIXED" option for any field
+in this schema — always resolve to exactly one value using the Decision
+Procedure (Section G, including the mandatory tie-breaker in Step 4).
 
 Before finalizing your answer, silently:
-  1. Re-run the DECISION PROCEDURE (Section H) — including Tests A, B,
-     and C — for each speaker/comment.
+  1. Re-run the DECISION PROCEDURE (Section G) — including Tests A, B, C,
+     and the Step 4 tie-breaker.
   2. Verify you did NOT classify as Negotiation based solely on strong/
      negative/categorical tone or a generic "you."
-  3. For single comments, complete Section I.
+  3. Complete Section H (likely_opposing_orientation +
+     potential_challenge_rationale).
   4. Verify no field contains more than one value.
 
 ════════════════════════════════════════════════════════════════
@@ -460,28 +523,21 @@ OUTPUT FORMAT — Return ONLY valid JSON
 {
   "prescribed_future_acknowledged": "Brief restatement of the prescribed future",
 
-  "main_activity": "one single value: EVALUATION, NEGOTIATION, ENACTMENT (or MIXED only for multi-speaker threads)",
+  "main_activity": "one single value: EVALUATION, NEGOTIATION, or ENACTMENT",
   "activity_subtype": "one single value: SIMPLIFY, STALL, AVOID, COMPLEXIFY, ADVOCATE, QUESTION, REJECT, CONTEST, ACCELERATE, DELAY, PREVENT, REROUTE",
   "activity_rationale": "State which Decision Procedure step/test matched (including Generic-You Test and Standalone-Judgment Test results if applicable), citing specific phrases",
-  "secondary_activities": [],
+  "secondary_activities": ["list any other activities weakly present, if any — informational only, does not affect main_activity"],
 
-  "main_orientation": "one single value: CATALYZER, AMBIVALENT, RESISTANT, EXPANDER (or MIXED only for multi-speaker threads)",
+  "main_orientation": "one single value: CATALYZER, AMBIVALENT, RESISTANT, or EXPANDER",
   "orientation_confidence": "HIGH, MEDIUM, or LOW",
   "orientation_rationale": "Empirical indicators, emotions, temporality, cited phrases",
   "narrative_identified": "Name and description of the single dominant narrative",
   "dominant_emotions": "Comma-separated list of emotions detected",
   "temporality_expressed": "...",
-  "notable_conditions_of_adoption": "Which single condition applies, if evident",
+  "notable_conditions_of_adoption": "Which single condition from Section B applies, if evident",
 
-  "primary_challenge": "CONVOLUTED_EVALUATIONS, CONFRONTATIONAL_NEGOTIATIONS, COMPETING_ENACTMENTS, or N/A (use N/A for single comments)",
-  "challenge_rationale": "Only for threads",
-
-  "likely_opposing_orientation": "For single comments ONLY: one value among CATALYZER, AMBIVALENT, RESISTANT, EXPANDER (not the main_orientation)",
-  "potential_challenge_rationale": "For single comments ONLY: content-specific explanation citing THIS comment's phrases",
-
-  "speaker_breakdown": [
-    {"speaker": "...", "orientation": "one single value", "activity": "one single value", "subtype": "one single value", "key_phrase": "..."}
-  ],
+  "likely_opposing_orientation": "One single value among CATALYZER, AMBIVALENT, RESISTANT, EXPANDER — whichever is NOT the main_orientation and would most likely clash with this comment",
+  "potential_challenge_rationale": "Content-specific explanation of how this comment would likely clash with the likely_opposing_orientation, citing specific phrases from THIS comment",
 
   "policy_recommendations": {
     "step": "...", "objective": "...", "instruments": [], "additional_actions": []
@@ -517,7 +573,9 @@ ORIENTATIONS = {
         "activities": "Stall · Question · Delay",
         "notable_conditions": (
             "Limited resources to support change in current practices as "
-            "directed by the prescribed future"
+            "directed by the prescribed future (e.g., has no time to "
+            "develop new competences, has insufficient money to replace "
+            "materials as required by the prescribed future)"
         )
     },
     "RESISTANT": {
@@ -528,7 +586,9 @@ ORIENTATIONS = {
         "activities": "Avoid · Reject · Prevent",
         "notable_conditions": (
             "Low degree of alignment between current practices and "
-            "prescribed future"
+            "prescribed future (e.g., recent investment in materials that "
+            "the prescribed future removes, identity centered in existing "
+            "competences)"
         )
     },
     "EXPANDER": {
@@ -539,7 +599,10 @@ ORIENTATIONS = {
         "activities": "Complexify · Contest · Reroute",
         "notable_conditions": (
             "Mismatch among current practices, normative practices and "
-            "those directed by the prescribed future"
+            "those directed by the prescribed future (e.g., current "
+            "competences do not transfer to prescribed practices; "
+            "prescribed future does not account for currently owned "
+            "materials)"
         )
     }
 }
@@ -560,15 +623,10 @@ CHALLENGES = {
         "color": "#8E44AD", "bg": "#F5EEF8",
         "description": "Acceleration, delay, prevention and rerouting pull the future in different directions"
     },
-    "MIXED": {
-        "emoji": "🔶", "label": "Multiple Challenges",
-        "color": "#555", "bg": "#F5F5F5",
-        "description": "This thread reflects elements of multiple future-making challenges"
-    },
     "N/A": {
         "emoji": "➖", "label": "Not Applicable",
         "color": "#999", "bg": "#FAFAFA",
-        "description": "No emergent challenge identified"
+        "description": "No potential challenge could be derived"
     }
 }
 
@@ -602,11 +660,6 @@ ACTIVITY_META = {
             "PREVENT":    ("🛡️ Resistant",  "#C0392B"),
             "REROUTE":    ("🌍 Expander",   "#7D3C98"),
         }
-    },
-    "MIXED": {
-        "icon": "🔄", "color": "#555", "bg": "#F5F5F5",
-        "definition": "Multiple speakers perform different activities simultaneously. Valid ONLY for multi-speaker threads.",
-        "subtypes": {}
     },
 }
 
@@ -789,100 +842,7 @@ EXAMPLES = {
 }
 
 # ─────────────────────────────────────────
-# THREAD_EXAMPLES — kept as an advanced/experimental feature
-# ─────────────────────────────────────────
-THREAD_EXAMPLES = {
-    "— Select a thread example —": {"prescribed": "", "challenge": "", "thread": [], "expected_speakers": []},
-    "🌀 Convoluted Evaluations (YouTube, n=408 comments — Fig. WE1)": {
-        "prescribed": PF_EV, "challenge": "CONVOLUTED_EVALUATIONS",
-        "thread": [
-            ("User 1", "Nothing is zero emission. I go for a walk and I create "
-             "emissions. But Electric cars have waaay lower emissions than ICE cars."),
-            ("User 2", "The question is: what is the difference pollution-wise "
-             "between making an EV and making an ICE car? And, if the EV is more "
-             "polluting to make, how many miles would it take to get rid of that "
-             "difference? If the EV was charged with 'dirty' electricity, is it "
-             "then polluting or not? What about the cost of recycling? It's a "
-             "complex issue... Articles and information that claim one over the "
-             "other are always sponsored by someone."),
-            ("User 3", "You won't save the planet buying an EV... the production "
-             "of the EV with mining does more damage than an ICE."),
-            ("User 4", "They are NOT emissions free. They still have harmful "
-             "noise emissions and particle emissions from tires, roads and brake "
-             "dust... EVs are NOT the solution. Electric trains and buses plus "
-             "accessible walking and cycling infrastructure."),
-        ],
-        "expected_speakers": [
-            {"speaker": "User 1", "orientation": "CATALYZER",  "activity": "EVALUATION", "subtype": "SIMPLIFY"},
-            {"speaker": "User 2", "orientation": "AMBIVALENT", "activity": "EVALUATION", "subtype": "STALL"},
-            {"speaker": "User 3", "orientation": "RESISTANT",  "activity": "EVALUATION", "subtype": "AVOID"},
-            {"speaker": "User 4", "orientation": "EXPANDER",   "activity": "EVALUATION", "subtype": "COMPLEXIFY"},
-        ]
-    },
-    "⚔️ Confrontational Negotiations (Whirlpool, 91 pages — Fig. WE2)": {
-        "prescribed": PF_EV, "challenge": "CONFRONTATIONAL_NEGOTIATIONS",
-        "thread": [
-            ("User 1", "EVs will be on an exponential adoption curve. Everyone "
-             "will want one... Nobody will want an expensive 2nd hand ICE... "
-             "Globally, governments are going to start making fossil fuels very "
-             "expensive. T-A-X-E-S will be levied on this foul, polluting rubbish "
-             "we are all burning today… Or are you advocating that we go back to "
-             "bicycles and horses, or maybe just buses?"),
-            ("User 2", "Better tell that to the Prius owners replacing their "
-             "batteries. My car is now 13 years old... Batteries wear over "
-             "time... so what magic bullet have you discovered that defies "
-             "physics...? Once someone like me can get a used EV for <$10k, and "
-             "have the battery replaced cheaply, then I'll agree with you... "
-             "I'm not anti EV, I'm just realistic about costs and time frames."),
-            ("User 3", "Nope, I'm not confused, thanks for the concern though... "
-             "If he bought an ICE car now, he will get 6-10 years use out of it "
-             "and sell it for scrap value and rego. Not even close to the "
-             "financial ruin you are trying to peddle... Technology adoption "
-             "curves typically look like bell curves... not what you are "
-             "suggesting... This is delusional."),
-            ("User 4", "I fully get what you're saying, it's not rocket science, "
-             "but that's not what I'm on about… I simply object to being told "
-             "I'm an idiot… I'd like to see passenger cars filled with "
-             "passengers, less cars on the road, less money spent on new "
-             "roads!... Where people may simply drive less."),
-        ],
-        "expected_speakers": [
-            {"speaker": "User 1", "orientation": "CATALYZER",  "activity": "NEGOTIATION", "subtype": "ADVOCATE"},
-            {"speaker": "User 2", "orientation": "AMBIVALENT", "activity": "NEGOTIATION", "subtype": "QUESTION"},
-            {"speaker": "User 3", "orientation": "RESISTANT",  "activity": "NEGOTIATION", "subtype": "REJECT"},
-            {"speaker": "User 4", "orientation": "EXPANDER",   "activity": "NEGOTIATION", "subtype": "CONTEST"},
-        ]
-    },
-    "🔀 Competing Enactments (Facebook, 954 comments — Fig. WE3)": {
-        "prescribed": PF_EV, "challenge": "COMPETING_ENACTMENTS",
-        "thread": [
-            ("User 1", "I bought my EV because it was faster than the comparable "
-             "ICE car, more spacious, has better range... at least $600 cheaper "
-             "per quarter on 'fuel', requires almost no maintenance or "
-             "servicing... and gets regular improvements via software updates. "
-             "It's the most brutally fast and best handling car I ever had!"),
-            ("User 2", "In the building where I live there are 150 underground "
-             "carparks. All full. There is no reserve capacity in the building to "
-             "install charging points for 1% of that. Nor any in the feed from "
-             "the street, nor any in the feed to the suburb... I have no "
-             "objection to eventually driving an EV, but it's just not happening "
-             "any time soon. The infrastructure is decades away."),
-            ("User 3", "I won't be getting one, I'll stick to my V8 and my other "
-             "diesel 4x4..."),
-            ("User 4", "Maybe some reliable public transport would be an "
-             "answer."),
-        ],
-        "expected_speakers": [
-            {"speaker": "User 1", "orientation": "CATALYZER",  "activity": "ENACTMENT", "subtype": "ACCELERATE"},
-            {"speaker": "User 2", "orientation": "AMBIVALENT", "activity": "ENACTMENT", "subtype": "DELAY"},
-            {"speaker": "User 3", "orientation": "RESISTANT",  "activity": "ENACTMENT", "subtype": "PREVENT"},
-            {"speaker": "User 4", "orientation": "EXPANDER",   "activity": "ENACTMENT", "subtype": "REROUTE"},
-        ]
-    },
-}
-
-# ─────────────────────────────────────────
-# EXTRA TEST COMMENTS — outside Table WE1, to test generalization
+# GENERALIZATION TESTS — comments outside Table WE1
 # ─────────────────────────────────────────
 GENERALIZATION_TESTS = {
     "— Select a generalization test —": {"comment": "", "note": ""},
@@ -909,6 +869,9 @@ GENERALIZATION_TESTS = {
 # ─────────────────────────────────────────
 
 def _clean_enum(value: str) -> str:
+    """Defensive post-processing in case the model still returns a
+    combined value like 'EVALUATION | NEGOTIATION' — take the FIRST
+    listed value."""
     if not value:
         return value
     for sep in ["|", "/", " or "]:
@@ -926,11 +889,11 @@ PRESCRIBED FUTURE:
 CONSUMER COMMENT TO ANALYZE:
 {comment}
 
-Remember: apply the DECISION PROCEDURE (Section H), including the
-Rhetorical-Question Test and the REJECT/CONTEST and DELAY/PREVENT
-disambiguations. If this is a single comment (no "User N:" labels),
-also complete Section I (likely_opposing_orientation +
-potential_challenge_rationale). Return EXACTLY ONE value per enum field.
+Remember: apply the DECISION PROCEDURE (Section G) in order — including
+the Generic-You Test, Rhetorical-Question Test, Standalone-Judgment Test,
+and the mandatory Step 4 tie-breaker if signals from more than one
+activity are present. Return EXACTLY ONE value per enum field. Complete
+Section H (likely_opposing_orientation + potential_challenge_rationale).
 """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -942,11 +905,6 @@ potential_challenge_rationale). Return EXACTLY ONE value per enum field.
         temperature=0
     )
     return json.loads(response.choices[0].message.content)
-
-
-def analyze_thread(prescribed_future: str, thread: list, api_key: str) -> dict:
-    formatted = "\n".join(f"{speaker}: {text}" for speaker, text in thread)
-    return analyze_comment(prescribed_future, formatted, api_key)
 
 
 def run_validation_suite(api_key: str) -> dict:
@@ -984,73 +942,6 @@ def run_validation_suite(api_key: str) -> dict:
     return {"results": results, "overall_accuracy": accuracy}
 
 
-def run_thread_validation_suite(api_key: str) -> dict:
-    """Validates thread examples at TWO levels, reported SEPARATELY:
-    (1) challenge-level accuracy (the reliable, primary metric), and
-    (2) speaker-level accuracy (informational — harder task, treated as
-    secondary since it requires the model to roleplay 4 personas at once)."""
-    results = []
-    for name, ex in THREAD_EXAMPLES.items():
-        if not ex.get("thread"):
-            continue
-        try:
-            pred = analyze_thread(ex["prescribed"], ex["thread"], api_key)
-        except Exception as e:
-            results.append({
-                "example": name, "error": str(e),
-                "challenge_match": False, "speaker_matches": []
-            })
-            continue
-
-        pred_challenge = _clean_enum((pred.get("primary_challenge") or "")).upper()
-        expected_challenge = ex["challenge"]
-        challenge_match = (pred_challenge == expected_challenge)
-
-        pred_speakers = pred.get("speaker_breakdown", []) or []
-        pred_by_label = {(sp.get("speaker") or "").strip(): sp for sp in pred_speakers}
-        speaker_matches = []
-        for exp_sp in ex["expected_speakers"]:
-            label = exp_sp["speaker"]
-            pred_sp = pred_by_label.get(label, {})
-            pred_ori = _clean_enum((pred_sp.get("orientation") or "")).upper()
-            pred_act = _clean_enum((pred_sp.get("activity") or "")).upper()
-            pred_sub = _clean_enum((pred_sp.get("subtype") or "")).upper()
-            match = (
-                pred_ori == exp_sp["orientation"]
-                and pred_act == exp_sp["activity"]
-                and pred_sub == exp_sp["subtype"]
-            )
-            speaker_matches.append({
-                "speaker": label,
-                "expected": (exp_sp["orientation"], exp_sp["activity"], exp_sp["subtype"]),
-                "predicted": (pred_ori, pred_act, pred_sub),
-                "match": match
-            })
-
-        results.append({
-            "example": name,
-            "expected_challenge": expected_challenge,
-            "predicted_challenge": pred_challenge,
-            "challenge_match": challenge_match,
-            "speaker_matches": speaker_matches,
-        })
-
-    if not results:
-        return {"results": [], "challenge_accuracy": 0.0, "speaker_accuracy": 0.0}
-
-    valid = [r for r in results if "error" not in r]
-    challenge_accuracy = sum(r["challenge_match"] for r in valid) / len(valid) if valid else 0.0
-    total_speakers = sum(len(r["speaker_matches"]) for r in valid)
-    correct_speakers = sum(sum(sm["match"] for sm in r["speaker_matches"]) for r in valid)
-    speaker_accuracy = (correct_speakers / total_speakers) if total_speakers else 0.0
-
-    return {
-        "results": results,
-        "challenge_accuracy": challenge_accuracy,
-        "speaker_accuracy": speaker_accuracy
-    }
-
-
 def show_example_badge(ex_data: dict):
     if not ex_data.get("activity"):
         return
@@ -1078,33 +969,12 @@ def show_example_badge(ex_data: dict):
     """, unsafe_allow_html=True)
 
 
-def show_thread_badge(ex_data: dict):
-    chg = CHALLENGES.get(ex_data.get("challenge", ""))
-    if not chg:
-        return
-    st.markdown(f"""
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-        <span style="background:{chg['bg']};border:2px solid {chg['color']};color:{chg['color']};
-                     border-radius:20px;padding:4px 14px;font-weight:bold;font-size:13px;">
-            {chg['emoji']} {chg['label']}
-        </span>
-        <span style="font-size:12px;color:#888;">(expected emergent challenge)</span>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def show_results(result: dict, prescribed_future: str, is_thread: bool = False):
+def show_results(result: dict, prescribed_future: str):
     orientation = _clean_enum((result.get("main_orientation") or "")).upper().strip()
     main_act    = _clean_enum((result.get("main_activity") or "")).upper().strip()
     act_sub     = _clean_enum((result.get("activity_subtype") or "N/A")).upper().strip()
-    speakers    = result.get("speaker_breakdown", []) or []
 
-    # For THREADS: use the LLM's own emergent challenge judgment.
-    # For SINGLE COMMENTS: derive it deterministically from the activity.
-    if is_thread:
-        challenge = _clean_enum((result.get("primary_challenge") or "N/A")).upper().strip()
-    else:
-        challenge = derive_potential_challenge(main_act)
+    challenge = derive_potential_challenge(main_act)
     chg = CHALLENGES.get(challenge, CHALLENGES["N/A"])
 
     st.markdown(f"""
@@ -1115,52 +985,28 @@ def show_results(result: dict, prescribed_future: str, is_thread: bool = False):
     </div>
     """, unsafe_allow_html=True)
 
-    if speakers:
-        st.markdown("### 🗣️ Speaker Breakdown")
-        cols = st.columns(len(speakers)) if len(speakers) <= 4 else st.columns(4)
-        for i, sp in enumerate(speakers):
-            sp_ori = _clean_enum((sp.get("orientation") or "")).upper()
-            cfg_sp = ORIENTATIONS.get(sp_ori, {})
-            with cols[i % len(cols)]:
-                st.markdown(f"""
-                <div style="background:{cfg_sp.get('bg','#f5f5f5')};
-                            border-left:4px solid {cfg_sp.get('border','#ccc')};
-                            border-radius:8px;padding:10px;margin-bottom:8px;">
-                    <strong style="font-size:12px;">{sp.get('speaker','?')}</strong><br>
-                    <span style="color:{cfg_sp.get('color','#555')};font-weight:bold;font-size:13px;">
-                        {cfg_sp.get('emoji','')} {sp_ori}
-                    </span><br>
-                    <span style="font-size:11px;color:#666;">
-                        {sp.get('activity','')} → {sp.get('subtype','')}
-                    </span><br>
-                    <span style="font-size:10px;color:#888;font-style:italic;">
-                        "{sp.get('key_phrase','')[:80]}..."
-                    </span>
-                </div>
-                """, unsafe_allow_html=True)
-        st.markdown("---")
-
     col1, col2, col3 = st.columns([2, 2, 2])
 
     with col1:
-        cfg = ORIENTATIONS.get(orientation)
-        if cfg:
-            st.markdown(f"""
-            <div style="background:{cfg['bg']};border-left:6px solid {cfg['border']};
-                        border-radius:10px;padding:16px 18px;min-height:220px;">
-                <h3 style="color:{cfg['color']};margin:0;font-size:22px;">{cfg['emoji']} {orientation}</h3>
-                <p style="color:#666;margin:4px 0 3px;font-size:12px;">
-                    <strong>Confidence:</strong> {result.get('orientation_confidence','N/A')}
-                </p>
-                <p style="color:#777;margin:2px 0;font-size:11px;">📖 {cfg['narrative']}</p>
-                <p style="color:#777;margin:2px 0;font-size:11px;">⏱️ {cfg['temporality']}</p>
-                <p style="color:#777;margin:2px 0;font-size:11px;">🎯 {cfg['goal']}</p>
-                <p style="color:#999;margin:4px 0 0;font-size:10px;">{cfg['activities']}</p>
-            </div>
-            """, unsafe_allow_html=True)
+        cfg = ORIENTATIONS.get(orientation, {})
+        st.markdown(f"""
+        <div style="background:{cfg.get('bg','#f5f5f5')};border-left:6px solid {cfg.get('border','#999')};
+                    border-radius:10px;padding:16px 18px;min-height:220px;">
+            <h3 style="color:{cfg.get('color','#555')};margin:0;font-size:22px;">
+                {cfg.get('emoji','❓')} {orientation}
+            </h3>
+            <p style="color:#666;margin:4px 0 3px;font-size:12px;">
+                <strong>Confidence:</strong> {result.get('orientation_confidence','N/A')}
+            </p>
+            <p style="color:#777;margin:2px 0;font-size:11px;">📖 {cfg.get('narrative','')}</p>
+            <p style="color:#777;margin:2px 0;font-size:11px;">⏱️ {cfg.get('temporality','')}</p>
+            <p style="color:#777;margin:2px 0;font-size:11px;">🎯 {cfg.get('goal','')}</p>
+            <p style="color:#999;margin:4px 0 0;font-size:10px;">{cfg.get('activities','')}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col2:
-        ameta = ACTIVITY_META.get(main_act, ACTIVITY_META["MIXED"])
+        ameta = ACTIVITY_META.get(main_act, {})
         sub_cfg = ORIENTATIONS.get(orientation, {})
         st.markdown(f"""
         <div style="background:{ameta.get('bg','#f5f5f5')};border-left:6px solid {ameta.get('color','#555')};
@@ -1181,47 +1027,37 @@ def show_results(result: dict, prescribed_future: str, is_thread: bool = False):
         """, unsafe_allow_html=True)
 
     with col3:
-        card_title = "Primary Future-Making Challenge" if is_thread else "⚠️ Potential Challenge Contribution"
-        subtitle = "" if is_thread else "<p style='color:#999;margin:0 0 4px;font-size:10px;'>(if this comment meets opposing orientations)</p>"
-        rationale_text = (
-            result.get('challenge_rationale','') if is_thread
-            else result.get('potential_challenge_rationale','')
-        )
         st.markdown(f"""
         <div style="background:{chg['bg']};border-left:6px solid {chg['color']};
                     border-radius:10px;padding:16px 18px;min-height:220px;">
             <h3 style="color:{chg['color']};margin:0;font-size:20px;">{chg['emoji']} {chg['label']}</h3>
-            <p style="color:#555;margin:4px 0 3px;font-size:12px;"><strong>{card_title}</strong></p>
-            {subtitle}
+            <p style="color:#555;margin:4px 0 3px;font-size:12px;"><strong>⚠️ Potential Challenge Contribution</strong></p>
+            <p style="color:#999;margin:0 0 4px;font-size:10px;">(if this comment meets an opposing orientation)</p>
             <p style="color:#777;margin:3px 0;font-size:11px;">{chg['description']}</p>
-            <p style="color:#888;margin:8px 0 0;font-size:11px;font-style:italic;">
-                "{(rationale_text or '')[:150]}..."
-            </p>
         </div>
         """, unsafe_allow_html=True)
 
-    # ── FRICTION POINT CARD (single comments only) ──
-    if not is_thread:
-        opp_ori = _clean_enum((result.get("likely_opposing_orientation") or "")).upper()
-        opp_cfg = ORIENTATIONS.get(opp_ori)
-        if opp_cfg:
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown(f"""
-            <div style="background:#FFF8F0;border:2px dashed #E67E22;border-radius:10px;
-                        padding:16px 18px;">
-                <h4 style="color:#E67E22;margin:0 0 8px;font-size:16px;">
-                    ⚡ Likely Friction Point
-                </h4>
-                <p style="font-size:13px;color:#555;margin:0 0 6px;">
-                    If this comment met an opposing consumer, it would most likely clash with a
-                    <strong style="color:{opp_cfg['color']};">{opp_cfg['emoji']} {opp_ori}</strong>
-                    orientation.
-                </p>
-                <p style="font-size:12px;color:#777;font-style:italic;margin:0;">
-                    "{result.get('potential_challenge_rationale','—')}"
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+    # ── FRICTION POINT CARD ──
+    opp_ori = _clean_enum((result.get("likely_opposing_orientation") or "")).upper()
+    opp_cfg = ORIENTATIONS.get(opp_ori)
+    if opp_cfg:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style="background:#FFF8F0;border:2px dashed #E67E22;border-radius:10px;
+                    padding:16px 18px;">
+            <h4 style="color:#E67E22;margin:0 0 8px;font-size:16px;">
+                ⚡ Likely Friction Point
+            </h4>
+            <p style="font-size:13px;color:#555;margin:0 0 6px;">
+                If this comment met an opposing consumer, it would most likely clash with a
+                <strong style="color:{opp_cfg['color']};">{opp_cfg['emoji']} {opp_ori}</strong>
+                orientation.
+            </p>
+            <p style="font-size:12px;color:#777;font-style:italic;margin:0;">
+                "{result.get('potential_challenge_rationale','—')}"
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1245,19 +1081,30 @@ def show_results(result: dict, prescribed_future: str, is_thread: bool = False):
         st.write(result.get("activity_rationale", "—"))
         sec = result.get("secondary_activities", [])
         if sec:
-            st.markdown(f"**Secondary activities also present:** {', '.join(sec)}")
+            st.markdown(f"**Secondary activities also present (informational):** {', '.join(sec)}")
+        st.markdown("---")
+        st.markdown("**📋 Coding Criteria Applied**")
+        for act_name, meta in ACTIVITY_META.items():
+            is_main = (act_name == main_act)
+            border  = f"3px solid {meta['color']}" if is_main else "1px solid #ddd"
+            st.markdown(f"""
+            <div style="border:{border};border-radius:8px;padding:10px 14px;
+                        margin-bottom:8px;background:{'#fff' if is_main else '#fafafa'};">
+                <strong style="color:{meta['color']};">{meta['icon']} {act_name}</strong>
+                {'<span style="background:#27AE60;color:white;border-radius:8px;'
+                 'padding:1px 8px;font-size:11px;margin-left:8px;">PRIMARY</span>'
+                 if is_main else ''}<br>
+                <span style="font-size:11px;color:#555;">{meta['definition']}</span>
+            </div>
+            """, unsafe_allow_html=True)
 
     with tab_chg:
-        if is_thread:
-            st.markdown("**Which future-making challenge does this thread reflect?**")
-            st.write(result.get("challenge_rationale", "—"))
-        else:
-            st.markdown("**How could this single comment contribute to a future-making challenge?**")
-            st.write(result.get("potential_challenge_rationale", "—"))
-            st.caption(
-                f"Deterministic mapping applied: {main_act} → {chg['label']} "
-                f"(per the paper's activity→challenge logic)."
-            )
+        st.markdown("**How could this comment contribute to a future-making challenge?**")
+        st.write(result.get("potential_challenge_rationale", "—"))
+        st.caption(
+            f"Deterministic mapping applied: {main_act} → {chg['label']} "
+            f"(per the paper's activity→challenge logic)."
+        )
 
     st.markdown("---")
     st.markdown("## 📋 Policy & Managerial Implications")
@@ -1276,6 +1123,18 @@ def show_results(result: dict, prescribed_future: str, is_thread: bool = False):
             st.markdown("**➡️ Additional Actions**")
             for action in policy.get("additional_actions", []) or []:
                 st.markdown(f"→ {action}")
+        with st.expander("📍 Full Policy Roadmap (7 Steps)"):
+            st.markdown("""
+| Step | Action |
+|:----:|--------|
+| **1** | **Determine the prescribed future** |
+| **2** | **Map future-making orientations** |
+| **3** | **Diagnose key future-making challenges** |
+| **4** | **Implement support initiatives** |
+| **5** | **Facilitate enactment** |
+| **6** | **Measure multiple outcomes** |
+| **7** | **Revise intervention** |
+            """)
 
     with manager_tab:
         manager = result.get("manager_recommendations", {}) or {}
@@ -1292,6 +1151,17 @@ def show_results(result: dict, prescribed_future: str, is_thread: bool = False):
                 st.markdown(f"✗ {av}")
         st.markdown("**💬 Messaging Tip**")
         st.info(manager.get("messaging_tip", "—"))
+        with st.expander("📍 Full Managerial Roadmap (6 Steps)"):
+            st.markdown("""
+| Step | Action |
+|:----:|--------|
+| **1** | **Determine the prescribed future** |
+| **2** | **Consider future-making orientations** |
+| **3** | **Monitor key future-making challenges** |
+| **4** | **Select orientation-sensitive response** |
+| **5** | **Match messaging to challenges** |
+| **6** | **Support consumers through enactment** |
+            """)
 
     st.markdown("---")
     st.caption(f"📚 *\"{PAPER_TITLE}\"* — *{PAPER_JOURNAL}* | [Read the paper](REPLACE_WITH_YOUR_DOI_OR_URL)")
@@ -1305,8 +1175,8 @@ def main():
     st.title("🔮 Future-Making Orientation Analyzer")
     st.markdown(f"""
     Identify the **main future-making orientation**, **primary activity**,
-    and the **potential future-making challenge** a comment could contribute to
-    — plus tailored **policy & managerial recommendations** —
+    and the **potential future-making challenge** a single comment could
+    contribute to — plus tailored **policy & managerial recommendations** —
     grounded in the paper's coding criteria.
 
     *Based on:* **"{PAPER_TITLE}"** — *{PAPER_JOURNAL}*
@@ -1324,19 +1194,14 @@ def main():
 
     mode = st.radio(
         "Analysis mode:",
-        [
-            "💬 Single Comment (with Potential Challenge Contribution)",
-            "🗣️ Multi-Speaker Thread (advanced / experimental)",
-            "🧪 Validation Suite — Single Comments",
-            "🧪 Validation Suite — Threads (advanced / experimental)"
-        ],
-        horizontal=False
+        ["💬 Analyze a Comment", "🧪 Validation Suite"],
+        horizontal=True
     )
 
     # ═══════════════════════════════════════
-    # MODE 1: SINGLE COMMENT (primary feature)
+    # MODE 1: ANALYZE A COMMENT
     # ═══════════════════════════════════════
-    if mode == "💬 Single Comment (with Potential Challenge Contribution)":
+    if mode == "💬 Analyze a Comment":
         st.markdown("### 📌 Step 1 — Define the Prescribed Future")
         pf_default = st.session_state.pop("pf_prefill", "")
         prescribed_future = st.text_area(
@@ -1383,13 +1248,11 @@ def main():
                 st.success(f"✅ Uploaded: {len(comment):,} characters")
 
         if not prescribed_future.strip():
-            prescribed_future = st.session_state.get("pf_prefill", PF_EV)
+            prescribed_future = PF_EV
 
         st.markdown("---")
         ready = bool(api_key and comment.strip() and prescribed_future.strip())
-        if not prescribed_future.strip():
-            st.warning("⚠️ Please define the prescribed future in Step 1.")
-        elif not comment.strip():
+        if not comment.strip():
             st.warning("⚠️ Please enter a comment in Step 2.")
 
         if st.button("🔍 Analyze Comment", type="primary", use_container_width=True, disabled=not ready):
@@ -1398,7 +1261,7 @@ def main():
                     result = analyze_comment(prescribed_future.strip(), comment.strip(), api_key)
                     st.divider()
                     st.markdown("## 🧠 Analysis Results")
-                    show_results(result, prescribed_future.strip(), is_thread=False)
+                    show_results(result, prescribed_future.strip())
                 except openai.AuthenticationError:
                     st.error("❌ Invalid API key.")
                 except openai.RateLimitError:
@@ -1407,57 +1270,22 @@ def main():
                     st.error(f"❌ Unexpected error: {e}")
 
     # ═══════════════════════════════════════
-    # MODE 2: MULTI-SPEAKER THREAD (advanced)
+    # MODE 2: VALIDATION SUITE
     # ═══════════════════════════════════════
-    elif mode == "🗣️ Multi-Speaker Thread (advanced / experimental)":
+    else:
+        st.markdown("### 🧪 Regression Validation Against the Paper")
         st.caption(
-            "⚠️ Experimental: asking the model to roleplay 4 distinct personas "
-            "in one call is inherently harder than single-comment classification. "
-            "The aggregate challenge label is reliable; per-speaker labels may vary."
+            "Runs all 12 labeled examples from Table WE1 through the model and "
+            "compares the predicted orientation / activity / subtype against the "
+            "categories assigned in the paper. Use this after any change to the "
+            "model, prompt, or temperature."
         )
-        st.markdown("### 📌 Step 1 — Define the Prescribed Future")
-        prescribed_future = st.text_area("prescribed_future_thread", value=PF_EV, height=85, label_visibility="collapsed")
-
-        st.markdown("### 🗣️ Step 2 — Choose or Build a Thread")
-        selected_thread = st.selectbox("Built-in thread example:", list(THREAD_EXAMPLES.keys()))
-        thread_data = THREAD_EXAMPLES.get(selected_thread, {"prescribed": "", "challenge": "", "thread": [], "expected_speakers": []})
-        if selected_thread != "— Select a thread example —":
-            show_thread_badge(thread_data)
-
-        thread_speakers = thread_data.get("thread", [])
-        edited_thread = []
-        if thread_speakers:
-            for i, (speaker, text) in enumerate(thread_speakers):
-                new_text = st.text_area(f"{speaker}", value=text, height=80, key=f"speaker_{i}")
-                edited_thread.append((speaker, new_text))
-        else:
-            custom_thread_text = st.text_area("Custom thread ('User 1: ...' one per line)", height=200)
-            if custom_thread_text.strip():
-                for line in custom_thread_text.strip().split("\n"):
-                    if ":" in line:
-                        spk, txt = line.split(":", 1)
-                        edited_thread.append((spk.strip(), txt.strip()))
-
-        st.markdown("---")
-        ready = bool(api_key and edited_thread and prescribed_future.strip())
-        if st.button("🔍 Analyze Thread Challenge", type="primary", use_container_width=True, disabled=not ready):
-            with st.spinner("Analyzing multi-speaker thread..."):
-                try:
-                    result = analyze_thread(prescribed_future.strip(), edited_thread, api_key)
-                    st.divider()
-                    st.markdown("## 🧠 Thread Analysis Results")
-                    show_results(result, prescribed_future.strip(), is_thread=True)
-                except Exception as e:
-                    st.error(f"❌ Unexpected error: {e}")
-
-    # ═══════════════════════════════════════
-    # MODE 3: VALIDATION SUITE — SINGLE COMMENTS
-    # ═══════════════════════════════════════
-    elif mode == "🧪 Validation Suite — Single Comments":
-        st.markdown("### 🧪 Regression Validation — Single Comments (Table WE1)")
         ready = bool(api_key)
+        if not ready:
+            st.warning("⚠️ Configure your API key above to run the validation suite.")
+
         if st.button("▶️ Run Validation Suite", type="primary", disabled=not ready):
-            with st.spinner("Running validation..."):
+            with st.spinner("Running validation across all examples..."):
                 report = run_validation_suite(api_key)
             if report["results"]:
                 st.metric("Overall Accuracy", f"{report['overall_accuracy']*100:.1f}%")
@@ -1468,39 +1296,8 @@ def main():
                         st.write("**Predicted:**", r["predicted"])
                         if r.get("error"):
                             st.error(r["error"])
-
-    # ═══════════════════════════════════════
-    # MODE 4: VALIDATION SUITE — THREADS (advanced)
-    # ═══════════════════════════════════════
-    else:
-        st.markdown("### 🧪 Regression Validation — Threads (advanced / experimental)")
-        st.caption(
-            "Reports TWO separate metrics: (1) Challenge-level accuracy — the "
-            "reliable, primary metric — and (2) Speaker-level accuracy — "
-            "informational only, since it requires the model to roleplay 4 "
-            "personas simultaneously in a single call."
-        )
-        ready = bool(api_key)
-        if st.button("▶️ Run Thread Validation Suite", type="primary", disabled=not ready):
-            with st.spinner("Running validation..."):
-                report = run_thread_validation_suite(api_key)
-            if report["results"]:
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.metric("Challenge-Level Accuracy", f"{report['challenge_accuracy']*100:.1f}%")
-                with c2:
-                    st.metric("Speaker-Level Accuracy (informational)", f"{report['speaker_accuracy']*100:.1f}%")
-                for r in report["results"]:
-                    if r.get("error"):
-                        st.error(f"{r['example']}: {r['error']}")
-                        continue
-                    chal_icon = "✅" if r["challenge_match"] else "❌"
-                    with st.expander(f"{chal_icon} {r['example']}"):
-                        st.write(f"**Challenge** — Expected: `{r['expected_challenge']}` | "
-                                 f"Predicted: `{r['predicted_challenge']}`")
-                        for sm in r["speaker_matches"]:
-                            sm_icon = "✅" if sm["match"] else "❌"
-                            st.caption(f"{sm_icon} {sm['speaker']}: expected {sm['expected']}, got {sm['predicted']}")
+            else:
+                st.info("No labeled examples found to validate.")
 
 
 if __name__ == "__main__":
