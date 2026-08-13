@@ -761,23 +761,26 @@ EXAMPLES = {
             "hybrid vehicles instead of EVs until 2030 (PC)."
         )
     },
-    "⚖️ AMBIVALENT  |  ⚙️ Enactment  →  Delay": {
-        "prescribed": PF_EV,
-        "activity":   "ENACTMENT",
-        "subtype":    "DELAY",
-        "orientation":"AMBIVALENT",
-        "comment": (
-            "Yep, the cost is indeed a huge hurdle. I think I'll be running my 12 year "
-            "old Subaru Outback a bit longer! (YT). "
-            "Just bought a new petrol car as the infrastructure still isn't in place (FG). "
-            "My car is doing all right — 13 years and 130,000 km, so good for another "
-            "13 years because it's diesel. No matter what the price of an EV it's still "
-            "cheaper to keep the car I own and repair (FG). "
-            "I plan to drive my current 10 year old hybrid as long as I can. The next "
-            "car I buy will probably be electric, but I'm expecting many of these "
-            "issues to be resolved by then (R)."
-        )
-    },
+"⚖️ AMBIVALENT  |  ⚙️ Enactment  →  Delay": {
+    "prescribed": PF_EV,
+    "activity":   "ENACTMENT",
+    "subtype":    "DELAY",
+    "orientation":"AMBIVALENT",
+    "comment": (
+        "Really good and interesting report! I am wanting to upgrade the car at a "
+        "not too distant time and I am umming and aahing over PHEV or EV. EV would "
+        "be magic but such a jump in price! PHEV seems great as a midway point as "
+        "most of my driving is around town (YT). "
+        "Yep, the cost is indeed a huge hurdle. I think I'll be running my 12 year "
+        "old Subaru Outback a bit longer! (YT). "
+        "Just bought a new petrol car as the infrastructure still isn't in place (FG). "
+        "Hopefully, by the time my car does need to be replaced, EVs are a lot "
+        "cheaper and the inconveniences are worked out (R). "
+        "I plan to drive my current 10 year old hybrid as long as I can. The next "
+        "car I buy will probably be electric, but I'm expecting many of these "
+        "issues to be resolved by then (R)."
+    )
+},
 
     # ══════ 🛡️ RESISTANT ══════
     "🛡️ RESISTANT  |  📊 Evaluation  →  Avoid": {
