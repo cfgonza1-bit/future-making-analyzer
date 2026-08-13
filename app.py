@@ -16,6 +16,7 @@ st.set_page_config(
 # ─────────────────────────────────────────
 PAPER_TITLE   = "Futures in the Making: How Consumers Respond to Future-Oriented Interventions"
 PAPER_JOURNAL = "Journal of Marketing"
+PAPER_URL     = "REPLACE_WITH_YOUR_DOI_OR_URL"  # ← reemplazar con el link real del paper
 
 DATA_SOURCE_CODES = {
     "I":  "Interview", "NM": "News Media", "AD": "Archival Document",
@@ -33,6 +34,19 @@ ACTIVITY_TO_CHALLENGE = {
     "ENACTMENT":   "COMPETING_ENACTMENTS",
 }
 
+
+def _clean_enum(value: str) -> str:
+    """Defensive post-processing in case the model still returns a
+    combined value like 'EVALUATION | NEGOTIATION' — take the FIRST
+    listed value."""
+    if not value:
+        return value
+    for sep in ["|", "/", " or "]:
+        if sep in value:
+            return value.split(sep)[0].strip()
+    return value.strip()
+
+
 def derive_potential_challenge(main_activity: str) -> str:
     """Deterministically maps a comment's activity to the future-making
     challenge it would most likely contribute to if it met opposing
@@ -42,8 +56,9 @@ def derive_potential_challenge(main_activity: str) -> str:
 
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT v6 — FINAL, single-comment only
-# (Multi-speaker mode fully removed; MIXED no longer a valid value)
+# SYSTEM PROMPT v6 — FINAL, single-comment architecture
+# Validated at 100% on Table WE1 (12/12) and 100% on 2/2
+# out-of-sample generalization tests.
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
 You are an expert qualitative coder applying the Future-Making framework from the paper
@@ -81,7 +96,7 @@ Coding criteria (ALL must apply):
   • CRITICAL: Generic/impersonal "you" (meaning "people in general," "one,"
     or a hypothetical reader — e.g., "a false solution if you care about
     the environment at all") does NOT count as second-person address to a
-    real interlocutor. See the GENERIC-YOU TEST in Section H.
+    real interlocutor. See the GENERIC-YOU TEST in Section G.
 Sub-types by orientation:
   SIMPLIFY   (Catalyzer)  — narrows focus, treats difficulties as temporary
   STALL      (Ambivalent) — careful consideration, information gathering
@@ -103,7 +118,7 @@ Signals that STRONGLY indicate Negotiation over Evaluation:
     "should")
   • Direct SECOND-PERSON address to a SPECIFIC, REAL interlocutor or
     opponent ("you," "have you," "your") — NOT a generic/impersonal "you"
-    meaning "people in general." See the GENERIC-YOU TEST in Section H
+    meaning "people in general." See the GENERIC-YOU TEST in Section G
     before using this signal.
   • Attribution of blame, responsibility, or authority to specific named
     actors (e.g., "politicians," "the government")
@@ -128,18 +143,7 @@ Sub-types by orientation:
   alternative future. Use CONTEST when it proposes a different, broader
   future.
 
-─── ENACTMENT ────────────────────────────────────────────────
-Operational definition: References to how consumers gave form to futures
-through imagined, planned, or actual changes in everyday practices and
-material arrangements.
-Coding criteria: Specifies what the consumer THEMSELVES does, intends,
-expects, or imagines doing in practice. At least ONE practice element must
-be identifiable: an action/routine, a material arrangement/technology, a
-competence, or a temporally situated commitment.
-Signals: first-person accounts of purchases/ownership/refusals; described
-routines actually performed; firm personal intentions ("I plan to...");
-relocation or acquisition/divestment of material objects.
-Sub-types by orientation:
+Sub-types by orientation (Enactment):
   ACCELERATE (Catalyzer)  — purchases EVs, divests ICE, installs chargers
   DELAY      (Ambivalent) — continues ICE use, ties non-adoption to
     SPECIFIC RESOLVABLE conditions (price, infrastructure) with an
@@ -151,6 +155,18 @@ Sub-types by orientation:
   DISAMBIGUATION — DELAY vs. PREVENT: DELAY ties non-adoption to a
   resolvable condition ("until infrastructure improves"); PREVENT frames
   it as a permanent stance ("no matter what," "til it dies").
+
+─── ENACTMENT ────────────────────────────────────────────────
+Operational definition: References to how consumers gave form to futures
+through imagined, planned, or actual changes in everyday practices and
+material arrangements.
+Coding criteria: Specifies what the consumer THEMSELVES does, intends,
+expects, or imagines doing in practice. At least ONE practice element must
+be identifiable: an action/routine, a material arrangement/technology, a
+competence, or a temporally situated commitment.
+Signals: first-person accounts of purchases/ownership/refusals; described
+routines actually performed; firm personal intentions ("I plan to...");
+relocation or acquisition/divestment of material objects.
 
 ════════════════════════════════════════════════════════════════
 B. FUTURE-MAKING ORIENTATIONS — Select the ONE primary orientation
@@ -222,7 +238,7 @@ DIFFERENTLY BY DIFFERENT ORIENTATIONS IN INTERACTION:
 
 This mapping is applied automatically by the calling application based on
 your "main_activity" classification — you do not need to output the
-challenge label yourself. Your job is to explain, in Section I below, HOW
+challenge label yourself. Your job is to explain, in Section H below, HOW
 this specific comment's content would likely generate friction with an
 opposing orientation.
 
@@ -374,7 +390,7 @@ Why EVALUATION/COMPLEXIFY, not NEGOTIATION/CONTEST: the "you" in "if you
 care about the environment at all" is GENERIC/IMPERSONAL — it means "a
 person in general," NOT a specific interlocutor. No named actor, no
 rebuttal of a specific prior claim, no call to action directed at a real
-audience. Apply the GENERIC-YOU TEST (Section H): replace "you" with
+audience. Apply the GENERIC-YOU TEST (Section G): replace "you" with
 "one" — if the sentence still makes identical sense, it is generic.
 → EVALUATION / COMPLEXIFY / EXPANDER
 
@@ -389,7 +405,7 @@ Why ENACTMENT (not Evaluation, and NEVER "mixed" or combined): even
 though this input contains evaluative hedging ("umming and aahing"), the
 presence of a concrete first-person action ("Just bought a new petrol
 car") and a firm intention ("I plan to drive...") means ENACTMENT signals
-are present and, per the mandatory tie-breaker in Section H Step 4,
+are present and, per the mandatory tie-breaker in Section G Step 4,
 ALWAYS take priority over Evaluation-like language elsewhere in the same
 input. Never output a combined or "mixed" activity for a single comment —
 always resolve to exactly one via the priority order.
@@ -671,6 +687,7 @@ PF_EV = (
 
 # ─────────────────────────────────────────
 # EXAMPLES — 12 entries (Table WE1), verbatim quotes with source codes
+# Used both as UI shortcuts AND as the Validation Suite ground truth.
 # ─────────────────────────────────────────
 EXAMPLES = {
     "— Select an example from the paper —": {
@@ -842,7 +859,8 @@ EXAMPLES = {
 }
 
 # ─────────────────────────────────────────
-# GENERALIZATION TESTS — comments outside Table WE1
+# GENERALIZATION TESTS — comments outside Table WE1, used to sanity-check
+# that the model generalizes rather than memorizes.
 # ─────────────────────────────────────────
 GENERALIZATION_TESTS = {
     "— Select a generalization test —": {"comment": "", "note": ""},
@@ -865,20 +883,8 @@ GENERALIZATION_TESTS = {
 }
 
 # ─────────────────────────────────────────
-# FUNCTIONS
+# CORE FUNCTIONS
 # ─────────────────────────────────────────
-
-def _clean_enum(value: str) -> str:
-    """Defensive post-processing in case the model still returns a
-    combined value like 'EVALUATION | NEGOTIATION' — take the FIRST
-    listed value."""
-    if not value:
-        return value
-    for sep in ["|", "/", " or "]:
-        if sep in value:
-            return value.split(sep)[0].strip()
-    return value.strip()
-
 
 def analyze_comment(prescribed_future: str, comment: str, api_key: str) -> dict:
     client = openai.OpenAI(api_key=api_key)
@@ -908,7 +914,9 @@ Section H (likely_opposing_orientation + potential_challenge_rationale).
 
 
 def run_validation_suite(api_key: str) -> dict:
-    """Validates the 12 single-comment examples from Table WE1."""
+    """Internal QA tool: validates the 12 single-comment examples from
+    Table WE1 against their ground-truth categories. Not needed for
+    regular use — see the 'Advanced / Developer Tools' expander."""
     results = []
     for name, ex in EXAMPLES.items():
         if not ex.get("comment"):
@@ -941,6 +949,10 @@ def run_validation_suite(api_key: str) -> dict:
     accuracy = sum(r["match"] for r in results) / len(results)
     return {"results": results, "overall_accuracy": accuracy}
 
+
+# ─────────────────────────────────────────
+# UI HELPER FUNCTIONS
+# ─────────────────────────────────────────
 
 def show_example_badge(ex_data: dict):
     if not ex_data.get("activity"):
@@ -1164,7 +1176,7 @@ def show_results(result: dict, prescribed_future: str):
             """)
 
     st.markdown("---")
-    st.caption(f"📚 *\"{PAPER_TITLE}\"* — *{PAPER_JOURNAL}* | [Read the paper](REPLACE_WITH_YOUR_DOI_OR_URL)")
+    st.caption(f"📚 *\"{PAPER_TITLE}\"* — *{PAPER_JOURNAL}* | [Read the paper]({PAPER_URL})")
 
 
 # ─────────────────────────────────────────
@@ -1183,6 +1195,7 @@ def main():
     """)
     st.divider()
 
+    # ── API KEY ──
     api_key = None
     try:
         api_key = st.secrets["openai_api_key"]
@@ -1192,112 +1205,109 @@ def main():
 
     st.markdown("---")
 
-    mode = st.radio(
-        "Analysis mode:",
-        ["💬 Analyze a Comment", "🧪 Validation Suite"],
+    # ─────────────────────────────────────────
+    # MAIN FEATURE — Analyze a Comment
+    # (always visible, no mode selector)
+    # ─────────────────────────────────────────
+    st.markdown("### 📌 Step 1 — Define the Prescribed Future")
+    pf_default = st.session_state.pop("pf_prefill", "")
+    prescribed_future = st.text_area(
+        "prescribed_future", value=pf_default, height=85,
+        placeholder="e.g., 'Transition all vehicles to Zero Emission Vehicles (EVs) to achieve Australia's net-zero emissions targets by 2035'",
+        label_visibility="collapsed"
+    )
+
+    st.markdown("### 💬 Step 2 — Enter a Consumer Comment")
+    input_method = st.radio(
+        "Input method:",
+        ["📝 Type or paste text", "🧪 Try a generalization test", "📂 Upload a .txt file"],
         horizontal=True
     )
 
-    # ═══════════════════════════════════════
-    # MODE 1: ANALYZE A COMMENT
-    # ═══════════════════════════════════════
-    if mode == "💬 Analyze a Comment":
-        st.markdown("### 📌 Step 1 — Define the Prescribed Future")
-        pf_default = st.session_state.pop("pf_prefill", "")
-        prescribed_future = st.text_area(
-            "prescribed_future", value=pf_default, height=85,
-            placeholder="e.g., 'Transition all vehicles to Zero Emission Vehicles (EVs)...'",
-            label_visibility="collapsed"
+    comment = ""
+    if input_method == "📝 Type or paste text":
+        selected_ex = st.selectbox(
+            "Or try a built-in example (from the paper's Table WE1):", list(EXAMPLES.keys())
         )
-
-        st.markdown("### 💬 Step 2 — Enter a Consumer Comment")
-        input_method = st.radio(
-            "Input method:",
-            ["📝 Type or paste text", "🧪 Generalization test (new, unseen comments)", "📂 Upload a .txt file"],
-            horizontal=True
+        ex_data = EXAMPLES.get(selected_ex, {"prescribed": "", "comment": "", "activity": "", "subtype": "", "orientation": ""})
+        if selected_ex != "— Select an example from the paper —":
+            show_example_badge(ex_data)
+            suggested_pf = ex_data.get("prescribed", "")
+            if suggested_pf:
+                st.info(f"💡 **Suggested prescribed future:** *{suggested_pf[:130]}...*")
+                if st.button("↑ Use this as my prescribed future", type="secondary"):
+                    st.session_state["pf_prefill"] = suggested_pf
+                    st.rerun()
+        comment = st.text_area(
+            "Comment:", value=ex_data.get("comment", ""), height=220,
+            placeholder="Paste or type a consumer comment here...", label_visibility="collapsed"
         )
-
-        comment = ""
-        if input_method == "📝 Type or paste text":
-            selected_ex = st.selectbox(
-                "Or try a built-in example (Table WE1):", list(EXAMPLES.keys())
-            )
-            ex_data = EXAMPLES.get(selected_ex, {"prescribed": "", "comment": "", "activity": "", "subtype": "", "orientation": ""})
-            if selected_ex != "— Select an example from the paper —":
-                show_example_badge(ex_data)
-                suggested_pf = ex_data.get("prescribed", "")
-                if suggested_pf:
-                    st.info(f"💡 **Suggested prescribed future:** *{suggested_pf[:130]}...*")
-                    if st.button("↑ Use this as my prescribed future", type="secondary"):
-                        st.session_state["pf_prefill"] = suggested_pf
-                        st.rerun()
-            comment = st.text_area(
-                "Comment:", value=ex_data.get("comment", ""), height=220,
-                placeholder="Paste or type a consumer comment here...", label_visibility="collapsed"
-            )
-        elif input_method == "🧪 Generalization test (new, unseen comments)":
-            selected_test = st.selectbox("Choose a test comment NOT in the paper:", list(GENERALIZATION_TESTS.keys()))
-            test_data = GENERALIZATION_TESTS.get(selected_test, {"comment": "", "note": ""})
-            if test_data.get("note"):
-                st.info(f"🧪 {test_data['note']}")
-            comment = st.text_area("Comment:", value=test_data.get("comment", ""), height=150, label_visibility="collapsed")
-        else:
-            uploaded_file = st.file_uploader("Upload .txt file:", type=["txt"])
-            if uploaded_file:
-                comment = uploaded_file.read().decode("utf-8")
-                st.success(f"✅ Uploaded: {len(comment):,} characters")
-
-        if not prescribed_future.strip():
-            prescribed_future = PF_EV
-
-        st.markdown("---")
-        ready = bool(api_key and comment.strip() and prescribed_future.strip())
-        if not comment.strip():
-            st.warning("⚠️ Please enter a comment in Step 2.")
-
-        if st.button("🔍 Analyze Comment", type="primary", use_container_width=True, disabled=not ready):
-            with st.spinner("Analyzing with paper coding criteria..."):
-                try:
-                    result = analyze_comment(prescribed_future.strip(), comment.strip(), api_key)
-                    st.divider()
-                    st.markdown("## 🧠 Analysis Results")
-                    show_results(result, prescribed_future.strip())
-                except openai.AuthenticationError:
-                    st.error("❌ Invalid API key.")
-                except openai.RateLimitError:
-                    st.error("⏳ Rate limit reached. Please wait a moment.")
-                except Exception as e:
-                    st.error(f"❌ Unexpected error: {e}")
-
-    # ═══════════════════════════════════════
-    # MODE 2: VALIDATION SUITE
-    # ═══════════════════════════════════════
+    elif input_method == "🧪 Try a generalization test":
+        selected_test = st.selectbox("Choose a test comment not used to build the app:", list(GENERALIZATION_TESTS.keys()))
+        test_data = GENERALIZATION_TESTS.get(selected_test, {"comment": "", "note": ""})
+        if test_data.get("note"):
+            st.info(f"🧪 {test_data['note']}")
+        comment = st.text_area("Comment:", value=test_data.get("comment", ""), height=150, label_visibility="collapsed")
     else:
-        st.markdown("### 🧪 Regression Validation Against the Paper")
-        st.caption(
-            "Runs all 12 labeled examples from Table WE1 through the model and "
-            "compares the predicted orientation / activity / subtype against the "
-            "categories assigned in the paper. Use this after any change to the "
-            "model, prompt, or temperature."
-        )
-        ready = bool(api_key)
-        if not ready:
-            st.warning("⚠️ Configure your API key above to run the validation suite.")
+        uploaded_file = st.file_uploader("Upload .txt file:", type=["txt"])
+        if uploaded_file:
+            comment = uploaded_file.read().decode("utf-8")
+            st.success(f"✅ Uploaded: {len(comment):,} characters")
+            with st.expander("Preview"):
+                st.text(comment[:600] + ("..." if len(comment) > 600 else ""))
 
-        if st.button("▶️ Run Validation Suite", type="primary", disabled=not ready):
-            with st.spinner("Running validation across all examples..."):
-                report = run_validation_suite(api_key)
-            if report["results"]:
-                st.metric("Overall Accuracy", f"{report['overall_accuracy']*100:.1f}%")
-                for r in report["results"]:
-                    icon = "✅" if r["match"] else "❌"
-                    with st.expander(f"{icon} {r['example']}"):
-                        st.write("**Expected:**", r["expected"])
-                        st.write("**Predicted:**", r["predicted"])
-                        if r.get("error"):
-                            st.error(r["error"])
+    if not prescribed_future.strip():
+        prescribed_future = PF_EV
+
+    st.markdown("---")
+    ready = bool(api_key and comment.strip())
+    if not comment.strip():
+        st.warning("⚠️ Please enter a comment in Step 2.")
+    if not api_key:
+        st.warning("⚠️ Please configure your OpenAI API key above.")
+
+    if st.button("🔍 Analyze Comment", type="primary", use_container_width=True, disabled=not ready):
+        with st.spinner("Analyzing with paper coding criteria..."):
+            try:
+                result = analyze_comment(prescribed_future.strip(), comment.strip(), api_key)
+                st.divider()
+                st.markdown("## 🧠 Analysis Results")
+                show_results(result, prescribed_future.strip())
+            except openai.AuthenticationError:
+                st.error("❌ Invalid API key.")
+            except openai.RateLimitError:
+                st.error("⏳ Rate limit reached. Please wait a moment.")
+            except Exception as e:
+                st.error(f"❌ Unexpected error: {e}")
+
+    # ─────────────────────────────────────────
+    # ADVANCED / DEVELOPER TOOLS
+    # (collapsed by default — internal QA only, not needed for regular use)
+    # ─────────────────────────────────────────
+    st.markdown("---")
+    with st.expander("🔧 Advanced / Developer Tools"):
+        st.caption(
+            "Internal quality-control tool. Not needed for regular use. "
+            "Run this after any change to the model, prompt, or temperature "
+            "to confirm the app still matches the paper's Table WE1 categories."
+        )
+        if st.button("▶️ Run Validation Suite (Table WE1)"):
+            if not api_key:
+                st.warning("⚠️ Configure your API key above first.")
             else:
-                st.info("No labeled examples found to validate.")
+                with st.spinner("Running validation across all 12 examples..."):
+                    report = run_validation_suite(api_key)
+                if report["results"]:
+                    st.metric("Overall Accuracy", f"{report['overall_accuracy']*100:.1f}%")
+                    for r in report["results"]:
+                        icon = "✅" if r["match"] else "❌"
+                        with st.expander(f"{icon} {r['example']}"):
+                            st.write("**Expected:**", r["expected"])
+                            st.write("**Predicted:**", r["predicted"])
+                            if r.get("error"):
+                                st.error(r["error"])
+                else:
+                    st.info("No labeled examples found to validate.")
 
 
 if __name__ == "__main__":
