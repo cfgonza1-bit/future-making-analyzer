@@ -178,7 +178,8 @@ Temporality: Present-focused — the future is close, change is happening now.
 Notable conditions of adoption: High degree of alignment between current
 practices and the prescribed future.
 Empirical indicators: urgency, momentum, tipping points, inevitability.
-Markers: "now," "rapidly," "already," "time to," "let's get moving."
+Markers: "now," "rapidly," "already," "time to," "let's get moving,"
+"catch up," "behind," "urgent."
 
 ─── AMBIVALENT ───────────────────────────────────────────────
 Main narrative: Pragmatic narrative — desirability assessed against
@@ -188,8 +189,10 @@ Emotions: Curiosity; caution; anxiety; frustration; conditional optimism.
 Temporality: Gradual and contingent.
 Notable conditions of adoption: Limited resources to support change.
 Empirical indicators: conditional support, information-seeking, waiting
-for prices/technology, preference for hybrids. Markers: "but," "if,"
-"when," "not yet," "hopefully."
+for prices/technology, preference for hybrids, cost-of-living concerns,
+preference for the "middle" or "compromise" option. Markers: "but," "if,"
+"when," "not yet," "hopefully," "compromise," "balance," "flexible,"
+"pragmatic," "cost of living."
 
 ─── RESISTANT ────────────────────────────────────────────────
 Main narrative: Control narrative — interventions framed as coercive,
@@ -200,8 +203,10 @@ Temporality: Maintenance-oriented.
 Notable conditions of adoption: Low degree of alignment between current
 practices and prescribed future.
 Empirical indicators: categorical rejection, distrust of authorities,
-commitments to retain ICE. Markers: "forced," "agenda," "control,"
-"freedom," "never," "stick with," "not the solution," "muddle point."
+commitments to retain ICE, opposition to regulation/mandates as
+government overreach. Markers: "forced," "agenda," "control," "freedom,"
+"never," "stick with," "not the solution," "muddle point," "free market,"
+"government overreach," "globalists," "woke."
 
 ─── EXPANDER ─────────────────────────────────────────────────
 Main narrative: Bigger-picture narrative — situates the intervention within
@@ -212,8 +217,11 @@ Temporality: Envisioned and system-oriented.
 Notable conditions of adoption: Mismatch among current practices, normative
 practices, and those directed by the prescribed future.
 Empirical indicators: zooming out to systemic consequences, challenging
-car-centrality. Formulations: "EVs are not enough," "bigger picture,"
-"less cars," "does it have to be a car?", "false solution."
+car-centrality, questioning whether EVs alone (without broader systemic/
+lifecycle change) are sufficient. Formulations: "EVs are not enough,"
+"bigger picture," "less cars," "does it have to be a car?", "false
+solution," "carbon legacy of manufacturing," "active transport,"
+"public transport instead."
 
 ════════════════════════════════════════════════════════════════
 C. FUTURE-MAKING CHALLENGES (conceptual mapping)
@@ -314,6 +322,30 @@ still isn't in place [concrete action]. I plan to drive my current 10
 year old hybrid as long as I can [firm intention]."
 → ENACTMENT / DELAY / AMBIVALENT
 
+Example 12 (EVALUATION/SIMPLIFY, Catalyzer — public consultation register):
+"We are way behind and need to act rapidly. Why not go as quick as
+possible as well as introduce far greater support for active transport
+options, public transport and electrification of transport and dump
+dependency on fossil fuels as soon as possible." (Source: PC)
+Why CATALYZER/EVALUATION/SIMPLIFY and not EXPANDER: although it mentions
+"active transport" and "public transport," the DOMINANT thrust is urgency
+about the current intervention ("act rapidly," "as quick as possible"),
+not a systemic critique that the intervention itself is insufficient.
+Compare with Example 8/10, where the entire point is to question whether
+cars/EVs should be central at all.
+→ EVALUATION / SIMPLIFY / CATALYZER
+
+Example 13 (ENACTMENT/PREVENT, Resistant — public consultation register,
+policy opposition without a real interlocutor):
+"Do not support either one as for industries which require vehicles for
+outback and certain trades will not be able to access sufficient
+technology in vehicles such as utes. Smaller vehicles with smaller
+engines become less reliable for heavy loads." (Source: PC)
+Why RESISTANT/EVALUATION/AVOID and not NEGOTIATION: standalone judgment
+that the standards are impractical for a specific use case (heavy-load
+trades); no named actor is addressed or refused, no call to action.
+→ EVALUATION / AVOID / RESISTANT
+
 ════════════════════════════════════════════════════════════════
 G. DECISION PROCEDURE — Apply in this exact order, for EVERY text
 ════════════════════════════════════════════════════════════════
@@ -365,6 +397,15 @@ STEP 4 — MANDATORY TIE-BREAKER:
 IMPORTANT: When in doubt between Evaluation and Negotiation, DEFAULT TO
 EVALUATION unless there is a clear, specific, real interlocutor or named
 actor being addressed/refused/persuaded.
+
+NOTE ON PUBLIC CONSULTATION TEXT: Many submissions to public consultations
+are standalone opinions written in response to a survey question ("Why
+did you choose this option?") rather than direct replies to another
+person. Words like "government," "the policy," or "manufacturers" used
+generically (not addressing a specific present interlocutor) should
+usually be treated as EVALUATION unless the text explicitly demands
+accountability from them or issues a direct collective call to action
+("we need to," "let's").
 
 ════════════════════════════════════════════════════════════════
 H. POTENTIAL CHALLENGE CONTRIBUTION
@@ -524,9 +565,14 @@ PF_EV = (
     "Vehicle Strategy (2023)"
 )
 
+PF_NVES = (
+    "Implement a national New Vehicle Efficiency Standard (NVES) in Australia to "
+    "reduce transport emissions, as consulted on by the Australian Government's "
+    "Department of Climate Change, Energy, the Environment and Water"
+)
+
 # ─────────────────────────────────────────
-# STATIC ROADMAP GUIDANCE (used for aggregate document recommendations,
-# no extra LLM call needed — deterministic, per Sections D/E of the prompt)
+# STATIC ROADMAP GUIDANCE (used for aggregate document recommendations)
 # ─────────────────────────────────────────
 POLICY_GUIDANCE = {
     "CATALYZER": {
@@ -847,7 +893,8 @@ def extract_text_from_pdf(uploaded_file) -> str:
     except ImportError:
         st.error(
             "PDF support requires the 'pypdf' package. Add `pypdf` to "
-            "requirements.txt and redeploy."
+            "requirements.txt and redeploy. In the meantime, you can paste "
+            "the text directly using the 'Paste text' option below."
         )
         return ""
     reader = PdfReader(uploaded_file)
@@ -897,6 +944,54 @@ def split_into_chunks(
                 chunks.append(para)
 
     return [c for c in chunks if len(c.split()) >= min_words]
+
+
+def extract_public_consultation_responses(text: str, min_words: int = 4) -> list:
+    """
+    Detects the specific pattern of NVES-style public consultation exports:
+    each response starts with a 6-7 digit ID, followed by 'Name withheld'
+    (or a real name), a ranking of options (e.g. 'Option A - 3rd, Option B
+    - 2nd, Option C - 1st'), a free-text comment, and ends with a
+    Yes/No/NULL support indicator.
+
+    Returns a list of individual free-text comments only (metadata
+    stripped), one per real respondent — ready to be treated as one
+    segment = one consumer voice.
+    """
+    text = re.sub(r'\s+', ' ', text.strip())
+
+    # Split on 6-7 digit IDs that are followed by "Name withheld" (or a name)
+    id_pattern = re.compile(r'(?=\b\d{6,7}\s+(?:Name\s+withheld|[A-Z][a-z]+))')
+    raw_blocks = id_pattern.split(text)
+    raw_blocks = [b.strip() for b in raw_blocks if b.strip()]
+
+    responses = []
+    for block in raw_blocks:
+        # Remove the leading ID + name
+        block = re.sub(
+            r'^\d{6,7}\s+(?:Name\s+withheld|[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*',
+            '', block
+        )
+
+        # Remove the option ranking segment, e.g.:
+        # "Option A - 3rd, Option B - 2nd, Option C - 1st"
+        block = re.sub(
+            r'Option\s+[ABC]\s*-\s*\w+,?\s*',
+            '', block, flags=re.IGNORECASE
+        )
+
+        # Remove trailing support indicator (Yes/No/NULL)
+        block = re.sub(r'\b(Yes|No|NULL)\s*$', '', block, flags=re.IGNORECASE).strip()
+
+        if not block or block.upper() == "NULL":
+            continue
+
+        block = re.sub(r'\s{2,}', ' ', block).strip(' ,.-')
+
+        if len(block.split()) >= min_words and block.upper() != "NULL":
+            responses.append(block)
+
+    return responses
 
 
 def analyze_document(chunks: list, prescribed_future: str, api_key: str, progress_bar=None) -> list:
@@ -1492,10 +1587,18 @@ def main():
         )
 
         st.markdown("### 📌 Step 1 — Define the Prescribed Future")
+        pf_doc_default = st.session_state.get("pf_doc_prefill", PF_EV)
         prescribed_future_doc = st.text_area(
-            "prescribed_future_doc", value=PF_EV, height=85,
+            "prescribed_future_doc", value=pf_doc_default, height=85,
             label_visibility="collapsed"
         )
+        st.caption(
+            "💡 Tip: for the NVES public consultation example below, consider using: "
+            f"*\"{PF_NVES[:110]}...\"*"
+        )
+        if st.button("↑ Use NVES prescribed future", type="secondary"):
+            st.session_state["pf_doc_prefill"] = PF_NVES
+            st.rerun()
 
         st.markdown("### 📄 Step 2 — Provide the Document")
         doc_input_method = st.radio(
@@ -1516,30 +1619,51 @@ def main():
                 if raw_text:
                     st.success(f"✅ Extracted {len(raw_text):,} characters from '{uploaded_doc.name}'")
         else:
-            raw_text = st.text_area("Paste large text here:", height=250)
+            raw_text = st.text_area(
+                "Paste large text here (works even if PDF extraction is unavailable):",
+                height=250
+            )
 
         if raw_text.strip():
             st.markdown("### ⚙️ Step 3 — Configure Segmentation")
+
+            # Auto-detect if this looks like a public consultation export
+            id_hits = len(re.findall(r'\b\d{6,7}\s+(?:Name\s+withheld|[A-Z][a-z]+)', raw_text))
+            looks_like_consultation = id_hits >= 5
+
+            granularity_options = ["Paragraphs (recommended for prose/reports)",
+                                    "Sentence groups (finer-grained)"]
+            if looks_like_consultation:
+                granularity_options.insert(
+                    0,
+                    f"🗳️ Public consultation responses (auto-detected {id_hits} respondent IDs)"
+                )
+
             gcol1, gcol2 = st.columns(2)
             with gcol1:
-                granularity = st.selectbox(
-                    "Segment by:",
-                    ["Paragraphs (recommended)", "Sentence groups (finer-grained)"]
-                )
+                granularity = st.selectbox("Segment by:", granularity_options)
             sentences_per_chunk = 3
             with gcol2:
                 if granularity.startswith("Sentence"):
                     sentences_per_chunk = st.slider("Sentences per segment", 2, 6, 3)
 
-            chunk_mode = "sentence_group" if granularity.startswith("Sentence") else "paragraph"
-            chunks = split_into_chunks(raw_text, granularity=chunk_mode, sentences_per_chunk=sentences_per_chunk)
+            if granularity.startswith("🗳️"):
+                chunks = extract_public_consultation_responses(raw_text)
+                st.success(
+                    f"✅ Extracted **{len(chunks)}** individual respondent comments "
+                    f"(NULL/empty responses automatically excluded)."
+                )
+            elif granularity.startswith("Sentence"):
+                chunks = split_into_chunks(raw_text, granularity="sentence_group", sentences_per_chunk=sentences_per_chunk)
+            else:
+                chunks = split_into_chunks(raw_text, granularity="paragraph")
 
             if not chunks:
                 st.warning("⚠️ No analyzable segments found. Try pasting more text or a different granularity.")
             else:
                 st.info(f"📊 Document split into **{len(chunks)}** analyzable segments.")
 
-                max_possible = min(len(chunks), 150)
+                max_possible = min(len(chunks), 300)
                 default_val = min(30, max_possible)
                 max_chunks = st.slider(
                     "Maximum segments to analyze (controls cost & time)",
