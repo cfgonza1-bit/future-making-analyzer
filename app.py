@@ -58,10 +58,6 @@ def derive_potential_challenge(main_activity: str) -> str:
 # SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (context typology)
 # ─────────────────────────────────────────
 INTERVENTION_TYPES = {
-    "Not specified / Custom": {
-        "scope": "", "prescriptiveness": "", "example": "",
-        "note": ""
-    },
     "Fixed Intervention (Narrow scope, Highly prescriptive)": {
         "scope": "Narrow", "prescriptiveness": "Highly",
         "example": "Ban on single-use plastic bags (Gonzalez-Arcos et al. 2021)",
@@ -109,6 +105,27 @@ INTERVENTION_TYPES = {
         )
     },
 }
+
+
+def augment_prescribed_future(base_pf: str, it_key: str) -> str:
+    """If the user selected an intervention type, append its scope/
+    prescriptiveness classification to the prescribed future text so the
+    model actually uses it to calibrate its analysis (per Section A of the
+    coding framework). Without this, the intervention type selector would
+    be purely decorative and would not affect the LLM's output."""
+    base_pf = (base_pf or "").strip()
+    if not it_key or it_key not in INTERVENTION_TYPES:
+        return base_pf
+    it_data = INTERVENTION_TYPES[it_key]
+    type_name = it_key.split(" (")[0]
+    addition = (
+        f"[Intervention type: {type_name} -- {it_data['scope']} scope, "
+        f"{it_data['prescriptiveness']} prescriptive.]"
+    )
+    if addition in base_pf:
+        return base_pf
+    return f"{base_pf} {addition}".strip()
+
 
 # ─────────────────────────────────────────
 # SYSTEM PROMPT v11
@@ -190,6 +207,11 @@ Coding criteria (ALL must apply):
     it uses similarly strong language ("false solution"). The presence of
     elaborated systemic reasoning -- not just the strength of the dismissal
     -- is what distinguishes AVOID from COMPLEXIFY.
+  - IMPORTANT: A passage containing ZERO imperative/call-to-action phrases
+    at all (no "we need to," "let's," "should," aimed at mobilizing others)
+    is automatically EVALUATION regardless of how confident, declarative,
+    or strongly-worded its tone is -- confidence and strong language alone
+    never indicate Negotiation.
 Sub-types by orientation:
   SIMPLIFY   (Catalyzer)  -- narrows focus, treats difficulties as temporary
     or already solved (e.g., "AI is already more accurate than humans")
@@ -901,21 +923,19 @@ ACTIVITY_META = {
 PF_EV = (
     "Transition all vehicles to Zero Emission Vehicles (EVs) to achieve Australia's "
     "net-zero emissions targets, as prescribed by Australia's National Electric "
-    "Vehicle Strategy (2023) -- a Bounded Intervention (broad scope, highly prescriptive)"
+    "Vehicle Strategy (2023)"
 )
 
 PF_NVES = (
     "Implement a national New Vehicle Efficiency Standard (NVES) in Australia to "
     "reduce transport emissions, as consulted on by the Australian Government's "
-    "Department of Climate Change, Energy, the Environment and Water -- a Bounded "
-    "Intervention (broad scope, highly prescriptive)"
+    "Department of Climate Change, Energy, the Environment and Water"
 )
 
 PF_AI_HEALTH = (
     "Integrate AI-supported triage, diagnostic tools, and predictive risk-scoring "
     "systems into healthcare service delivery, where AI is expected to contribute "
-    "to healthcare quality and efficiency across sectors -- an Open Intervention "
-    "(broad scope, lowly prescriptive)"
+    "to healthcare quality and efficiency across sectors"
 )
 
 # ─────────────────────────────────────────
@@ -1395,7 +1415,8 @@ field. Complete Section I (likely_opposing_orientation +
 potential_challenge_rationale), framing the rationale in terms of Fragile
 Futures risk where relevant. Populate policy_recommendations and
 manager_recommendations with content SPECIFIC to the prescribed future
-given above.
+given above, including its intervention type context if provided in
+brackets.
 """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -2100,58 +2121,146 @@ def show_results(result: dict, prescribed_future: str):
 
 
 # ─────────────────────────────────────────
-# MODE SELECTOR
+# BREADCRUMB HELPER
+# ─────────────────────────────────────────
+
+def render_breadcrumb(*items, current=None):
+    if current is None:
+        current = len(items) - 1
+    parts = []
+    for i, label in enumerate(items):
+        if i == current:
+            parts.append(f"<strong style='color:#2980B9;'>{label}</strong>")
+        else:
+            parts.append(f"<span style='color:#999;'>{label}</span>")
+    st.markdown(
+        "<div style='font-size:13px;margin:2px 0 14px 0;'>"
+        + " &nbsp;&rsaquo;&nbsp; ".join(parts) + "</div>",
+        unsafe_allow_html=True
+    )
+
+
+# ─────────────────────────────────────────
+# INTERVENTION TYPE SELECTOR (shared helper)
+# ─────────────────────────────────────────
+
+def render_intervention_type_selector(key_suffix: str):
+    st.markdown("**Intervention type**")
+    st.caption(
+        "Purpose: tells the model whether this intervention is narrow or "
+        "broad in scope, and how prescriptive it is. The model uses this to "
+        "calibrate which future-making challenges are more likely (e.g., "
+        "Bounded interventions tend to generate Convoluted Evaluations, "
+        "Confrontational Negotiations, AND Competing Enactments "
+        "simultaneously; Open interventions tend to generate more Convoluted "
+        "Evaluations and Expander critique). If you select a type, it is "
+        "appended to your prescribed future text before the analysis runs."
+    )
+    it_key = st.selectbox(
+        "Choose the intervention type:",
+        options=list(INTERVENTION_TYPES.keys()),
+        index=None,
+        placeholder="No intervention type selected -- click to choose (optional)",
+        key=f"it_{key_suffix}"
+    )
+    if it_key is None:
+        st.warning(
+            "No intervention type selected. The analysis will proceed "
+            "without this contextual calibration."
+        )
+    else:
+        it_data = INTERVENTION_TYPES[it_key]
+        st.caption(f"**Example:** {it_data['example']}")
+        st.caption(it_data["note"])
+    return it_key
+
+
+# ─────────────────────────────────────────
+# MODE SELECTOR (with confirm-before-switch)
 # ─────────────────────────────────────────
 
 def render_mode_selector():
     st.markdown("""
     <style>
-    div.st-key-mode_single_btn button {
-        background-color: #EBF5FB !important;
-        border: 2px solid #2980B9 !important;
-        color: #2980B9 !important;
-        font-weight: bold !important;
-    }
-    div.st-key-mode_single_btn button:hover {
+    div.st-key-mode_single_btn_active button {
         background-color: #2980B9 !important;
+        border: 2px solid #2980B9 !important;
         color: white !important;
-    }
-    div.st-key-mode_doc_btn button {
-        background-color: #F5EEF8 !important;
-        border: 2px solid #8E44AD !important;
-        color: #8E44AD !important;
         font-weight: bold !important;
     }
-    div.st-key-mode_doc_btn button:hover {
+    div.st-key-mode_single_btn_inactive button {
+        background-color: #EBF5FB !important;
+        border: 2px solid #AED6F1 !important;
+        color: #888 !important;
+        font-weight: normal !important;
+    }
+    div.st-key-mode_doc_btn_active button {
         background-color: #8E44AD !important;
+        border: 2px solid #8E44AD !important;
         color: white !important;
+        font-weight: bold !important;
+    }
+    div.st-key-mode_doc_btn_inactive button {
+        background-color: #F5EEF8 !important;
+        border: 2px solid #D7BDE2 !important;
+        color: #888 !important;
+        font-weight: normal !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
     if "app_mode" not in st.session_state:
         st.session_state["app_mode"] = MODE_SINGLE
+    if "pending_mode" not in st.session_state:
+        st.session_state["pending_mode"] = None
+
+    active_mode = st.session_state["app_mode"]
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button(MODE_SINGLE_LABEL, key="mode_single_btn", use_container_width=True):
-            st.session_state["app_mode"] = MODE_SINGLE
+        is_active = (active_mode == MODE_SINGLE)
+        key_name = "mode_single_btn_active" if is_active else "mode_single_btn_inactive"
+        label = f"[Selected] {MODE_SINGLE_LABEL}" if is_active else MODE_SINGLE_LABEL
+        if st.button(label, key=key_name, use_container_width=True) and not is_active:
+            st.session_state["pending_mode"] = MODE_SINGLE
+            st.rerun()
     with col2:
-        if st.button(MODE_DOC_LABEL, key="mode_doc_btn", use_container_width=True):
-            st.session_state["app_mode"] = MODE_DOC
+        is_active2 = (active_mode == MODE_DOC)
+        key_name2 = "mode_doc_btn_active" if is_active2 else "mode_doc_btn_inactive"
+        label2 = f"[Selected] {MODE_DOC_LABEL}" if is_active2 else MODE_DOC_LABEL
+        if st.button(label2, key=key_name2, use_container_width=True) and not is_active2:
+            st.session_state["pending_mode"] = MODE_DOC
+            st.rerun()
 
-    active_mode = st.session_state["app_mode"]
-    active_label = MODE_SINGLE_LABEL if active_mode == MODE_SINGLE else MODE_DOC_LABEL
-    active_color = "#2980B9" if active_mode == MODE_SINGLE else "#8E44AD"
-    active_bg = "#EBF5FB" if active_mode == MODE_SINGLE else "#F5EEF8"
-    st.markdown(f"""
-    <div style="background:{active_bg};border-left:4px solid {active_color};
-                padding:8px 14px;border-radius:6px;margin:10px 0 16px 0;">
-        <strong style="color:{active_color};">Current mode:</strong> {active_label}
-    </div>
-    """, unsafe_allow_html=True)
+    pending_mode = st.session_state["pending_mode"]
+    if pending_mode and pending_mode != active_mode:
+        pending_label = MODE_SINGLE_LABEL if pending_mode == MODE_SINGLE else MODE_DOC_LABEL
+        st.warning(
+            f"Switch to **'{pending_label}'**? Any unsaved input in the "
+            f"current mode may be lost."
+        )
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("Proceed", type="primary", key="confirm_switch_btn", use_container_width=True):
+                st.session_state["app_mode"] = pending_mode
+                st.session_state["pending_mode"] = None
+                st.rerun()
+        with c2:
+            if st.button("Cancel", key="cancel_switch_btn", use_container_width=True):
+                st.session_state["pending_mode"] = None
+                st.rerun()
+    else:
+        active_label = MODE_SINGLE_LABEL if active_mode == MODE_SINGLE else MODE_DOC_LABEL
+        active_color = "#2980B9" if active_mode == MODE_SINGLE else "#8E44AD"
+        active_bg = "#EBF5FB" if active_mode == MODE_SINGLE else "#F5EEF8"
+        st.markdown(f"""
+        <div style="background:{active_bg};border-left:4px solid {active_color};
+                    padding:8px 14px;border-radius:6px;margin:10px 0 16px 0;">
+            <strong style="color:{active_color};">Current mode:</strong> {active_label}
+        </div>
+        """, unsafe_allow_html=True)
 
-    return active_mode
+    return st.session_state["app_mode"]
 
 
 # ─────────────────────────────────────────
@@ -2160,6 +2269,7 @@ def render_mode_selector():
 
 def main():
     st.title("Future-Making Orientation Analyzer")
+    render_breadcrumb("Home")
     st.markdown(f"""
     Identify **future-making orientations**, **activities**, and **potential
     challenges** -- either for a single comment, or aggregated across an
@@ -2186,14 +2296,12 @@ def main():
     # MODE 1: SINGLE COMMENT
     # ═══════════════════════════════════════
     if mode == MODE_SINGLE:
+        render_breadcrumb("Home", MODE_SINGLE_LABEL)
+
+        render_breadcrumb("Home", MODE_SINGLE_LABEL, "Step 1: Prescribed Future")
         st.markdown("### Step 1 -- Define the Prescribed Future")
 
-        with st.expander("What type of intervention is this? (optional but recommended)"):
-            it_key = st.selectbox("Intervention type:", list(INTERVENTION_TYPES.keys()), key="it_single")
-            it_data = INTERVENTION_TYPES.get(it_key, {})
-            if it_data.get("note"):
-                st.caption(f"**Example:** {it_data['example']}")
-                st.caption(it_data["note"])
+        it_key_single = render_intervention_type_selector("single")
 
         pf_default = st.session_state.pop("pf_prefill", "")
         prescribed_future = st.text_area(
@@ -2202,6 +2310,7 @@ def main():
             label_visibility="collapsed"
         )
 
+        render_breadcrumb("Home", MODE_SINGLE_LABEL, "Step 2: Comment")
         st.markdown("### Step 2 -- Enter a Consumer Comment")
         input_method = st.radio(
             "Input method:",
@@ -2248,6 +2357,8 @@ def main():
         if not prescribed_future.strip():
             prescribed_future = PF_EV
 
+        final_pf_single = augment_prescribed_future(prescribed_future, it_key_single)
+
         st.markdown("---")
         ready = bool(api_key and comment.strip())
         if not comment.strip():
@@ -2258,10 +2369,11 @@ def main():
         if st.button("Analyze Comment", type="primary", use_container_width=True, disabled=not ready):
             with st.spinner("Analyzing with the framework's coding criteria..."):
                 try:
-                    result = analyze_comment(prescribed_future.strip(), comment.strip(), api_key)
+                    result = analyze_comment(final_pf_single, comment.strip(), api_key)
                     st.divider()
+                    render_breadcrumb("Home", MODE_SINGLE_LABEL, "Step 3: Results")
                     st.markdown("## Analysis Results")
-                    show_results(result, prescribed_future.strip())
+                    show_results(result, final_pf_single)
                 except openai.AuthenticationError:
                     st.error("Invalid API key.")
                 except openai.RateLimitError:
@@ -2273,6 +2385,7 @@ def main():
     # MODE 2: DOCUMENT / CORPUS ANALYSIS
     # ═══════════════════════════════════════
     else:
+        render_breadcrumb("Home", MODE_DOC_LABEL)
         st.caption(
             "Upload or paste a larger text (e.g., forum export, survey open-ends, "
             "public consultation submissions, social media export, or a policy "
@@ -2282,14 +2395,10 @@ def main():
             "segments."
         )
 
+        render_breadcrumb("Home", MODE_DOC_LABEL, "Step 1: Prescribed Future")
         st.markdown("### Step 1 -- Define the Prescribed Future")
 
-        with st.expander("What type of intervention is this? (optional but recommended)"):
-            it_key_doc = st.selectbox("Intervention type:", list(INTERVENTION_TYPES.keys()), key="it_doc")
-            it_data_doc = INTERVENTION_TYPES.get(it_key_doc, {})
-            if it_data_doc.get("note"):
-                st.caption(f"**Example:** {it_data_doc['example']}")
-                st.caption(it_data_doc["note"])
+        it_key_doc = render_intervention_type_selector("doc")
 
         pf_doc_default = st.session_state.get("pf_doc_prefill", PF_EV)
         prescribed_future_doc = st.text_area(
@@ -2310,6 +2419,7 @@ def main():
                 st.session_state["pf_doc_prefill"] = PF_AI_HEALTH
                 st.rerun()
 
+        render_breadcrumb("Home", MODE_DOC_LABEL, "Step 2: Upload Document")
         st.markdown("### Step 2 -- Provide the Document")
         doc_input_method = st.radio(
             "Input method:",
@@ -2335,6 +2445,7 @@ def main():
             )
 
         if raw_text.strip():
+            render_breadcrumb("Home", MODE_DOC_LABEL, "Step 3: Segmentation")
             st.markdown("### Step 3 -- Configure Segmentation")
 
             id_hits = len(re.findall(r'\b\d{6,7}\s+(?:Name\s+withheld|[A-Z][a-z]+)', raw_text))
@@ -2358,58 +2469,66 @@ def main():
 
             if granularity.startswith("Public consultation"):
                 chunks = extract_public_consultation_responses(raw_text)
-                st.success(
-                    f"Extracted {len(chunks)} individual respondent comments "
-                    f"(NULL/empty responses automatically excluded)."
-                )
             elif granularity.startswith("Sentence"):
                 chunks = split_into_chunks(raw_text, granularity="sentence_group", sentences_per_chunk=sentences_per_chunk)
             else:
                 chunks = split_into_chunks(raw_text, granularity="paragraph")
 
-            if not chunks:
-                st.warning("No analyzable segments found. Try pasting more text or a different granularity.")
-            else:
+            if chunks:
                 st.info(f"Document split into {len(chunks)} analyzable segments.")
-
-                max_possible = min(len(chunks), 300)
-                default_val = min(30, max_possible)
-                max_chunks = st.slider(
-                    "Maximum segments to analyze (controls cost and time)",
-                    min_value=1, max_value=max_possible, value=default_val
-                )
-                est_seconds = round(max_chunks / DOC_MAX_WORKERS * 2.5)
-                est_cost = round(max_chunks * 0.00075, 3)
-                st.caption(
-                    f"Estimated time: ~{est_seconds}s | API calls: {max_chunks} "
-                    f"(parallelized, {DOC_MAX_WORKERS} at a time) | "
-                    f"Estimated cost: ~${est_cost}"
-                )
-
                 with st.expander(f"Preview first segments (of {len(chunks)} total)"):
                     for i, c in enumerate(chunks[:10]):
                         st.caption(f"[{i+1}] {c[:200]}{'...' if len(c) > 200 else ''}")
-
-                run_doc_analysis = st.button(
-                    "Analyze Document", type="primary", use_container_width=True,
-                    disabled=not api_key
+            else:
+                st.warning(
+                    "No analyzable segments found with the current segmentation "
+                    "option. Try a different segmentation method, or paste more "
+                    "text below."
                 )
-                if not api_key:
-                    st.warning("Please configure your OpenAI API key above.")
 
-                if run_doc_analysis:
-                    chunks_to_run = chunks[:max_chunks]
-                    progress_bar = st.progress(0, text="Starting analysis...")
-                    doc_results = analyze_document(
-                        chunks_to_run, prescribed_future_doc.strip(), api_key, progress_bar
-                    )
-                    progress_bar.empty()
-                    st.session_state["doc_results"] = doc_results
-                    st.session_state["doc_prescribed_future"] = prescribed_future_doc.strip()
-                    st.session_state["doc_intervention_type"] = it_key_doc
+            # ── STEP 4: RUN ANALYSIS -- always rendered once text is provided ──
+            render_breadcrumb("Home", MODE_DOC_LABEL, "Step 4: Run Analysis")
+            st.markdown("### Step 4 -- Run Analysis")
+
+            max_possible = max(1, min(len(chunks), 300)) if chunks else 1
+            default_val = min(30, max_possible) if chunks else 1
+            max_chunks = st.slider(
+                "Maximum segments to analyze (controls cost and time)",
+                min_value=1, max_value=max_possible, value=default_val,
+                disabled=(len(chunks) == 0)
+            )
+            est_seconds = round(max_chunks / DOC_MAX_WORKERS * 2.5)
+            est_cost = round(max_chunks * 0.00075, 3)
+            st.caption(
+                f"Estimated time: ~{est_seconds}s | API calls: {max_chunks} "
+                f"(parallelized, {DOC_MAX_WORKERS} at a time) | "
+                f"Estimated cost: ~${est_cost}"
+            )
+
+            run_doc_analysis = st.button(
+                "Analyze Document", type="primary", use_container_width=True,
+                disabled=(not api_key or len(chunks) == 0)
+            )
+            if not api_key:
+                st.warning("Please configure your OpenAI API key above.")
+            if not chunks:
+                st.caption("The Analyze Document button is disabled until at least one valid segment is found.")
+
+            if run_doc_analysis and chunks:
+                final_pf_doc = augment_prescribed_future(prescribed_future_doc, it_key_doc)
+                chunks_to_run = chunks[:max_chunks]
+                progress_bar = st.progress(0, text="Starting analysis...")
+                doc_results = analyze_document(
+                    chunks_to_run, final_pf_doc, api_key, progress_bar
+                )
+                progress_bar.empty()
+                st.session_state["doc_results"] = doc_results
+                st.session_state["doc_prescribed_future"] = final_pf_doc
+                st.session_state["doc_intervention_type"] = it_key_doc
 
         if "doc_results" in st.session_state:
             st.divider()
+            render_breadcrumb("Home", MODE_DOC_LABEL, "Step 5: Results")
             st.markdown("## Document-Level Analysis")
             show_document_summary(
                 st.session_state["doc_results"],
