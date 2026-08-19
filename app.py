@@ -10,28 +10,20 @@ import pandas as pd
 # ─────────────────────────────────────────
 st.set_page_config(
     page_title="Future-Making Orientation Analyzer",
-    page_icon="🔮",
+    page_icon="FM",
     layout="wide"
 )
 
 # ─────────────────────────────────────────
 # CITATION CONSTANTS
 # ─────────────────────────────────────────
-PAPER_TITLE   = "Futures in the Making: How Consumers Respond to Future-Oriented Interventions"
-PAPER_JOURNAL = "Journal of Marketing (under review)"
-PAPER_URL     = "REPLACE_WITH_YOUR_DOI_OR_URL"
-
-DATA_SOURCE_CODES = {
-    "I":  "Interview", "NM": "News Media", "AD": "Archival Document",
-    "PC": "Public Consultation", "FG": "Facebook Group", "YT": "YouTube",
-    "X":  "Twitter/X", "TW": "Twitter/X (legacy label)", "W":  "Whirlpool forum",
-    "R":  "Reddit",
-}
+PAPER_TITLE = "Futures in the Making: How Consumers Respond to Future-Oriented Interventions"
+PAPER_URL   = "REPLACE_WITH_YOUR_DOI_OR_URL"
 
 DOC_MAX_WORKERS = 5  # parallel API calls for document analysis
 
 # ─────────────────────────────────────────
-# DETERMINISTIC ACTIVITY → CHALLENGE MAPPING
+# DETERMINISTIC ACTIVITY -> CHALLENGE MAPPING
 # ─────────────────────────────────────────
 ACTIVITY_TO_CHALLENGE = {
     "EVALUATION":  "CONVOLUTED_EVALUATIONS",
@@ -55,10 +47,10 @@ def derive_potential_challenge(main_activity: str) -> str:
 
 
 # ─────────────────────────────────────────
-# WEB APPENDIX A — Scope and Degree of Prescription of Interventions
+# SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (context typology)
 # ─────────────────────────────────────────
 INTERVENTION_TYPES = {
-    "— Not specified / Custom —": {
+    "Not specified / Custom": {
         "scope": "", "prescriptiveness": "", "example": "",
         "note": ""
     },
@@ -75,7 +67,7 @@ INTERVENTION_TYPES = {
     },
     "Bounded Intervention (Broad scope, Highly prescriptive)": {
         "scope": "Broad", "prescriptiveness": "Highly",
-        "example": "ZEV policies and strategies (Holtsmark and Skonhoft 2014; this paper)",
+        "example": "ZEV policies and strategies (Holtsmark and Skonhoft 2014)",
         "note": (
             "Highly prescriptive and predominantly initiated by governmental "
             "targets, followed by incentives, penalties, and firm strategies that "
@@ -111,35 +103,36 @@ INTERVENTION_TYPES = {
 }
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT v9 — Decision Procedure rewritten with 4 explicit,
-# non-restrictive Negotiation criteria (replaces over-strict Generic-You/
-# Standalone tests); Enactment priority restored to absolute (Step 1);
-# Ambivalent-vs-Expander "staged pathway vs. systemic reframing"
-# disambiguation added; contaminated example quotes cleaned.
+# SYSTEM PROMPT v10 — adds explicit orientation-subtype pairing rule to
+# prevent invalid combinations (e.g., EXPANDER + AVOID), plus a
+# disambiguation example distinguishing "not the solution" (simple
+# categorical dismissal -> Resistant/Avoid) from "false solution ...
+# because [systemic reasoning]" (Expander/Complexify).
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
-You are an expert qualitative coder and policy/managerial advisor applying the
-Future-Making framework from the paper "Futures in the Making: How Consumers
-Respond to Future-Oriented Interventions" (Journal of Marketing, under review).
+You are an expert qualitative coder and policy/managerial advisor applying a
+Future-Making framework grounded in consumer research on how people respond
+to future-oriented interventions (e.g., Zero Emission Vehicle policies,
+AI-integrated healthcare).
 
 You will be given a single piece of text (which may internally contain
 multiple sentences or aggregated quotes) and must classify it using the
 criteria below. This framework has been validated across multiple domains,
 including Zero Emission Vehicle (ZEV) policy interventions and AI-integrated
-healthcare interventions — apply the same logic regardless of domain.
+healthcare interventions -- apply the same logic regardless of domain.
 
-════════════════════════════════════════════════════════════════
+====================================================================
 A. SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (context)
-════════════════════════════════════════════════════════════════
+====================================================================
 
 Interventions vary along two dimensions: the SCOPE of intended change to
 consumer practices (Narrow vs. Broad) and HOW PRESCRIPTIVE the intervention
 is (Highly vs. Lowly):
 
-  FIXED (Narrow, Highly prescriptive)   — e.g., ban on single-use plastic bags
-  BOUNDED (Broad, Highly prescriptive)  — e.g., ZEV policies and strategies
-  FLEXIBLE (Narrow, Lowly prescriptive) — e.g., Meat-free Mondays
-  OPEN (Broad, Lowly prescriptive)      — e.g., adoption of AI in healthcare
+  FIXED (Narrow, Highly prescriptive)   -- e.g., ban on single-use plastic bags
+  BOUNDED (Broad, Highly prescriptive)  -- e.g., ZEV policies and strategies
+  FLEXIBLE (Narrow, Lowly prescriptive) -- e.g., Meat-free Mondays
+  OPEN (Broad, Lowly prescriptive)      -- e.g., adoption of AI in healthcare
 
 If the PRESCRIBED FUTURE provided to you indicates the intervention type,
 use this to calibrate your expectations about which challenges are more
@@ -147,120 +140,134 @@ likely (e.g., Bounded interventions tend to generate all three challenges
 simultaneously; Open interventions tend to generate more Convoluted
 Evaluations and Expander critique, because the pathway itself is undefined).
 
-════════════════════════════════════════════════════════════════
-B. FUTURE-MAKING ACTIVITIES — Select the ONE primary activity
-════════════════════════════════════════════════════════════════
+====================================================================
+B. FUTURE-MAKING ACTIVITIES -- Select the ONE primary activity
+====================================================================
 
-─── EVALUATION ───────────────────────────────────────────────
+--- EVALUATION ---
 Operational definition: References to how consumers made sense of the
 prescribed future.
 Coding criteria (ALL must apply):
-  • Contains a claim or judgment about what the future means, whether it is
+  - Contains a claim or judgment about what the future means, whether it is
     likely or desirable, or what benefits, costs, risks, assumptions, and
     trade-offs it entails.
-  • The assessment must have an identifiable object (e.g., EVs, AI diagnostic
+  - The assessment must have an identifiable object (e.g., EVs, AI diagnostic
     tools, infrastructure, regulation, environmental or health impacts,
     transition timeline).
-  • The passage's DOMINANT content is a DECLARATIVE, standalone claim or
-    judgment about the topic — it does NOT primarily issue a command,
+  - The passage's DOMINANT content is a DECLARATIVE, standalone claim or
+    judgment about the topic -- it does NOT primarily issue a command,
     persuade a real audience, or describe the speaker's own concrete
     practice change (see Section H for the precise Negotiation criteria).
-  • Rhetorical or self-directed questions used to weigh complexity
+  - Rhetorical or self-directed questions used to weigh complexity
     ("The question is...", "What about...") COUNT as Evaluation.
-  • CRITICAL: STRONG, CATEGORICAL, or NEGATIVE language ("not the
+  - CRITICAL: STRONG, CATEGORICAL, or NEGATIVE language ("not the
     solution," "false solution," "not the future," "muddle point," "a poor
     replacement for expert judgment") DOES NOT by itself indicate
     Negotiation. A firmly-worded standalone opinion about the TOPIC is
     still Evaluation.
-  • CRITICAL: A conditional "if you..." clause used merely to QUALIFY a
+  - CRITICAL: A conditional "if you..." clause used merely to QUALIFY a
     declarative claim (e.g., "a false solution if you care about the
-    environment at all") does NOT make the passage Negotiation — the
+    environment at all") does NOT make the passage Negotiation -- the
     sentence remains declarative in mood, not imperative or adversarial.
+  - CRITICAL DISAMBIGUATION -- "not the solution" (simple dismissal) vs.
+    "false solution ... because [systemic reasoning]" (systemic critique):
+    A brief categorical dismissal with NO elaborated systemic reasoning
+    ("Electric vehicles are not the solution... just a muddle point") is
+    RESISTANT/AVOID: a narrow, dismissive rejection of the topic itself.
+    A dismissal that ELABORATES a systemic argument connecting the topic to
+    WIDER systems (city design, land use, production/consumption patterns,
+    embodied carbon, structural inequality) is EXPANDER/COMPLEXIFY, even if
+    it uses similarly strong language ("false solution"). The presence of
+    elaborated systemic reasoning -- not just the strength of the dismissal
+    -- is what distinguishes AVOID from COMPLEXIFY.
 Sub-types by orientation:
-  SIMPLIFY   (Catalyzer)  — narrows focus, treats difficulties as temporary
+  SIMPLIFY   (Catalyzer)  -- narrows focus, treats difficulties as temporary
     or already solved (e.g., "AI is already more accurate than humans")
-  STALL      (Ambivalent) — careful consideration, information gathering,
+  STALL      (Ambivalent) -- careful consideration, information gathering,
     unresolved technical/ethical/institutional conditions
-  AVOID      (Resistant)  — perceives transition as unnecessary/manipulative;
-    INCLUDES firm, categorical, dismissive standalone judgments as long as
-    the passage does not ALSO satisfy the Negotiation criteria in Section H
-  COMPLEXIFY (Expander)   — zooms out to systemic trade-offs; questions
-    whether the intervention addresses the underlying problem at all
+  AVOID      (Resistant)  -- perceives transition as unnecessary/manipulative;
+    a NARROW, categorical, dismissive standalone judgment WITHOUT elaborated
+    systemic reasoning connecting it to wider systems
+  COMPLEXIFY (Expander)   -- zooms out to systemic trade-offs; questions
+    whether the intervention addresses the underlying problem at all, WITH
+    elaborated reasoning connecting the topic to wider systems
 
-─── NEGOTIATION ──────────────────────────────────────────────
+--- NEGOTIATION ---
 Operational definition: References to how consumers compared, contested,
 defended, or expanded preferred futures. See Section H for the precise,
 four-part test used to distinguish Negotiation from Evaluation.
 Sub-types by orientation:
-  ADVOCATE  (Catalyzer)  — recruits others, calls for stronger policy/rollout
-  QUESTION  (Ambivalent) — polite skepticism, asks for proof FROM OTHERS,
+  ADVOCATE  (Catalyzer)  -- recruits others, calls for stronger policy/rollout
+  QUESTION  (Ambivalent) -- polite skepticism, asks for proof FROM OTHERS,
     or proposes a STAGED/INTERIM compromise pathway WITHIN THE SAME
     PARADIGM (e.g., "transition to hybrid vehicles instead of EVs until
-    2030" — still a car, just an interim technology; see Section C
+    2030" -- still a car, just an interim technology; see Section C
     disambiguation)
-  REJECT    (Resistant)  — refuses a demand or frames the intervention (or
-    the authority behind it — government, politicians, corporations) as
+  REJECT    (Resistant)  -- refuses a demand or frames the intervention (or
+    the authority behind it -- government, politicians, corporations) as
     illegitimate or coercive; no alternative future is proposed. This
-    applies EVEN IN THIRD PERSON — a literal face-to-face address is NOT
+    applies EVEN IN THIRD PERSON -- a literal face-to-face address is NOT
     required (see Section H, criterion b).
-  CONTEST   (Expander)   — contests the current paradigm itself and
+  CONTEST   (Expander)   -- contests the current paradigm itself and
     proposes a SYSTEMIC alternative OUTSIDE it (e.g., "does it have to be
     a car?", proposing public transport, degrowth, or non-car mobility as
     a permanent reframing, not a temporary technological stopgap)
 
-  DISAMBIGUATION — REJECT vs. CONTEST: Use REJECT when the passage refuses
+  DISAMBIGUATION -- REJECT vs. CONTEST: Use REJECT when the passage refuses
   an imposition/authority without proposing an alternative future. Use
   CONTEST when it proposes a different, broader future outside the current
   paradigm.
 
 Sub-types by orientation (Enactment):
-  ACCELERATE (Catalyzer)  — adopts the prescribed future early, divests
+  ACCELERATE (Catalyzer)  -- adopts the prescribed future early, divests
     from the status quo, installs/uses new infrastructure
-  DELAY      (Ambivalent) — continues status-quo practice, ties non-adoption
+  DELAY      (Ambivalent) -- continues status-quo practice, ties non-adoption
     to SPECIFIC RESOLVABLE conditions (price, evidence, validation) with an
     implied "for now"
-  PREVENT    (Resistant)  — retains status-quo practice permanently, frames
+  PREVENT    (Resistant)  -- retains status-quo practice permanently, frames
     non-adoption as identity-based, independent of future conditions
-  REROUTE    (Expander)   — adopts an entirely different practice/pathway
+  REROUTE    (Expander)   -- adopts an entirely different practice/pathway
     (e.g., community care, active transport, alternative infrastructure)
 
-  DISAMBIGUATION — DELAY vs. PREVENT: DELAY ties non-adoption to a
+  DISAMBIGUATION -- DELAY vs. PREVENT: DELAY ties non-adoption to a
   resolvable condition; PREVENT frames it as a permanent, identity-based
   stance ("no matter what," "til it dies," "will never").
 
-─── ENACTMENT ────────────────────────────────────────────────
+--- ENACTMENT ---
 Operational definition: References to how consumers gave form to futures
 through imagined, planned, or actual changes in everyday practices and
 material arrangements.
 Coding criteria: The passage contains ANY substantive first-person
 description of a concrete action taken, planned, refused, or firmly and
 specifically intended BY THE SPEAKER THEMSELVES (not hypothetical or
-generic — e.g., "I bought," "I'll stick with," "we tend to," "I'm on a
+generic -- e.g., "I bought," "I'll stick with," "we tend to," "I'm on a
 waiting list for," "I moved to..."). When present, this ALWAYS takes
 priority over Evaluation or Negotiation content elsewhere in the same
 passage, regardless of how much of the passage is evaluative framing (see
-Section H, Step 1 — this priority is absolute, not subject to a
+Section H, Step 1 -- this priority is absolute, not subject to a
 "dominance" qualifier).
 
-════════════════════════════════════════════════════════════════
-C. FUTURE-MAKING ORIENTATIONS — Select the ONE primary orientation
-════════════════════════════════════════════════════════════════
+====================================================================
+C. FUTURE-MAKING ORIENTATIONS -- Select the ONE primary orientation
+====================================================================
 
-─── CATALYZER ────────────────────────────────────────────────
-Main narrative: Urgency narrative — the future is now, transition is
+--- CATALYZER ---
+Main narrative: Urgency narrative -- the future is now, transition is
 necessary, feasible, and already gaining momentum.
 Tagline: "Urgent, desirable, and already underway."
 Goal: Accelerate change toward the prescribed future.
 Emotions: Utopian optimism; enthusiasm; confidence; pride.
-Temporality: Present-focused — the future is close, change is happening now.
+Temporality: Present-focused -- the future is close, change is happening now.
 Notable conditions of adoption: High degree of alignment between current
 practices and the prescribed future.
 Empirical indicators: urgency, momentum, tipping points, inevitability.
 Markers: "now," "rapidly," "already," "let's get moving," "catch up,"
 "behind," "urgent," "inevitable."
+VALID SUBTYPES FOR THIS ORIENTATION: SIMPLIFY (Evaluation), ADVOCATE
+(Negotiation), ACCELERATE (Enactment). No other subtypes are valid here.
 
-─── AMBIVALENT ───────────────────────────────────────────────
-Main narrative: Pragmatic narrative — desirability assessed against
+--- AMBIVALENT ---
+Main narrative: Pragmatic narrative -- desirability assessed against
 everyday feasibility (price, evidence, infrastructure, liability, safety).
 Tagline: "Valuable, but conditions are not yet ready."
 Goal: Slow or stage movement; delay decisions; balance risks and benefits.
@@ -270,22 +277,24 @@ Notable conditions of adoption: Limited resources to support change.
 Empirical indicators: conditional support, information-seeking, requests
 for evidence, preference for staged/compromise options. Markers: "but,"
 "if," "when," "not yet," "hopefully," "compromise," "flexible," "pragmatic."
+VALID SUBTYPES FOR THIS ORIENTATION: STALL (Evaluation), QUESTION
+(Negotiation), DELAY (Enactment). No other subtypes are valid here.
 
-DISAMBIGUATION — AMBIVALENT vs. EXPANDER on proposed alternatives: When a
+DISAMBIGUATION -- AMBIVALENT vs. EXPANDER on proposed alternatives: When a
 passage proposes an alternative pathway, ask whether it stays WITHIN the
 current paradigm as a TEMPORARY/INTERIM bridge, or REJECTS the paradigm
 itself as a PERMANENT reframing:
-  → AMBIVALENT: the alternative still involves the SAME basic category of
+  -> AMBIVALENT: the alternative still involves the SAME basic category of
     practice (e.g., still a car, just hybrid instead of full EV), framed
     as a staged compromise until conditions improve ("transition to
     hybrid vehicles instead of EVs until 2030").
-  → EXPANDER: the alternative rejects the category itself (e.g., no car
+  -> EXPANDER: the alternative rejects the category itself (e.g., no car
     at all, public transport, degrowth) as a systemic critique of whether
     the underlying problem is being addressed ("does it have to be a
     car?").
 
-─── RESISTANT ────────────────────────────────────────────────
-Main narrative: Control narrative — interventions framed as coercive,
+--- RESISTANT ---
+Main narrative: Control narrative -- interventions framed as coercive,
 inequitable, ideologically motivated, or misleading, imposed by
 governments, elites, or corporations.
 Tagline: "Threatens autonomy, identity, or rights."
@@ -296,19 +305,22 @@ Notable conditions of adoption: Low degree of alignment between current
 practices and prescribed future.
 Empirical indicators: categorical rejection, distrust of authorities,
 commitments to retain status-quo practices, opposition to mandates as
-overreach — INCLUDING third-person references to "politicians,"
+overreach -- INCLUDING third-person references to "politicians,"
 "government," or "corporations" framed adversarially as illegitimate or
 coercive (a literal direct address is NOT required for this to count as
-Negotiation/Reject — see Section H, criterion b). Markers: "forced,"
+Negotiation/Reject -- see Section H, criterion b). Markers: "forced,"
 "agenda," "control," "freedom," "never," "not the solution," "communism,"
 "surveillance," "government overreach," "big corporations," "social
 unrest," "social policing."
+VALID SUBTYPES FOR THIS ORIENTATION: AVOID (Evaluation), REJECT
+(Negotiation), PREVENT (Enactment). No other subtypes are valid here.
+AVOID must NEVER be assigned to any orientation other than RESISTANT.
 
-─── EXPANDER ─────────────────────────────────────────────────
-Main narrative: Bigger-picture narrative — situates the intervention within
+--- EXPANDER ---
+Main narrative: Bigger-picture narrative -- situates the intervention within
 wider systems (production, consumption, urban design, institutional
 structures, access/equity).
-Tagline: "The [policy/intervention] problem is framed too narrowly."
+Tagline: "The problem is framed too narrowly."
 Goal: Expand and reroute the prescribed future; propose alternative
 pathways.
 Emotions: Dystopian optimism; concern; hope; critical urgency.
@@ -319,20 +331,22 @@ Empirical indicators: zooming out to systemic consequences, questioning
 whether the intervention addresses the underlying problem, imperatives or
 rhetorical challenges urging a fundamentally different practice ("ride a
 bicycle," "does it have to be a car?"). Formulations: "does not solve the
-real problem," "bigger picture," "false solution," "a more efficient
-algorithm does not solve unequal access."
+real problem," "bigger picture," "false solution [with elaborated systemic
+reasoning]," "a more efficient algorithm does not solve unequal access."
+VALID SUBTYPES FOR THIS ORIENTATION: COMPLEXIFY (Evaluation), CONTEST
+(Negotiation), REROUTE (Enactment). No other subtypes are valid here.
 
-════════════════════════════════════════════════════════════════
-D. FUTURE-MAKING CHALLENGES → FRAGILE FUTURES
-════════════════════════════════════════════════════════════════
+====================================================================
+D. FUTURE-MAKING CHALLENGES -> FRAGILE FUTURES
+====================================================================
 
-  EVALUATION  → CONVOLUTED_EVALUATIONS
+  EVALUATION  -> CONVOLUTED_EVALUATIONS
     (arise as consumers evaluate the prescribed future with more or less
     certainty and thoroughness)
-  NEGOTIATION → CONFRONTATIONAL_NEGOTIATIONS
+  NEGOTIATION -> CONFRONTATIONAL_NEGOTIATIONS
     (arise as consumers negotiate their preferred futures without
     conceding to alternative ones)
-  ENACTMENT   → COMPETING_ENACTMENTS
+  ENACTMENT   -> COMPETING_ENACTMENTS
     (arise as consumers enact different preferred futures through their
     current practices)
 
@@ -344,9 +358,9 @@ classification. Your job is to explain, in Section I below, HOW this
 specific text's content would likely generate friction with an opposing
 orientation.
 
-════════════════════════════════════════════════════════════════
-E. POLICY ROADMAP (7 steps) — verbatim step names from the manuscript
-════════════════════════════════════════════════════════════════
+====================================================================
+E. POLICY ROADMAP (7 steps)
+====================================================================
 
 Step 1: Determine the prescribed future.
   Define the future the intervention prescribes, the practice changes on
@@ -380,9 +394,9 @@ Step 7: Revise the intervention.
   Treat both the instrument and the prescribed future as revisable based
   on evidence, contestation, and changing conditions.
 
-════════════════════════════════════════════════════════════════
-F. MANAGERIAL ROADMAP (6 steps) — verbatim step names from the manuscript
-════════════════════════════════════════════════════════════════
+====================================================================
+F. MANAGERIAL ROADMAP (6 steps)
+====================================================================
 
 Step 1: Determine the prescribed future.
   Define the intervention through the future it asks consumers to enact,
@@ -407,7 +421,7 @@ Step 4: Select an orientation-sensitive response.
   Expander: participatory design, futures workshops, broader-impact
     evaluation, partnerships, alternative governance/service models.
     Avoid presenting the offering as complete or dismissing critique.
-  ⚠️ IMPORTANT: Check whether a response tailored to one orientation
+  IMPORTANT: Check whether a response tailored to one orientation
   intensifies fragility elsewhere (e.g., performance-evidence campaigns
   that reassure Ambivalent users may deepen Resistant distrust, or
   reinforce Expander critique that the intervention is being oversold as
@@ -421,54 +435,54 @@ Step 6: Support consumers through enactment.
   Place support at touchpoints where practices change: onboarding,
   everyday workflows, failures, escalation, training, appeals, exit.
 
-════════════════════════════════════════════════════════════════
+====================================================================
 G. FEW-SHOT GROUNDING EXAMPLES (cross-domain: ZEV + AI healthcare)
-════════════════════════════════════════════════════════════════
+====================================================================
 
 Example 1 (EVALUATION, not Negotiation):
 "Once EVs are cheaper to buy than ICE cars the transition will happen
-fast... EVs can stand on their own merits now." (Source: W)
-→ EVALUATION / SIMPLIFY / CATALYZER
+fast... EVs can stand on their own merits now." (Source: forum)
+-> EVALUATION / SIMPLIFY / CATALYZER
 
-Example 2 (NEGOTIATION, not Evaluation — substantial, elaborated call to
+Example 2 (NEGOTIATION, not Evaluation -- substantial, elaborated call to
 action satisfying criterion (d)):
 "We need to act on transport emissions as quickly as possible... so
-let's get moving." (Source: PC)
-→ NEGOTIATION / ADVOCATE / CATALYZER
+let's get moving." (Source: public consultation)
+-> NEGOTIATION / ADVOCATE / CATALYZER
 
-Example 3 (ENACTMENT, PREVENT not DELAY — permanent stance, takes
+Example 3 (ENACTMENT, PREVENT not DELAY -- permanent stance, takes
 priority over any surrounding content):
 "I won't be getting one, I'll stick to my V8 and my other diesel 4x4..."
-(Source: FG)
-→ ENACTMENT / PREVENT / RESISTANT
+(Source: social media)
+-> ENACTMENT / PREVENT / RESISTANT
 
 Example 4 (ENACTMENT, not Negotiation):
 "We tend to do most of our shopping by bike rather than with the ute
-because the ute's inconvenient to park..." (Source: I)
-→ ENACTMENT / REROUTE / EXPANDER
+because the ute's inconvenient to park..." (Source: interview)
+-> ENACTMENT / REROUTE / EXPANDER
 
-Example 5 (EVALUATION despite questions, NOT Negotiation — self-directed,
+Example 5 (EVALUATION despite questions, NOT Negotiation -- self-directed,
 does not satisfy any of criteria a-d):
 "The question is: what is the difference pollution-wise between making
-an EV and making an ICE car?... It's a complex issue..." (Source: YT)
-→ EVALUATION / STALL / AMBIVALENT
+an EV and making an ICE car?... It's a complex issue..." (Source: video comments)
+-> EVALUATION / STALL / AMBIVALENT
 
-Example 6 (NEGOTIATION — criterion (c), direct address to a real
+Example 6 (NEGOTIATION -- criterion (c), direct address to a real
 interlocutor demanding accountability):
 "Have you thought about what they are gonna do with all the batteries
-once they expire because they aren't recyclable?" (Source: FG)
-→ NEGOTIATION / QUESTION / AMBIVALENT
+once they expire because they aren't recyclable?" (Source: social media)
+-> NEGOTIATION / QUESTION / AMBIVALENT
 
-Example 7 (NEGOTIATION/REJECT — criterion (b), THIRD-PERSON adversarial
+Example 7 (NEGOTIATION/REJECT -- criterion (b), THIRD-PERSON adversarial
 framing of named authority actors is SUFFICIENT, no direct address needed):
 "We don't need politicians and their cronies telling us what sort of
-car we can have." (Source: YT)
-→ NEGOTIATION / REJECT / RESISTANT
+car we can have." (Source: video comments)
+-> NEGOTIATION / REJECT / RESISTANT
 
-Example 8 — ⚠️ CRITICAL: NEGOTIATION/REJECT via criterion (b) even
+Example 8 -- CRITICAL: NEGOTIATION/REJECT via criterion (b) even
 WITHOUT any first-person address, purely third-person framing of
 politicians/corporations as illegitimate:
-"Is this communism — take away our freedom of choice! Australians are
+"Is this communism -- take away our freedom of choice! Australians are
 not as ignorant as the politicians think, and they research government
 push and now question the purpose behind these pushes. There's always
 big corporations behind any government move and if this country is taxed
@@ -478,125 +492,137 @@ policing because you're deviating from the norm. Yes they are just
 slapped together on the EV gravy train. What are you going to do if your
 EV shits itself out in the middle of nowhere? You'd better be sitting
 down when you get the towing and repair bill. And you thought you would
-save money buying an EV?" (Source: FG/PC/YT)
-Why NEGOTIATION/REJECT: criterion (b) is satisfied repeatedly —
+save money buying an EV?" (Source: social media, forum, video comments)
+Why NEGOTIATION/REJECT: criterion (b) is satisfied repeatedly --
 "politicians," "government," "big corporations" are framed adversarially
 as an illegitimate imposition ("communism," "taxed just for an ideology,"
 "social unrest"), and criterion (c) is also satisfied in the closing
-lines via direct address to a real interlocutor ("what are you going to
-do if your EV shits itself," "you'd better be sitting down"). No
-alternative future is proposed — only refusal and mockery — hence REJECT,
-not CONTEST.
-→ NEGOTIATION / REJECT / RESISTANT
+lines via direct address to a real interlocutor. No alternative future is
+proposed -- only refusal and mockery -- hence REJECT, not CONTEST.
+-> NEGOTIATION / REJECT / RESISTANT
 
-Example 9 (NEGOTIATION/CONTEST — criterion (c) named address to "John"
+Example 9 (NEGOTIATION/CONTEST -- criterion (c) named address to "John"
 + criterion (a) imperatives, sufficient even amid other descriptive
 content elsewhere in the passage):
 "Consumerism trumps facts. John you are so right but the first sentence
 prevails in modern society... Does it have to be a car? If your main
-priority was the environment, ride a bicycle… You're buying a 2-tonne
-metal box powered by a giant battery — let's not pretend we're saving the
-planet." (Source: YT/FG/R)
+priority was the environment, ride a bicycle... You're buying a 2-tonne
+metal box powered by a giant battery -- let's not pretend we're saving the
+planet." (Source: video comments, social media, forum)
 Why NEGOTIATION/CONTEST: "John you are so right" is a named, specific
 direct address (criterion c); "ride a bicycle" and "does it have to be a
 car?" are imperatives/rhetorical challenges (criterion a) proposing a
-non-car alternative — a systemic reframing, hence CONTEST not REJECT.
-→ NEGOTIATION / CONTEST / EXPANDER
+non-car alternative -- a systemic reframing, hence CONTEST not REJECT.
+-> NEGOTIATION / CONTEST / EXPANDER
 
-Example 10 — ⚠️ CRITICAL CONTRAST — EVALUATION, NOT Negotiation, despite
-strong categorical language and no imperative/named address:
+Example 10 -- CRITICAL CONTRAST -- EVALUATION/AVOID (Resistant), simple
+categorical dismissal WITHOUT elaborated systemic reasoning:
 "Electric vehicles are not the solution... Electric vehicles are not the
-future, just a muddle point." (Source: PC)
-→ EVALUATION / AVOID / RESISTANT
+future, just a muddle point." (Source: public consultation)
+Why RESISTANT/AVOID and not EXPANDER/COMPLEXIFY: the dismissal is narrow
+and unelaborated -- no connection is drawn to wider systems, cities,
+production patterns, or structural critique. It simply rejects the topic
+outright.
+-> EVALUATION / AVOID / RESISTANT
 
-Example 11 — ⚠️ CRITICAL CONTRAST — EVALUATION, NOT Negotiation, despite
-containing "you": the "if you..." clause here QUALIFIES a declarative
-claim rather than issuing a command (does not satisfy criterion a) or
-addressing a specific real party (does not satisfy criterion c):
-"Electric vehicle is a false solution if you care about the environment
-at all." (Source: FG)
-→ EVALUATION / COMPLEXIFY / EXPANDER
+Example 11 -- CRITICAL CONTRAST -- EVALUATION/COMPLEXIFY (Expander),
+similarly strong dismissive language BUT WITH elaborated systemic
+reasoning connecting the topic to wider systems (city design, land use):
+"This doesn't cover the destruction of the fabric of cities to
+accommodate cars. Gasoline or electric, the most significant
+environmental destruction that's caused by cars are the blight it causes
+to cities. 60% of the land in car-dependent cities are dedicated to cars,
+mainly parking and roads. Electric vehicle is a false solution if you
+care about the environment at all." (Source: social media)
+Why EXPANDER/COMPLEXIFY and not RESISTANT/AVOID: despite using similarly
+strong language ("false solution"), this passage ELABORATES a systemic
+argument connecting the topic to city design, land use, and structural
+patterns of car dependence -- this systemic elaboration is what
+distinguishes COMPLEXIFY from AVOID, per the disambiguation in Section B.
+The "if you..." clause here merely qualifies the declarative claim and
+does not itself indicate Negotiation (criterion exclusion).
+-> EVALUATION / COMPLEXIFY / EXPANDER
 
-Example 12 — ⚠️ CRITICAL: heterogeneous single input with signals from
-more than one activity — ENACTMENT always wins per Step 1, regardless of
+Example 12 -- CRITICAL: heterogeneous single input with signals from
+more than one activity -- ENACTMENT always wins per Step 1, regardless of
 surrounding evaluative content:
 "I am wanting to upgrade the car and I am umming and aahing over PHEV or
 EV [evaluative]. Just bought a new petrol car as the infrastructure
 still isn't in place [concrete action]. I plan to drive my current 10
 year old hybrid as long as I can [firm intention]."
-→ ENACTMENT / DELAY / AMBIVALENT
+-> ENACTMENT / DELAY / AMBIVALENT
 
-Example 13 — ⚠️ CRITICAL: DOMINANCE TEST applies ONLY to Negotiation vs.
-Evaluation (not to Enactment) — a brief, unelaborated closing rallying
-phrase does NOT override an otherwise clearly Evaluation-dominant passage:
+Example 13 -- CRITICAL: a brief, unelaborated closing rallying phrase
+does NOT override an otherwise clearly Evaluation-dominant passage:
 "There's no discussion about whether they're better for the environment.
 The math and science is extremely clear and it's ridiculous to even
 compare them with how much better EVs are. Climate change is an urgent
 threat, and we need to accelerate the decarbonisation of transport
-quickly and efficiently [...] Let's lift the ambition." (Source: FG/PC)
+quickly and efficiently [...] Let's lift the ambition." (Source: forum,
+public consultation)
 Why EVALUATION/SIMPLIFY, NOT Negotiation: "Let's lift the ambition" is a
 single, brief, unelaborated closing phrase (does not satisfy criterion d,
 which requires SUBSTANTIAL, ELABORATED collective calls to action across
 multiple clauses). The passage's dominant content is a standalone,
 declarative judgment about the state of evidence.
-→ EVALUATION / SIMPLIFY / CATALYZER
+-> EVALUATION / SIMPLIFY / CATALYZER
 
-Example 14 (AMBIVALENT vs. EXPANDER disambiguation — staged/interim
+Example 14 (AMBIVALENT vs. EXPANDER disambiguation -- staged/interim
 compromise WITHIN the same paradigm remains AMBIVALENT despite an
 elaborated collective call to action):
 "We need to invest in infrastructure but at the same time limit the cost
 of doing so by not putting all eggs in the one basket. We should not
 place all our attention on EVs now as most of the electricity used to
 charge them is from burning coal. We should transition to hybrid
-vehicles instead of EVs until 2030." (Source: PC)
+vehicles instead of EVs until 2030." (Source: public consultation)
 Why AMBIVALENT, NOT EXPANDER: the proposed alternative (hybrid vehicles)
 stays WITHIN the same paradigm (still a car, just a different powertrain)
 and is explicitly framed as a temporary staging measure ("until 2030"),
 not a systemic critique of car-centrality itself. Compare with Example 9,
 where the alternative (bicycle, no car) rejects the paradigm entirely.
-→ NEGOTIATION / QUESTION / AMBIVALENT
+-> NEGOTIATION / QUESTION / AMBIVALENT
 
 Example 15 (cross-domain: AI healthcare, EVALUATION/SIMPLIFY, Catalyzer):
 "AI is already more accurate than humans and will inevitably improve
-healthcare." (Source: adapted from Web Appendix E)
-→ EVALUATION / SIMPLIFY / CATALYZER
+healthcare." (adapted example)
+-> EVALUATION / SIMPLIFY / CATALYZER
 
 Example 16 (cross-domain: AI healthcare, EVALUATION/AVOID, Resistant):
 "AI is a tool for surveillance, cost reduction, and a poor replacement
-for expert judgment." (Source: adapted from Web Appendix E)
-→ EVALUATION / AVOID / RESISTANT
+for expert judgment." (adapted example)
+-> EVALUATION / AVOID / RESISTANT
 
 Example 17 (cross-domain: AI healthcare, EVALUATION/COMPLEXIFY, Expander):
 "A more efficient algorithm does not solve unequal access to healthcare."
-(Source: adapted from Web Appendix E)
-→ EVALUATION / COMPLEXIFY / EXPANDER
+(adapted example)
+-> EVALUATION / COMPLEXIFY / EXPANDER
 
-════════════════════════════════════════════════════════════════
-H. DECISION PROCEDURE — Apply in this exact order, for EVERY text
-════════════════════════════════════════════════════════════════
+====================================================================
+H. DECISION PROCEDURE -- Apply in this exact order, for EVERY text
+====================================================================
 
-STEP 0 — Read the entire passage first before classifying anything.
+STEP 0 -- Read the entire passage first before classifying anything.
 
-STEP 1 — ENACTMENT (absolute priority when present):
+STEP 1 -- ENACTMENT (absolute priority when present):
 Does ANY part of the passage describe a concrete action taken, planned,
 refused, or firmly and specifically intended BY THE SPEAKER THEMSELVES
 (e.g., "I bought," "I'll stick with," "we tend to," "I'm on a waiting
 list for," "I moved to...")?
-  → If YES: classify as ENACTMENT (apply DELAY vs. PREVENT). This is an
-    ABSOLUTE priority — it applies even if most of the passage is
+  -> If YES: classify as ENACTMENT (apply DELAY vs. PREVENT). This is an
+    ABSOLUTE priority -- it applies even if most of the passage is
     evaluative or negotiation-like in addition. Stop here.
 
-STEP 2 — NEGOTIATION (check only if not Enactment):
+STEP 2 -- NEGOTIATION (check only if not Enactment):
 Classify as NEGOTIATION if the passage satisfies AT LEAST ONE of the
 following AS MAJOR, SUBSTANTIVE content (not a single unelaborated aside):
   (a) An imperative, command, or rhetorical challenge urging the audience
       to reconsider or change a specific belief or action ("ride a
-      bicycle," "does it have to be a car?", "let's get moving" — IF
+      bicycle," "does it have to be a car?", "let's get moving" -- IF
       elaborated, not standalone).
-  (b) Framing the prescribed future — or the authority/institution behind
-      it (government, politicians, corporations, elites, "the policy") —
+  (b) Framing the prescribed future -- or the authority/institution behind
+      it (government, politicians, corporations, elites, "the policy") --
       as illegitimate, coercive, or imposed, refusing or contesting that
-      authority's legitimacy. This applies EVEN IN THIRD PERSON — a
+      authority's legitimacy. This applies EVEN IN THIRD PERSON -- a
       literal face-to-face address is NOT required. Adversarial framing
       of power structures ("politicians," "big corporations," "taxed for
       an ideology," "communism") is itself sufficient.
@@ -608,30 +634,20 @@ following AS MAJOR, SUBSTANTIVE content (not a single unelaborated aside):
       infrastructure... We should transition to X instead...").
   EXCLUSION: A conditional "if you..." clause that merely QUALIFIES a
   declarative claim (e.g., "a false solution if you care about the
-  environment at all") does NOT satisfy (a)-(d) — remains EVALUATION.
-  → If (a), (b), (c), or (d) is present as major content: classify as
+  environment at all") does NOT satisfy (a)-(d) -- remains EVALUATION.
+  -> If (a), (b), (c), or (d) is present as major content: classify as
     NEGOTIATION (apply REJECT vs. CONTEST per the disambiguation in
     Section B). Stop here.
 
-STEP 3 — EVALUATION (default):
+STEP 3 -- EVALUATION (default):
 If neither Step 1 nor Step 2 applies, classify as EVALUATION. This
 includes passages with a brief, UNELABORATED incidental phrase that
-superficially resembles (a)-(d) but is not the passage's main point —
-apply the Dominance Test below.
+superficially resembles (a)-(d) but is not the passage's main point.
+Apply the disambiguation in Section B between AVOID (narrow, unelaborated
+dismissal) and COMPLEXIFY (elaborated systemic critique) when the
+orientation is unclear between Resistant and Expander.
 
-─── DOMINANCE TEST (applies ONLY to distinguishing NEGOTIATION from
-EVALUATION — NEVER applies to Enactment, which is always absolute
-priority per Step 1) ───
-Ask: "If I removed this single short phrase, would the passage's meaning
-and primary point remain fully intact?"
-  → If YES → the phrase is incidental; classify based on the remaining,
-    dominant Evaluation content.
-  → If NO (the phrase or an equivalent elaboration constitutes a
-    substantial part of the passage, or independently satisfies (b) or
-    (c) even briefly, e.g., a named address or adversarial framing of an
-    authority) → classify as NEGOTIATION.
-
-STEP 4 — MANDATORY TIE-BREAKER (last resort only, if Steps 1-3 genuinely
+STEP 4 -- MANDATORY TIE-BREAKER (last resort only, if Steps 1-3 genuinely
 cannot resolve a dominant activity): ENACTMENT > NEGOTIATION > EVALUATION.
 
 IMPORTANT: When in doubt between Evaluation and Negotiation, DEFAULT TO
@@ -645,9 +661,9 @@ adversarially as illegitimate/coercive) remain EVALUATION; references
 that explicitly frame them as imposing something illegitimate satisfy
 criterion (b) and become NEGOTIATION.
 
-════════════════════════════════════════════════════════════════
+====================================================================
 I. POTENTIAL CHALLENGE CONTRIBUTION
-════════════════════════════════════════════════════════════════
+====================================================================
 
 For EVERY text, in addition to classifying its activity/subtype/
 orientation, identify:
@@ -658,20 +674,31 @@ orientation, identify:
      citing specific phrases from THIS text, framed in terms of how this
      friction could contribute to Fragile Futures if left unaddressed.
 
-Do NOT compute the challenge label yourself — it is derived
+Do NOT compute the challenge label yourself -- it is derived
 deterministically from your "main_activity" by the calling application.
 
-════════════════════════════════════════════════════════════════
+====================================================================
 CRITICAL OUTPUT RULE
-════════════════════════════════════════════════════════════════
+====================================================================
 
 Select EXACTLY ONE value for each enum field below. There is no "MIXED"
 option for any field. Always resolve to exactly one value using the
 Decision Procedure (Section H).
 
-════════════════════════════════════════════════════════════════
-OUTPUT FORMAT — Return ONLY valid JSON
-════════════════════════════════════════════════════════════════
+MANDATORY ORIENTATION-SUBTYPE PAIRING (never violate this table):
+  CATALYZER  -> SIMPLIFY (Evaluation) | ADVOCATE (Negotiation) | ACCELERATE (Enactment)
+  AMBIVALENT -> STALL (Evaluation)    | QUESTION (Negotiation) | DELAY (Enactment)
+  RESISTANT  -> AVOID (Evaluation)    | REJECT (Negotiation)   | PREVENT (Enactment)
+  EXPANDER   -> COMPLEXIFY (Evaluation) | CONTEST (Negotiation) | REROUTE (Enactment)
+Before finalizing your answer, verify that "activity_subtype" belongs to
+the row matching your "main_orientation" and "main_activity". If it does
+not, you have made an error -- re-evaluate which orientation is correct
+given the subtype, or which subtype is correct given the orientation, and
+resolve the inconsistency before responding.
+
+====================================================================
+OUTPUT FORMAT -- Return ONLY valid JSON
+====================================================================
 
 {
   "prescribed_future_acknowledged": "Brief restatement of the prescribed future",
@@ -689,7 +716,7 @@ OUTPUT FORMAT — Return ONLY valid JSON
   "temporality_expressed": "...",
   "notable_conditions_of_adoption": "Which single condition applies, if evident",
 
-  "likely_opposing_orientation": "One single value among CATALYZER, AMBIVALENT, RESISTANT, EXPANDER — not the main_orientation",
+  "likely_opposing_orientation": "One single value among CATALYZER, AMBIVALENT, RESISTANT, EXPANDER -- not the main_orientation",
   "potential_challenge_rationale": "Content-specific explanation citing THIS text's phrases, framed in terms of Fragile Futures risk",
 
   "policy_recommendations": {
@@ -702,128 +729,118 @@ OUTPUT FORMAT — Return ONLY valid JSON
 """
 
 # ─────────────────────────────────────────
-# ORIENTATION CONFIG (Table 2 + notable_conditions + taglines)
+# ORIENTATION CONFIG
 # ─────────────────────────────────────────
 ORIENTATIONS = {
     "CATALYZER": {
-        "emoji": "⚡", "color": "#27AE60", "bg": "#EAFAF1", "border": "#2ECC71",
+        "color": "#27AE60", "bg": "#EAFAF1", "border": "#2ECC71",
         "goal": "Accelerate change toward the prescribed future",
         "narrative": "Urgency Narrative",
         "tagline": "Urgent, desirable, and already underway.",
-        "temporality": "Present-focused — The future is NOW",
-        "activities": "Simplify · Advocate · Accelerate",
+        "temporality": "Present-focused -- The future is now",
+        "activities": "Simplify - Advocate - Accelerate",
         "notable_conditions": (
             "High degree of alignment between current practices and "
             "prescribed future"
         )
     },
     "AMBIVALENT": {
-        "emoji": "⚖️", "color": "#D68910", "bg": "#FEFDE7", "border": "#F4D03F",
+        "color": "#D68910", "bg": "#FEFDE7", "border": "#F4D03F",
         "goal": "Slow or stage movement; delay decisions; balance risks and benefits",
         "narrative": "Pragmatic Narrative",
         "tagline": "Valuable, but conditions are not yet ready.",
-        "temporality": "Gradual — The future is contingent",
-        "activities": "Stall · Question · Delay",
+        "temporality": "Gradual -- The future is contingent",
+        "activities": "Stall - Question - Delay",
         "notable_conditions": "Limited resources to support change"
     },
     "RESISTANT": {
-        "emoji": "🛡️", "color": "#C0392B", "bg": "#FDEDEC", "border": "#E74C3C",
+        "color": "#C0392B", "bg": "#FDEDEC", "border": "#E74C3C",
         "goal": "Contest the prescribed future; protect the status quo",
         "narrative": "Control Narrative",
         "tagline": "Threatens autonomy, identity, or rights.",
-        "temporality": "Maintenance — The future is distant / should not happen",
-        "activities": "Avoid · Reject · Prevent",
+        "temporality": "Maintenance -- The future is distant / should not happen",
+        "activities": "Avoid - Reject - Prevent",
         "notable_conditions": "Low degree of alignment between current practices and prescribed future"
     },
     "EXPANDER": {
-        "emoji": "🌍", "color": "#7D3C98", "bg": "#F4ECF7", "border": "#9B59B6",
+        "color": "#7D3C98", "bg": "#F4ECF7", "border": "#9B59B6",
         "goal": "Expand and reroute the prescribed future; propose alternatives",
         "narrative": "Bigger Picture Narrative",
         "tagline": "The problem is framed too narrowly.",
-        "temporality": "Envisioned — Change will be broader than prescribed",
-        "activities": "Complexify · Contest · Reroute",
+        "temporality": "Envisioned -- Change will be broader than prescribed",
+        "activities": "Complexify - Contest - Reroute",
         "notable_conditions": "Mismatch among current practices, normative practices, and the prescribed future"
     }
 }
 
 CHALLENGES = {
     "CONVOLUTED_EVALUATIONS": {
-        "emoji": "🌀", "label": "Convoluted Evaluations",
+        "label": "Convoluted Evaluations",
         "color": "#2980B9", "bg": "#EBF5FB",
         "description": "Consumers evaluate the prescribed future with more or less certainty and thoroughness, making coherent sensemaking difficult"
     },
     "CONFRONTATIONAL_NEGOTIATIONS": {
-        "emoji": "⚔️", "label": "Confrontational Negotiations",
+        "label": "Confrontational Negotiations",
         "color": "#E67E22", "bg": "#FEF9E7",
         "description": "Consumers negotiate their preferred futures without conceding to alternative ones"
     },
     "COMPETING_ENACTMENTS": {
-        "emoji": "🔀", "label": "Competing Enactments",
+        "label": "Competing Enactments",
         "color": "#8E44AD", "bg": "#F5EEF8",
         "description": "Consumers enact different preferred futures through their current practices"
     },
     "N/A": {
-        "emoji": "➖", "label": "Not Applicable",
+        "label": "Not Applicable",
         "color": "#999", "bg": "#FAFAFA",
         "description": "No potential challenge could be derived"
     }
 }
 
+# subtypes map subtype -> canonical orientation key, used both for display
+# and for the automatic consistency-correction safeguard
 ACTIVITY_META = {
     "EVALUATION":  {
-        "icon": "📊", "color": "#2980B9", "bg": "#EBF5FB",
+        "color": "#2980B9", "bg": "#EBF5FB",
         "definition": "Standalone declarative claim or judgment about the prescribed future.",
-        "subtypes": {
-            "SIMPLIFY":    ("⚡ Catalyzer", "#27AE60"),
-            "STALL":       ("⚖️ Ambivalent", "#D68910"),
-            "AVOID":       ("🛡️ Resistant",  "#C0392B"),
-            "COMPLEXIFY":  ("🌍 Expander",   "#7D3C98"),
-        }
+        "subtypes": {"SIMPLIFY": "CATALYZER", "STALL": "AMBIVALENT",
+                     "AVOID": "RESISTANT", "COMPLEXIFY": "EXPANDER"}
     },
     "NEGOTIATION": {
-        "icon": "💬", "color": "#E67E22", "bg": "#FEF9E7",
+        "color": "#E67E22", "bg": "#FEF9E7",
         "definition": "Imperative, adversarial framing of authority, named address, or elaborated collective call to action.",
-        "subtypes": {
-            "ADVOCATE":  ("⚡ Catalyzer", "#27AE60"),
-            "QUESTION":  ("⚖️ Ambivalent", "#D68910"),
-            "REJECT":    ("🛡️ Resistant",  "#C0392B"),
-            "CONTEST":   ("🌍 Expander",   "#7D3C98"),
-        }
+        "subtypes": {"ADVOCATE": "CATALYZER", "QUESTION": "AMBIVALENT",
+                     "REJECT": "RESISTANT", "CONTEST": "EXPANDER"}
     },
     "ENACTMENT":   {
-        "icon": "⚙️", "color": "#8E44AD", "bg": "#F5EEF8",
-        "definition": "Specifies what the consumer THEMSELVES does or intends to do (absolute priority when present).",
-        "subtypes": {
-            "ACCELERATE": ("⚡ Catalyzer", "#27AE60"),
-            "DELAY":      ("⚖️ Ambivalent", "#D68910"),
-            "PREVENT":    ("🛡️ Resistant",  "#C0392B"),
-            "REROUTE":    ("🌍 Expander",   "#7D3C98"),
-        }
+        "color": "#8E44AD", "bg": "#F5EEF8",
+        "definition": "Specifies what the consumer themselves does or intends to do (absolute priority when present).",
+        "subtypes": {"ACCELERATE": "CATALYZER", "DELAY": "AMBIVALENT",
+                     "PREVENT": "RESISTANT", "REROUTE": "EXPANDER"}
     },
 }
 
 PF_EV = (
     "Transition all vehicles to Zero Emission Vehicles (EVs) to achieve Australia's "
     "net-zero emissions targets, as prescribed by Australia's National Electric "
-    "Vehicle Strategy (2023) — a Bounded Intervention (broad scope, highly prescriptive)"
+    "Vehicle Strategy (2023) -- a Bounded Intervention (broad scope, highly prescriptive)"
 )
 
 PF_NVES = (
     "Implement a national New Vehicle Efficiency Standard (NVES) in Australia to "
     "reduce transport emissions, as consulted on by the Australian Government's "
-    "Department of Climate Change, Energy, the Environment and Water — a Bounded "
+    "Department of Climate Change, Energy, the Environment and Water -- a Bounded "
     "Intervention (broad scope, highly prescriptive)"
 )
 
 PF_AI_HEALTH = (
     "Integrate AI-supported triage, diagnostic tools, and predictive risk-scoring "
     "systems into healthcare service delivery, where AI is expected to contribute "
-    "to healthcare quality and efficiency across sectors — an Open Intervention "
-    "(broad scope, lowly prescriptive), as illustrated in Web Appendix E of the paper"
+    "to healthcare quality and efficiency across sectors -- an Open Intervention "
+    "(broad scope, lowly prescriptive)"
 )
 
 # ─────────────────────────────────────────
-# POLICY & MANAGERIAL GUIDANCE (unchanged from previous version)
+# POLICY & MANAGERIAL GUIDANCE
 # ─────────────────────────────────────────
 POLICY_GUIDANCE = {
     "CATALYZER": {
@@ -850,7 +867,7 @@ POLICY_GUIDANCE = {
             "desirable but consider specific technical, material, ethical, or "
             "institutional conditions unresolved. Their conditional support "
             "should be used to formulate the exact conditions under which broader "
-            "authorization becomes legitimate — not treated merely as an adoption "
+            "authorization becomes legitimate -- not treated merely as an adoption "
             "barrier."
         ),
         "monitor": (
@@ -921,7 +938,7 @@ MANAGER_GUIDANCE = {
     "AMBIVALENT": {
         "implications": (
             "Ambivalent hesitation can identify specific, addressable barriers "
-            "rather than generalized opposition — treat it as diagnostic "
+            "rather than generalized opposition -- treat it as diagnostic "
             "information, not resistance to be overcome by persuasion alone."
         ),
         "monitor": (
@@ -937,7 +954,7 @@ MANAGER_GUIDANCE = {
     "RESISTANT": {
         "implications": (
             "Distinguish ideological opposition, identity threat, material "
-            "disadvantage, and practical exclusion — each requires a different "
+            "disadvantage, and practical exclusion -- each requires a different "
             "kind of managerial response, not a single reassurance message."
         ),
         "monitor": (
@@ -952,7 +969,7 @@ MANAGER_GUIDANCE = {
     "EXPANDER": {
         "implications": (
             "Expander critique may reveal broader value propositions, necessary "
-            "complementarities, and alternative governance or business models — "
+            "complementarities, and alternative governance or business models -- "
             "treat it as market intelligence about unmet systemic needs, not as "
             "out-of-scope noise."
         ),
@@ -969,91 +986,89 @@ MANAGER_GUIDANCE = {
 }
 
 CROSS_ORIENTATION_WARNING = (
-    "⚠️ **Cross-orientation interference check (Managerial Step 4):** Before "
-    "finalizing a response, check whether a response tailored to one orientation "
-    "intensifies fragility elsewhere. For example, performance-evidence campaigns "
-    "that reassure Ambivalent users may deepen Resistant distrust, or reinforce "
-    "Expander critique that the intervention is being oversold as a complete "
-    "solution."
+    "Cross-orientation interference check: Before finalizing a response, check "
+    "whether a response tailored to one orientation intensifies fragility "
+    "elsewhere. For example, performance-evidence campaigns that reassure "
+    "Ambivalent users may deepen Resistant distrust, or reinforce Expander "
+    "critique that the intervention is being oversold as a complete solution."
 )
 
 # ─────────────────────────────────────────
-# EXAMPLES — realigned to Table WD1 (Web Appendix D); Resistant/Reject
-# cleaned of Enactment-flavored contamination; Expander/Reroute reverted
-# to lean version with strong first-person action content
+# EXAMPLES -- built-in coded illustrations, used both as UI shortcuts and
+# as ground truth for the validation suite
 # ─────────────────────────────────────────
 EXAMPLES = {
-    "— Select an example from the paper —": {
+    "Select an example": {
         "prescribed": "", "comment": "", "activity": "", "subtype": "", "orientation": ""
     },
-    "⚡ CATALYZER  |  📊 Evaluation  →  Simplify": {
+    "CATALYZER | Evaluation -> Simplify": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "SIMPLIFY", "orientation": "CATALYZER",
         "comment": (
             "We need to move on climate with urgency [...] Boldness will encourage "
             "innovation here as we more fully join the international efforts "
-            "towards zero fossil fuels (PC). "
+            "towards zero fossil fuels. "
             "All the studies I've seen say about 12,000 miles or 3 to 5 years for "
-            "lifetime emissions to be better than ICE (FG). "
+            "lifetime emissions to be better than ICE. "
             "There's no discussion about whether they're better for the "
             "environment. The math and science is extremely clear and it's "
-            "ridiculous to even compare them with how much better EVs are (FG). "
+            "ridiculous to even compare them with how much better EVs are. "
             "Climate change is an urgent threat, and we need to accelerate the "
             "decarbonisation of transport quickly and efficiently [...] At a time "
             "of higher concern about the cost of living will deliver the most "
-            "benefits to Australian households. Let's lift the ambition (PC)."
+            "benefits to Australian households. Let's lift the ambition."
         )
     },
-    "⚡ CATALYZER  |  💬 Negotiation  →  Advocate": {
+    "CATALYZER | Negotiation -> Advocate": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "ADVOCATE", "orientation": "CATALYZER",
         "comment": (
-            "#ClimateCrisis is real. It's time to look at #solarenergy and "
-            "#ElectricVehicles not the energy sources of the past like "
-            "#fossilfuels (X). "
+            "Climate crisis is real. It's time to look at solar energy and "
+            "electric vehicles, not the energy sources of the past like fossil "
+            "fuels. "
             "When prices drop below $50k and charging times below 15 minutes, you "
-            "can expect a real EV boom (W). "
+            "can expect a real EV boom. "
             "More or less of a problem than handing my kids a planet that's an "
-            "uninhabitable shithole? (FG). "
+            "uninhabitable place? "
             "We need to act on transport emissions as quickly as possible. People "
-            "are still buying new Internal Combustion Energy vehicles due to the "
-            "lack of choice of Electric Vehicles. Australia has demonstrated that "
-            "it has an appetite for EVs, so let's get moving (PC)."
+            "are still buying new internal combustion vehicles due to the lack of "
+            "choice of electric vehicles. Australia has demonstrated that it has "
+            "an appetite for EVs, so let's get moving."
         )
     },
-    "⚡ CATALYZER  |  ⚙️ Enactment  →  Accelerate": {
+    "CATALYZER | Enactment -> Accelerate": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "ACCELERATE", "orientation": "CATALYZER",
         "comment": (
             "Our family has been living with an EV and a PHEV for 3 years and "
             "they are fantastic. There are many advantages and few disadvantages, "
-            "apart from fictitious scenarios non-EV owners make up (W). "
-            "Road trips up and down East Coast are simple in a Tesla… with "
-            "superchargers it is easy – just a stop every 2.5 hours or so (W). "
-            "We now both use our EV as our preferred first vehicle… the EV just "
-            "ends up being nicer for road trips too (W). "
-            "Proud owner of Model 3. I'll never own a gas combustion engine again "
-            "-- not even a hybrid (TW). "
+            "apart from fictitious scenarios non-EV owners make up. "
+            "Road trips up and down East Coast are simple in a Tesla, with "
+            "superchargers it is easy, just a stop every 2.5 hours or so. "
+            "We now both use our EV as our preferred first vehicle, the EV just "
+            "ends up being nicer for road trips too. "
+            "Proud owner of Model 3. I'll never own a gas combustion engine again, "
+            "not even a hybrid. "
             "Bought our first EV largely for the environment, partly for fuel "
             "cost savings. Bought our second EV because they're just far better "
-            "cars to own and drive (R)."
+            "cars to own and drive."
         )
     },
-    "⚖️ AMBIVALENT  |  📊 Evaluation  →  Stall": {
+    "AMBIVALENT | Evaluation -> Stall": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "STALL", "orientation": "AMBIVALENT",
         "comment": (
-            "Range anxiety is overstated… however if you stay somewhere with no "
-            "charging and need to drive 200–300km you are stuffed (W). "
+            "Range anxiety is overstated, however if you stay somewhere with no "
+            "charging and need to drive 200-300km you are stuffed. "
             "I am far from being anti EV (I want one!) but I am also trying to "
-            "weigh up all the facts (FG). "
+            "weigh up all the facts. "
             "I'm not convinced yet that full EVs are the way to go. They seem to "
             "have quite a few problems, you know, battery disposal and other "
-            "things (I). "
+            "things. "
             "Perhaps these problems are over-exaggerated for views and I realise "
             "they will eventually be resolved with infrastructure and "
             "improvements in technology. I just don't see this happening "
             "adequately in the next few years. I'm willing to change my mind if "
-            "my concerns are unfounded (R)."
+            "my concerns are unfounded."
         )
     },
-    "⚖️ AMBIVALENT  |  💬 Negotiation  →  Question": {
+    "AMBIVALENT | Negotiation -> Question": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "QUESTION", "orientation": "AMBIVALENT",
         "comment": (
             "One of the arguments that is used for full EV's is the lower "
@@ -1063,32 +1078,32 @@ EXAMPLES = {
             "years you're trying to save money. Opportunity cost perhaps? I also "
             "can't help thinking that in a few years they will come out with a "
             "cheaper, more efficient or better technology that will render all of "
-            "the current EV's completely worthless (YT). "
+            "the current EV's completely worthless. "
             "We need to invest in infrastructure but at the same time limit the "
             "cost of doing so by not putting all eggs in the one basket. We "
             "should not place all our attention on EVs now as most of the "
             "electricity used to charge them is from burning coal. We should "
-            "transition to hybrid vehicles instead of EVs until 2030 (PC)."
+            "transition to hybrid vehicles instead of EVs until 2030."
         )
     },
-    "⚖️ AMBIVALENT  |  ⚙️ Enactment  →  Delay": {
+    "AMBIVALENT | Enactment -> Delay": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "DELAY", "orientation": "AMBIVALENT",
         "comment": (
             "Really good and interesting report! I am wanting to upgrade the car "
             "at a not too distant time and I am umming and aahing over PHEV or "
             "EV. EV would be magic but such a jump in price! PHEV seems great as "
-            "a midway point as most of my driving is around town (YT). "
+            "a midway point as most of my driving is around town. "
             "Yep, the cost is indeed a huge hurdle. I think I'll be running my 12 "
-            "year old Subaru Outback a bit longer! (YT). "
+            "year old Subaru Outback a bit longer! "
             "Just bought a new petrol car as the infrastructure still isn't in "
-            "place (FG). "
+            "place. "
             "Hopefully, by the time my car does need to be replaced, EVs are a "
-            "lot cheaper and the inconveniences are worked out (R). "
-            "My car is doing all right — 13 years and 130,000 km, so good for "
-            "another 13 years because it's diesel (FG)."
+            "lot cheaper and the inconveniences are worked out. "
+            "My car is doing all right, 13 years and 130,000 km, so good for "
+            "another 13 years because it's diesel."
         )
     },
-    "🛡️ RESISTANT  |  📊 Evaluation  →  Avoid": {
+    "RESISTANT | Evaluation -> Avoid": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "AVOID", "orientation": "RESISTANT",
         "comment": (
             "Electric vehicles are not the solution, for Australia to take this "
@@ -1098,68 +1113,66 @@ EXAMPLES = {
             "up with the demand now let alone if everyone in inner city want "
             "electric cars being recharged in high rise complexes. I feel this "
             "is a lazy policy just appealing to city people and is just going to "
-            "result in expensive car prices (PC). "
+            "result in expensive car prices. "
             "EV and hybrid technology has long way to go especially here in "
             "Australia. Petrol and diesel vehicles will be around for many "
-            "decades to come doing the jobs that EVs and Hybrids just can't do "
-            "(YT). "
-            "Electric vehicles are not the future, just a muddle point (PC)."
+            "decades to come doing the jobs that EVs and hybrids just can't do. "
+            "Electric vehicles are not the future, just a muddle point."
         )
     },
-    "🛡️ RESISTANT  |  💬 Negotiation  →  Reject": {
+    "RESISTANT | Negotiation -> Reject": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "REJECT", "orientation": "RESISTANT",
         "comment": (
-            "Is this communism — take away our freedom of choice! (FG). "
+            "Is this communism, take away our freedom of choice! "
             "Australians are not as ignorant as the politicians think, and they "
             "research government push and now question the purpose behind these "
             "pushes. There's always big corporations behind any government move "
             "and if this country is taxed just for an ideology then the "
-            "potential for even greater social unrest is likely (PC). "
+            "potential for even greater social unrest is likely. "
             "I think it's like being a vegan of the car world. People think it's "
-            "a virtue signal — that you must be a snooty holier-than-thou type "
+            "a virtue signal, that you must be a snooty holier-than-thou type "
             "judging their non-participation and lifestyle which they take "
             "pride in and identify with. It's social policing because you're "
-            "deviating from the norm (FG). "
+            "deviating from the norm. "
             "Yes they are just slapped together on the EV gravy train. Like any "
             "new technologies what are you going to do if your EV shits itself "
             "out in the middle of nowhere? You'd better be sitting down when you "
             "get the towing and repair bill for your 80 grand shit box. And you "
-            "thought you would save money buying an EV? (YT)."
+            "thought you would save money buying an EV?"
         )
     },
-    "🛡️ RESISTANT  |  ⚙️ Enactment  →  Prevent": {
+    "RESISTANT | Enactment -> Prevent": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "PREVENT", "orientation": "RESISTANT",
         "comment": (
             "I have had ICE cars for some 37 years and have found them to be "
-            "very reliable (W). "
-            "Why buy a new EV when my old car is doing all right — 13 years and "
+            "very reliable. "
+            "Why buy a new EV when my old car is doing all right, 13 years and "
             "130,000 km, so good for another 13 years because it's diesel. No "
             "matter what the price of an EV it's still cheaper to keep the car I "
-            "own and repair (FG). "
+            "own and repair. "
             "From the start of manufacturing to the end of the vehicle's life "
-            "I'd easily put my money on ICE being a far better investment (FG). "
-            "Me, I'm sticking to my petrol vehicle til it dies (YT)."
+            "I'd easily put my money on ICE being a far better investment. "
+            "Me, I'm sticking to my petrol vehicle til it dies."
         )
     },
-    "🌍 EXPANDER  |  📊 Evaluation  →  Complexify": {
+    "EXPANDER | Evaluation -> Complexify": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "COMPLEXIFY", "orientation": "EXPANDER",
         "comment": (
             "Facilitating greater use of active, shared and public transport can "
-            "cut climate pollution further and faster [than electrifying "
-            "vehicles] - and do so this decade - because the effects are seen "
-            "immediately through reduced use of private motor vehicle travel "
-            "(AD). "
+            "cut climate pollution further and faster than electrifying "
+            "vehicles, and do so this decade, because the effects are seen "
+            "immediately through reduced use of private motor vehicle travel. "
             "The best way to help the environment is to buy less stuff and keep "
-            "older stuff running for longer (R). "
+            "older stuff running for longer. "
             "This doesn't cover the destruction of the fabric of cities to "
             "accommodate cars. Gasoline or electric, the most significant "
             "environmental destruction that's caused by cars are the blight it "
             "causes to cities. 60% of the land in car-dependent cities are "
             "dedicated to cars, mainly parking and roads. Electric vehicle is a "
-            "false solution if you care about the environment at all (FG)."
+            "false solution if you care about the environment at all."
         )
     },
-    "🌍 EXPANDER  |  💬 Negotiation  →  Contest": {
+    "EXPANDER | Negotiation -> Contest": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "CONTEST", "orientation": "EXPANDER",
         "comment": (
             "Consumerism trumps facts. John you are so right but the first "
@@ -1168,39 +1181,39 @@ EXAMPLES = {
             "join the Joneses, Smiths or whoever your neighbour is and spend "
             "money on that flash new hybrid/EV/hydrogen powered four wheeled "
             "status symbol that shows you earn more money than you need. But "
-            "hey who am I to judge (YT). "
-            "Does it have to be a car? (FG). "
-            "If your main priority was the environment, ride a bicycle… You're "
-            "buying a 2-tonne metal box powered by a giant battery — let's not "
+            "hey who am I to judge. "
+            "Does it have to be a car? "
+            "If your main priority was the environment, ride a bicycle. You're "
+            "buying a 2-tonne metal box powered by a giant battery, let's not "
             "pretend we're saving the planet, we're just picking a lesser evil "
-            "but it's still not good for the planet (R)."
+            "but it's still not good for the planet."
         )
     },
-    "🌍 EXPANDER  |  ⚙️ Enactment  →  Reroute": {
+    "EXPANDER | Enactment -> Reroute": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "REROUTE", "orientation": "EXPANDER",
         "comment": (
             "We tend to do most of our shopping by bike rather than with the ute "
             "because the ute's inconvenient to park and navigate in small car "
-            "parks (I). "
+            "parks. "
             "So that's the plan, to extract maximum value out of that current "
             "vehicle until it is no longer functional. I am at the moment on a "
-            "waiting list for a new electric cargo bike (I). "
+            "waiting list for a new electric cargo bike. "
             "The future is less cars, in higher density pedestrian, bike and "
             "train-orientated urban environments, where cars are secondary "
-            "transport really only for those who really need it (FG). "
+            "transport really only for those who really need it. "
             "I uprooted my life and moved from the Sunshine Coast to Melbourne "
             "with some of my strongest reasoning being the ability to use "
             "public transport, ride a bike around and use a car as little as "
-            "possible (PC)."
+            "possible."
         )
     },
 }
 
 # ─────────────────────────────────────────
-# GENERALIZATION TESTS — cross-domain (EV + AI healthcare), per Web Appendix E
+# GENERALIZATION TESTS -- cross-domain (EV + AI healthcare), out-of-sample
 # ─────────────────────────────────────────
 GENERALIZATION_TESTS = {
-    "— Select a generalization test —": {"comment": "", "note": "", "prescribed": ""},
+    "Select a generalization test": {"comment": "", "note": "", "prescribed": ""},
     "New (EV domain): mechanic cost concern": {
         "comment": (
             "I've been thinking about getting an EV for a while but my mechanic "
@@ -1227,8 +1240,7 @@ GENERALIZATION_TESTS = {
             "handing over consequential decisions to an algorithm."
         ),
         "note": "Expected: AMBIVALENT / NEGOTIATION-QUESTION or ENACTMENT-DELAY "
-                "(tests whether the framework generalizes beyond the EV domain, "
-                "per Web Appendix E)",
+                "(tests whether the framework generalizes beyond the EV domain)",
         "prescribed": PF_AI_HEALTH
     },
     "New (cross-domain, AI healthcare): patient autonomy rejection": {
@@ -1243,7 +1255,43 @@ GENERALIZATION_TESTS = {
 }
 
 # ─────────────────────────────────────────
-# CORE FUNCTIONS — single-comment analysis
+# CONSISTENCY SAFEGUARD
+# ─────────────────────────────────────────
+
+def _enforce_subtype_orientation_consistency(result: dict) -> dict:
+    """Defensive post-processing: if the model returns an impossible
+    orientation-subtype pairing (e.g., EXPANDER + AVOID, which does not
+    exist in the schema), correct the subtype to match the identified
+    orientation. The orientation classification is trusted as the source
+    of truth, since orientation accuracy is empirically more reliable
+    than subtype accuracy in edge cases."""
+    main_orientation = _clean_enum(result.get("main_orientation", "")).upper()
+    main_activity = _clean_enum(result.get("main_activity", "")).upper()
+    subtype = _clean_enum(result.get("activity_subtype", "")).upper()
+
+    subtype_map = ACTIVITY_META.get(main_activity, {}).get("subtypes", {})
+    if not subtype_map:
+        return result
+
+    expected_orientation_for_subtype = subtype_map.get(subtype)
+
+    if expected_orientation_for_subtype and expected_orientation_for_subtype != main_orientation:
+        corrected_subtype = next(
+            (st for st, ori in subtype_map.items() if ori == main_orientation),
+            None
+        )
+        if corrected_subtype:
+            result["activity_subtype"] = corrected_subtype
+            result["_consistency_note"] = (
+                f"Internal consistency check: subtype adjusted from {subtype} "
+                f"to {corrected_subtype} to match the identified orientation "
+                f"({main_orientation})."
+            )
+    return result
+
+
+# ─────────────────────────────────────────
+# CORE FUNCTIONS -- single-comment analysis
 # ─────────────────────────────────────────
 
 def analyze_comment(prescribed_future: str, comment: str, api_key: str) -> dict:
@@ -1258,15 +1306,16 @@ TEXT TO ANALYZE:
 Remember: read the ENTIRE passage first (Step 0), then apply the DECISION
 PROCEDURE (Section H) in order. ENACTMENT (Step 1) is an ABSOLUTE priority
 whenever any substantive first-person action is described, regardless of
-surrounding content. For NEGOTIATION (Step 2), apply criteria (a)-(d) —
+surrounding content. For NEGOTIATION (Step 2), apply criteria (a)-(d) --
 remember that criterion (b), adversarial framing of authorities like
 "politicians" or "corporations," applies even in THIRD PERSON and does
-NOT require a literal direct address. Return EXACTLY ONE value per enum
-field. Complete Section I (likely_opposing_orientation +
-potential_challenge_rationale), framing the rationale in terms of Fragile
-Futures risk where relevant. Populate policy_recommendations and
-manager_recommendations with content SPECIFIC to the prescribed future
-given above.
+NOT require a literal direct address. Verify your activity_subtype belongs
+to the valid pairing table for your main_orientation before responding.
+Return EXACTLY ONE value per enum field. Complete Section I
+(likely_opposing_orientation + potential_challenge_rationale), framing the
+rationale in terms of Fragile Futures risk where relevant. Populate
+policy_recommendations and manager_recommendations with content SPECIFIC
+to the prescribed future given above.
 """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -1277,12 +1326,14 @@ given above.
         response_format={"type": "json_object"},
         temperature=0
     )
-    return json.loads(response.choices[0].message.content)
+    parsed = json.loads(response.choices[0].message.content)
+    parsed = _enforce_subtype_orientation_consistency(parsed)
+    return parsed
 
 
 def run_validation_suite(api_key: str) -> dict:
-    """Internal QA tool: validates the 12 single-comment examples,
-    realigned strictly to Table WD1 (Web Appendix D)."""
+    """Internal quality-control tool: validates the built-in coded
+    examples against their ground-truth categories."""
     results = []
     for name, ex in EXAMPLES.items():
         if not ex.get("comment"):
@@ -1325,7 +1376,7 @@ def extract_text_from_pdf(uploaded_file) -> str:
         from pypdf import PdfReader
     except ImportError:
         st.error(
-            "PDF support requires the 'pypdf' package. Add `pypdf` to "
+            "PDF support requires the 'pypdf' package. Add pypdf to "
             "requirements.txt and redeploy. In the meantime, you can paste "
             "the text directly using the 'Paste text' option below."
         )
@@ -1380,12 +1431,10 @@ def split_into_chunks(
 
 
 def extract_public_consultation_responses(text: str, min_words: int = 4) -> list:
-    """
-    Detects the specific pattern of NVES-style public consultation exports:
-    each response starts with a 6-7 digit ID, followed by 'Name withheld'
-    (or a real name), a ranking of options, a free-text comment, and ends
-    with a Yes/No/NULL support indicator. Returns free-text comments only.
-    """
+    """Detects tabular public-consultation exports: each response starts
+    with a 6-7 digit ID, followed by 'Name withheld' (or a real name), a
+    ranking of options, a free-text comment, and a Yes/No/NULL support
+    indicator. Returns free-text comments only, one per respondent."""
     text = re.sub(r'\s+', ' ', text.strip())
     id_pattern = re.compile(r'(?=\b\d{6,7}\s+(?:Name\s+withheld|[A-Z][a-z]+))')
     raw_blocks = id_pattern.split(text)
@@ -1500,42 +1549,42 @@ def build_narrative_summary(summary: dict, intervention_type_key: str = None) ->
         ori_meta = ORIENTATIONS.get(pred_ori, {})
         lines.append(
             f"Across **{n}** analyzed segments, the predominant future-making orientation is "
-            f"**{ori_meta.get('emoji','')} {pred_ori}** ({pct(ori_counts[pred_ori])}% of segments), "
-            f"reflecting a *{ori_meta.get('narrative','')}* — *\"{ori_meta.get('tagline','')}\"*"
+            f"**{pred_ori}** ({pct(ori_counts[pred_ori])}% of segments), "
+            f"reflecting a *{ori_meta.get('narrative','')}* -- \"{ori_meta.get('tagline','')}\""
         )
 
     sorted_ori = sorted(ori_counts.items(), key=lambda x: -x[1])
-    ori_dist = ", ".join(f"{ORIENTATIONS.get(k,{}).get('emoji','')} {k} {pct(v)}%" for k, v in sorted_ori)
+    ori_dist = ", ".join(f"{k} {pct(v)}%" for k, v in sorted_ori)
     lines.append(f"**Orientation distribution:** {ori_dist}.")
 
     if pred_chal and pred_chal != "N/A":
         chal_meta = CHALLENGES.get(pred_chal, {})
         lines.append(
             f"The predominant potential future-making challenge is "
-            f"**{chal_meta.get('emoji','')} {chal_meta.get('label', pred_chal)}** "
+            f"**{chal_meta.get('label', pred_chal)}** "
             f"({pct(chal_counts[pred_chal])}% of segments): {chal_meta.get('description','')}."
         )
 
     significant_orientations = [k for k, v in ori_counts.items() if pct(v) >= 15]
     if len(significant_orientations) >= 3:
         lines.append(
-            "⚠️ **High Fragile Futures risk**: at least three orientations each represent "
-            "15%+ of the corpus. Per the paper's framework, this fragmented landscape "
-            "suggests *multiple, volatile, and conflicting preferred futures* are likely "
-            "co-existing, interfering with actualization of the prescribed future — "
+            "High Fragile Futures risk: at least three orientations each represent "
+            "15%+ of the corpus. This fragmented landscape suggests multiple, "
+            "volatile, and conflicting preferred futures are likely co-existing, "
+            "interfering with actualization of the prescribed future -- "
             "orientation-specific strategies for each major group are likely necessary."
         )
     elif len(significant_orientations) == 2:
         lines.append(
-            "🔶 **Moderate Fragile Futures risk**: two orientations dominate the corpus, "
+            "Moderate Fragile Futures risk: two orientations dominate the corpus, "
             "suggesting the prescribed future is likely to face organized contestation "
             "from a substantial minority alongside majority support/acceptance."
         )
     else:
         lines.append(
-            "✅ **Lower Fragile Futures risk**: one orientation clearly dominates, "
+            "Lower Fragile Futures risk: one orientation clearly dominates, "
             "suggesting relatively more aligned sensemaking around the prescribed "
-            "future — though minority voices should still be monitored, as they may "
+            "future -- though minority voices should still be monitored, as they may "
             "still generate localized Convoluted Evaluations, Confrontational "
             "Negotiations, or Competing Enactments."
         )
@@ -1559,12 +1608,11 @@ def render_pct_bars(counts: dict, meta_dict: dict, total: int, label_key_name=No
         pct_val = round(cnt / total * 100, 1)
         meta = meta_dict.get(key, {})
         color = meta.get("color", "#888")
-        emoji = meta.get("emoji", meta.get("icon", ""))
         display_name = meta.get(label_key_name, key) if label_key_name else key
         st.markdown(f"""
         <div style="margin-bottom:10px;">
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px;">
-                <span>{emoji} <strong>{display_name}</strong></span>
+                <span><strong>{display_name}</strong></span>
                 <span style="color:#666;">{cnt} segments ({pct_val}%)</span>
             </div>
             <div style="background:#eee;border-radius:6px;height:14px;width:100%;overflow:hidden;">
@@ -1614,31 +1662,31 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
     st.markdown(f"""
     <div style="background:#EBF5FB;border-left:5px solid #2980B9;border-radius:8px;
                 padding:12px 18px;margin-bottom:16px;">
-        <strong style="color:#2980B9;">📌 Prescribed Future Analyzed:</strong><br>
+        <strong style="color:#2980B9;">Prescribed Future Analyzed:</strong><br>
         <em style="color:#333;">{prescribed_future}</em>
     </div>
     """, unsafe_allow_html=True)
 
     if n_errors:
-        st.warning(f"⚠️ {n_errors} segment(s) failed to analyze and were excluded from the summary.")
+        st.warning(f"{n_errors} segment(s) failed to analyze and were excluded from the summary.")
 
-    st.markdown("### 📝 Executive Summary")
+    st.markdown("### Executive Summary")
     st.markdown(build_narrative_summary(summary, intervention_type_key))
 
     st.markdown("---")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown("#### 🧭 Orientation Distribution")
+        st.markdown("#### Orientation Distribution")
         render_pct_bars(summary["orientation_counts"], ORIENTATIONS, n)
     with col2:
-        st.markdown("#### 🔄 Activity Distribution")
+        st.markdown("#### Activity Distribution")
         render_pct_bars(summary["activity_counts"], ACTIVITY_META, n)
     with col3:
-        st.markdown("#### ⚡ Potential Challenge Distribution")
+        st.markdown("#### Potential Challenge Distribution")
         render_pct_bars(summary["challenge_counts"], CHALLENGES, n, label_key_name="label")
 
     st.markdown("---")
-    st.markdown("### ⚔️ Most Frequent Likely Friction Pairs")
+    st.markdown("### Most Frequent Likely Friction Pairs")
     st.caption(
         "These pairs indicate which orientations, if they encountered each other "
         "in a real exchange, would most likely generate Fragile Futures dynamics."
@@ -1648,29 +1696,25 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
         sorted_pairs = sorted(friction_pairs.items(), key=lambda x: -x[1])
         for pair, cnt in sorted_pairs[:6]:
             o1, o2 = pair
-            cfg1, cfg2 = ORIENTATIONS.get(o1, {}), ORIENTATIONS.get(o2, {})
             pct_val = round(cnt / n * 100, 1)
-            st.markdown(
-                f"- {cfg1.get('emoji','')} **{o1}** ↔ {cfg2.get('emoji','')} **{o2}**: "
-                f"{cnt} segments ({pct_val}%)"
-            )
+            st.markdown(f"- **{o1}** vs. **{o2}**: {cnt} segments ({pct_val}%)")
     else:
         st.caption("No friction pairs identified.")
 
     st.markdown("---")
-    st.markdown("### 🎯 Recommended Focus Areas")
+    st.markdown("### Recommended Focus Areas")
     top_orientations = sorted(summary["orientation_counts"].items(), key=lambda x: -x[1])[:2]
-    policy_tab, manager_tab = st.tabs(["🏛️ Policy Focus", "🏢 Managerial Focus"])
+    policy_tab, manager_tab = st.tabs(["Policy Focus", "Managerial Focus"])
 
     with policy_tab:
         for ori, cnt in top_orientations:
             guidance = POLICY_GUIDANCE.get(ori, {})
             cfg = ORIENTATIONS.get(ori, {})
             pct_val = round(cnt / n * 100, 1)
-            st.markdown(f"**{cfg.get('emoji','')} {ori}** ({pct_val}% of segments) — *\"{cfg.get('tagline','')}\"*")
-            st.markdown(f"*General implications:* {guidance.get('implications','—')}")
-            st.markdown(f"*Monitor for:* {guidance.get('monitor','—')}")
-            st.markdown(f"*Objective:* {guidance.get('objective','—')}")
+            st.markdown(f"**{ori}** ({pct_val}% of segments) -- \"{cfg.get('tagline','')}\"")
+            st.markdown(f"*General implications:* {guidance.get('implications','--')}")
+            st.markdown(f"*Monitor for:* {guidance.get('monitor','--')}")
+            st.markdown(f"*Objective:* {guidance.get('objective','--')}")
             for inst in guidance.get("instruments", []):
                 st.markdown(f"- {inst}")
             st.markdown("")
@@ -1680,10 +1724,10 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
             guidance = MANAGER_GUIDANCE.get(ori, {})
             cfg = ORIENTATIONS.get(ori, {})
             pct_val = round(cnt / n * 100, 1)
-            st.markdown(f"**{cfg.get('emoji','')} {ori}** ({pct_val}% of segments) — *\"{cfg.get('tagline','')}\"*")
-            st.markdown(f"*General implications:* {guidance.get('implications','—')}")
-            st.markdown(f"*Monitor for:* {guidance.get('monitor','—')}")
-            st.markdown(f"*Objective:* {guidance.get('objective','—')}")
+            st.markdown(f"**{ori}** ({pct_val}% of segments) -- \"{cfg.get('tagline','')}\"")
+            st.markdown(f"*General implications:* {guidance.get('implications','--')}")
+            st.markdown(f"*Monitor for:* {guidance.get('monitor','--')}")
+            st.markdown(f"*Objective:* {guidance.get('objective','--')}")
             for interv in guidance.get("interventions", []):
                 st.markdown(f"- {interv}")
             avoid_list = guidance.get("avoid", [])
@@ -1694,13 +1738,13 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
             st.info(CROSS_ORIENTATION_WARNING)
 
     st.markdown("---")
-    st.markdown("### 📋 Segment-Level Detail")
+    st.markdown("### Segment-Level Detail")
     df = build_results_dataframe(results)
     st.dataframe(df, use_container_width=True, height=350)
 
     csv_bytes = df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        "⬇️ Download full results as CSV",
+        "Download full results as CSV",
         data=csv_bytes,
         file_name="future_making_document_analysis.csv",
         mime="text/csv"
@@ -1708,7 +1752,7 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
 
 
 # ─────────────────────────────────────────
-# UI HELPER FUNCTIONS — single comment
+# UI HELPER FUNCTIONS -- single comment
 # ─────────────────────────────────────────
 
 def show_example_badge(ex_data: dict):
@@ -1722,14 +1766,14 @@ def show_example_badge(ex_data: dict):
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
         <span style="background:{cfg['bg']};border:2px solid {cfg['border']};color:{cfg['color']};
                      border-radius:20px;padding:4px 14px;font-weight:bold;font-size:13px;">
-            {cfg['emoji']} {ori}
+            {ori}
         </span>
-        <span style="font-size:16px;color:#aaa;">→</span>
+        <span style="font-size:16px;color:#aaa;">-></span>
         <span style="background:{ameta['bg']};border:2px solid {ameta['color']};color:{ameta['color']};
                      border-radius:20px;padding:4px 14px;font-weight:bold;font-size:13px;">
-            {ameta['icon']} {act}
+            {act}
         </span>
-        <span style="font-size:16px;color:#aaa;">→</span>
+        <span style="font-size:16px;color:#aaa;">-></span>
         <span style="background:#f0f0f0;border:2px solid #bbb;color:#444;
                      border-radius:20px;padding:4px 14px;font-weight:bold;font-size:13px;">
             {sub}
@@ -1749,10 +1793,13 @@ def show_results(result: dict, prescribed_future: str):
     st.markdown(f"""
     <div style="background:#EBF5FB;border-left:5px solid #2980B9;border-radius:8px;
                 padding:12px 18px;margin-bottom:16px;">
-        <strong style="color:#2980B9;">📌 Prescribed Future Analyzed:</strong><br>
+        <strong style="color:#2980B9;">Prescribed Future Analyzed:</strong><br>
         <em style="color:#333;">{prescribed_future}</em>
     </div>
     """, unsafe_allow_html=True)
+
+    if result.get("_consistency_note"):
+        st.caption(f"Note: {result['_consistency_note']}")
 
     col1, col2, col3 = st.columns([2, 2, 2])
 
@@ -1762,15 +1809,15 @@ def show_results(result: dict, prescribed_future: str):
         <div style="background:{cfg.get('bg','#f5f5f5')};border-left:6px solid {cfg.get('border','#999')};
                     border-radius:10px;padding:16px 18px;min-height:230px;">
             <h3 style="color:{cfg.get('color','#555')};margin:0;font-size:22px;">
-                {cfg.get('emoji','❓')} {orientation}
+                {orientation}
             </h3>
             <p style="color:#666;margin:4px 0 3px;font-size:12px;">
                 <strong>Confidence:</strong> {result.get('orientation_confidence','N/A')}
             </p>
             <p style="color:#777;margin:2px 0;font-size:11px;font-style:italic;">"{cfg.get('tagline','')}"</p>
-            <p style="color:#777;margin:2px 0;font-size:11px;">📖 {cfg.get('narrative','')}</p>
-            <p style="color:#777;margin:2px 0;font-size:11px;">⏱️ {cfg.get('temporality','')}</p>
-            <p style="color:#777;margin:2px 0;font-size:11px;">🎯 {cfg.get('goal','')}</p>
+            <p style="color:#777;margin:2px 0;font-size:11px;">{cfg.get('narrative','')}</p>
+            <p style="color:#777;margin:2px 0;font-size:11px;">{cfg.get('temporality','')}</p>
+            <p style="color:#777;margin:2px 0;font-size:11px;">{cfg.get('goal','')}</p>
             <p style="color:#999;margin:4px 0 0;font-size:10px;">{cfg.get('activities','')}</p>
         </div>
         """, unsafe_allow_html=True)
@@ -1782,13 +1829,13 @@ def show_results(result: dict, prescribed_future: str):
         <div style="background:{ameta.get('bg','#f5f5f5')};border-left:6px solid {ameta.get('color','#555')};
                     border-radius:10px;padding:16px 18px;min-height:230px;">
             <h3 style="color:{ameta.get('color','#555')};margin:0;font-size:20px;">
-                {ameta.get('icon','🔄')} {main_act}
+                {main_act}
             </h3>
             <p style="color:#555;margin:4px 0 3px;font-size:12px;"><strong>Main Future-Making Activity</strong></p>
             <span style="background:{sub_cfg.get('bg','#f5f5f5')};border:1.5px solid {sub_cfg.get('color','#555')};
                          color:{sub_cfg.get('color','#555')};border-radius:12px;
                          padding:3px 10px;font-weight:bold;font-size:12px;">
-                → {act_sub}
+                -> {act_sub}
             </span>
             <p style="color:#777;margin:8px 0 0;font-size:11px;font-style:italic;">
                 {ameta.get('definition','')[:180]}...
@@ -1800,9 +1847,9 @@ def show_results(result: dict, prescribed_future: str):
         st.markdown(f"""
         <div style="background:{chg['bg']};border-left:6px solid {chg['color']};
                     border-radius:10px;padding:16px 18px;min-height:230px;">
-            <h3 style="color:{chg['color']};margin:0;font-size:20px;">{chg['emoji']} {chg['label']}</h3>
-            <p style="color:#555;margin:4px 0 3px;font-size:12px;"><strong>⚠️ Potential Challenge Contribution</strong></p>
-            <p style="color:#999;margin:0 0 4px;font-size:10px;">(if this comment meets an opposing orientation → Fragile Futures risk)</p>
+            <h3 style="color:{chg['color']};margin:0;font-size:20px;">{chg['label']}</h3>
+            <p style="color:#555;margin:4px 0 3px;font-size:12px;"><strong>Potential Challenge Contribution</strong></p>
+            <p style="color:#999;margin:0 0 4px;font-size:10px;">(if this comment meets an opposing orientation, Fragile Futures risk)</p>
             <p style="color:#777;margin:3px 0;font-size:11px;">{chg['description']}</p>
         </div>
         """, unsafe_allow_html=True)
@@ -1815,51 +1862,51 @@ def show_results(result: dict, prescribed_future: str):
         <div style="background:#FFF8F0;border:2px dashed #E67E22;border-radius:10px;
                     padding:16px 18px;">
             <h4 style="color:#E67E22;margin:0 0 8px;font-size:16px;">
-                ⚡ Likely Friction Point
+                Likely Friction Point
             </h4>
             <p style="font-size:13px;color:#555;margin:0 0 6px;">
                 If this comment met an opposing consumer, it would most likely clash with a
-                <strong style="color:{opp_cfg['color']};">{opp_cfg['emoji']} {opp_ori}</strong>
-                orientation — a dynamic that, per the paper, could contribute to Fragile Futures.
+                <strong style="color:{opp_cfg['color']};">{opp_ori}</strong>
+                orientation, a dynamic that could contribute to Fragile Futures.
             </p>
             <p style="font-size:12px;color:#777;font-style:italic;margin:0;">
-                "{result.get('potential_challenge_rationale','—')}"
+                "{result.get('potential_challenge_rationale','--')}"
             </p>
         </div>
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    tab_ori, tab_act, tab_chg = st.tabs(["🔍 Orientation Rationale", "🔄 Activity Rationale", "⚡ Challenge Rationale"])
+    tab_ori, tab_act, tab_chg = st.tabs(["Orientation Rationale", "Activity Rationale", "Challenge Rationale"])
 
     with tab_ori:
         st.markdown("**Why this orientation? (applied coding criteria)**")
-        st.write(result.get("orientation_rationale", "—"))
+        st.write(result.get("orientation_rationale", "--"))
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            st.markdown("**📖 Narrative**"); st.caption(result.get("narrative_identified", "—"))
+            st.markdown("**Narrative**"); st.caption(result.get("narrative_identified", "--"))
         with c2:
-            st.markdown("**😊 Emotions**"); st.caption(result.get("dominant_emotions", "—"))
+            st.markdown("**Emotions**"); st.caption(result.get("dominant_emotions", "--"))
         with c3:
-            st.markdown("**⏱️ Temporality**"); st.caption(result.get("temporality_expressed", "—"))
+            st.markdown("**Temporality**"); st.caption(result.get("temporality_expressed", "--"))
         with c4:
-            st.markdown("**📋 Notable Conditions**"); st.caption(result.get("notable_conditions_of_adoption", "—"))
+            st.markdown("**Notable Conditions**"); st.caption(result.get("notable_conditions_of_adoption", "--"))
 
     with tab_act:
         st.markdown("**Why this activity is primary? (Decision Procedure applied)**")
-        st.write(result.get("activity_rationale", "—"))
+        st.write(result.get("activity_rationale", "--"))
         sec = result.get("secondary_activities", [])
         if sec:
             st.markdown(f"**Secondary activities also present (informational):** {', '.join(sec)}")
         st.markdown("---")
-        st.markdown("**📋 Coding Criteria Applied**")
+        st.markdown("**Coding Criteria Applied**")
         for act_name, meta in ACTIVITY_META.items():
             is_main = (act_name == main_act)
             border  = f"3px solid {meta['color']}" if is_main else "1px solid #ddd"
             st.markdown(f"""
             <div style="border:{border};border-radius:8px;padding:10px 14px;
                         margin-bottom:8px;background:{'#fff' if is_main else '#fafafa'};">
-                <strong style="color:{meta['color']};">{meta['icon']} {act_name}</strong>
+                <strong style="color:{meta['color']};">{act_name}</strong>
                 {'<span style="background:#27AE60;color:white;border-radius:8px;'
                  'padding:1px 8px;font-size:11px;margin-left:8px;">PRIMARY</span>'
                  if is_main else ''}<br>
@@ -1869,30 +1916,29 @@ def show_results(result: dict, prescribed_future: str):
 
     with tab_chg:
         st.markdown("**How could this comment contribute to a future-making challenge (Fragile Futures)?**")
-        st.write(result.get("potential_challenge_rationale", "—"))
+        st.write(result.get("potential_challenge_rationale", "--"))
         st.caption(
-            f"Deterministic mapping applied: {main_act} → {chg['label']} "
-            f"(per the paper's activity→challenge logic)."
+            f"Deterministic mapping applied: {main_act} -> {chg['label']}."
         )
 
     st.markdown("---")
-    st.markdown("## 📋 Policy & Managerial Implications")
-    policy_tab, manager_tab = st.tabs(["🏛️ Policy Roadmap", "🏢 Managerial Roadmap"])
+    st.markdown("## Policy and Managerial Implications")
+    policy_tab, manager_tab = st.tabs(["Policy Roadmap", "Managerial Roadmap"])
 
     with policy_tab:
         policy = result.get("policy_recommendations", {}) or {}
-        st.markdown(f"**📍 Most Relevant Step:** {policy.get('step','—')}")
-        st.markdown(f"**🎯 Policy Objective:** {policy.get('objective','—')}")
+        st.markdown(f"**Most Relevant Step:** {policy.get('step','--')}")
+        st.markdown(f"**Policy Objective:** {policy.get('objective','--')}")
         pc1, pc2 = st.columns(2)
         with pc1:
-            st.markdown("**🔧 Recommended Policy Instruments**")
+            st.markdown("**Recommended Policy Instruments**")
             for inst in policy.get("instruments", []) or []:
-                st.markdown(f"• {inst}")
+                st.markdown(f"- {inst}")
         with pc2:
-            st.markdown("**➡️ Additional Actions**")
+            st.markdown("**Additional Actions**")
             for action in policy.get("additional_actions", []) or []:
-                st.markdown(f"→ {action}")
-        with st.expander("📍 Full Policy Roadmap (7 Steps)"):
+                st.markdown(f"- {action}")
+        with st.expander("Full Policy Roadmap (7 Steps)"):
             st.markdown("""
 | Step | Action |
 |:----:|--------|
@@ -1907,20 +1953,20 @@ def show_results(result: dict, prescribed_future: str):
 
     with manager_tab:
         manager = result.get("manager_recommendations", {}) or {}
-        st.markdown(f"**📍 Most Relevant Step:** {manager.get('step','—')}")
-        st.markdown(f"**🎯 Managerial Objective:** {manager.get('objective','—')}")
+        st.markdown(f"**Most Relevant Step:** {manager.get('step','--')}")
+        st.markdown(f"**Managerial Objective:** {manager.get('objective','--')}")
         mc1, mc2 = st.columns(2)
         with mc1:
-            st.markdown("**🔧 Recommended Interventions**")
+            st.markdown("**Recommended Interventions**")
             for interv in manager.get("interventions", []) or []:
-                st.markdown(f"• {interv}")
+                st.markdown(f"- {interv}")
         with mc2:
-            st.markdown("**⚠️ Avoid**")
+            st.markdown("**Avoid**")
             for av in manager.get("avoid", []) or []:
-                st.markdown(f"✗ {av}")
-        st.markdown("**💬 Messaging Tip**")
-        st.info(manager.get("messaging_tip", "—"))
-        with st.expander("📍 Full Managerial Roadmap (6 Steps)"):
+                st.markdown(f"- {av}")
+        st.markdown("**Messaging Tip**")
+        st.info(manager.get("messaging_tip", "--"))
+        with st.expander("Full Managerial Roadmap (6 Steps)"):
             st.markdown("""
 | Step | Action |
 |:----:|--------|
@@ -1934,7 +1980,7 @@ def show_results(result: dict, prescribed_future: str):
         st.caption(CROSS_ORIENTATION_WARNING)
 
     st.markdown("---")
-    st.caption(f"📚 *\"{PAPER_TITLE}\"* — *{PAPER_JOURNAL}* | [Read the paper]({PAPER_URL})")
+    st.caption(f"\"{PAPER_TITLE}\" | Read the paper: {PAPER_URL}")
 
 
 # ─────────────────────────────────────────
@@ -1942,15 +1988,15 @@ def show_results(result: dict, prescribed_future: str):
 # ─────────────────────────────────────────
 
 def main():
-    st.title("🔮 Future-Making Orientation Analyzer")
+    st.title("Future-Making Orientation Analyzer")
     st.markdown(f"""
     Identify **future-making orientations**, **activities**, and **potential
-    challenges** — either for a single comment, or aggregated across an
-    entire document or corpus — grounded in the paper's coding criteria and
-    validated across domains (Zero Emission Vehicles and AI-integrated
-    healthcare).
+    challenges** -- either for a single comment, or aggregated across an
+    entire document or corpus -- grounded in the coding criteria of a
+    consumer research framework validated across domains (Zero Emission
+    Vehicles and AI-integrated healthcare).
 
-    *Based on:* **"{PAPER_TITLE}"** — *{PAPER_JOURNAL}*
+    *Based on:* **"{PAPER_TITLE}"**
     """)
     st.divider()
 
@@ -1958,28 +2004,28 @@ def main():
     try:
         api_key = st.secrets["openai_api_key"]
     except Exception:
-        with st.expander("⚙️ API Settings — click to configure", expanded=True):
+        with st.expander("API Settings -- click to configure", expanded=True):
             api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
 
     st.markdown("---")
 
     mode = st.radio(
         "What would you like to do?",
-        ["💬 Analyze a Single Comment", "📄 Analyze a Document / Corpus"],
+        ["Analyze a Single Comment", "Analyze a Document / Corpus"],
         horizontal=True
     )
 
     # ═══════════════════════════════════════
     # MODE 1: SINGLE COMMENT
     # ═══════════════════════════════════════
-    if mode == "💬 Analyze a Single Comment":
-        st.markdown("### 📌 Step 1 — Define the Prescribed Future")
+    if mode == "Analyze a Single Comment":
+        st.markdown("### Step 1 -- Define the Prescribed Future")
 
-        with st.expander("ℹ️ What type of intervention is this? (Web Appendix A — optional but recommended)"):
+        with st.expander("What type of intervention is this? (optional but recommended)"):
             it_key = st.selectbox("Intervention type:", list(INTERVENTION_TYPES.keys()), key="it_single")
             it_data = INTERVENTION_TYPES.get(it_key, {})
             if it_data.get("note"):
-                st.caption(f"**Example in the paper:** {it_data['example']}")
+                st.caption(f"**Example:** {it_data['example']}")
                 st.caption(it_data["note"])
 
         pf_default = st.session_state.pop("pf_prefill", "")
@@ -1989,40 +2035,40 @@ def main():
             label_visibility="collapsed"
         )
 
-        st.markdown("### 💬 Step 2 — Enter a Consumer Comment")
+        st.markdown("### Step 2 -- Enter a Consumer Comment")
         input_method = st.radio(
             "Input method:",
-            ["📝 Type or paste text", "🧪 Try a generalization test", "📂 Upload a .txt file"],
+            ["Type or paste text", "Try a generalization test", "Upload a .txt file"],
             horizontal=True
         )
 
         comment = ""
-        if input_method == "📝 Type or paste text":
+        if input_method == "Type or paste text":
             selected_ex = st.selectbox(
-                "Or try a built-in example (from the paper's Web Appendix D, Table WD1):", list(EXAMPLES.keys())
+                "Or try a built-in coded example:", list(EXAMPLES.keys())
             )
             ex_data = EXAMPLES.get(selected_ex, {"prescribed": "", "comment": "", "activity": "", "subtype": "", "orientation": ""})
-            if selected_ex != "— Select an example from the paper —":
+            if selected_ex != "Select an example":
                 show_example_badge(ex_data)
                 suggested_pf = ex_data.get("prescribed", "")
                 if suggested_pf:
-                    st.info(f"💡 **Suggested prescribed future:** *{suggested_pf[:130]}...*")
-                    if st.button("↑ Use this as my prescribed future", type="secondary"):
+                    st.info(f"Suggested prescribed future: {suggested_pf[:130]}...")
+                    if st.button("Use this as my prescribed future", type="secondary"):
                         st.session_state["pf_prefill"] = suggested_pf
                         st.rerun()
             comment = st.text_area(
                 "Comment:", value=ex_data.get("comment", ""), height=220,
                 placeholder="Paste or type a consumer comment here...", label_visibility="collapsed"
             )
-        elif input_method == "🧪 Try a generalization test":
+        elif input_method == "Try a generalization test":
             selected_test = st.selectbox(
-                "Choose a test comment not used to build the app (includes a cross-domain AI healthcare test, per Web Appendix E):",
+                "Choose a test comment not used to build the app:",
                 list(GENERALIZATION_TESTS.keys())
             )
             test_data = GENERALIZATION_TESTS.get(selected_test, {"comment": "", "note": "", "prescribed": ""})
             if test_data.get("note"):
-                st.info(f"🧪 {test_data['note']}")
-            if test_data.get("prescribed") and st.button("↑ Use suggested prescribed future for this test", type="secondary"):
+                st.info(test_data['note'])
+            if test_data.get("prescribed") and st.button("Use suggested prescribed future for this test", type="secondary"):
                 st.session_state["pf_prefill"] = test_data["prescribed"]
                 st.rerun()
             comment = st.text_area("Comment:", value=test_data.get("comment", ""), height=150, label_visibility="collapsed")
@@ -2030,7 +2076,7 @@ def main():
             uploaded_file = st.file_uploader("Upload .txt file:", type=["txt"])
             if uploaded_file:
                 comment = uploaded_file.read().decode("utf-8")
-                st.success(f"✅ Uploaded: {len(comment):,} characters")
+                st.success(f"Uploaded: {len(comment):,} characters")
 
         if not prescribed_future.strip():
             prescribed_future = PF_EV
@@ -2038,23 +2084,23 @@ def main():
         st.markdown("---")
         ready = bool(api_key and comment.strip())
         if not comment.strip():
-            st.warning("⚠️ Please enter a comment in Step 2.")
+            st.warning("Please enter a comment in Step 2.")
         if not api_key:
-            st.warning("⚠️ Please configure your OpenAI API key above.")
+            st.warning("Please configure your OpenAI API key above.")
 
-        if st.button("🔍 Analyze Comment", type="primary", use_container_width=True, disabled=not ready):
-            with st.spinner("Analyzing with paper coding criteria..."):
+        if st.button("Analyze Comment", type="primary", use_container_width=True, disabled=not ready):
+            with st.spinner("Analyzing with the framework's coding criteria..."):
                 try:
                     result = analyze_comment(prescribed_future.strip(), comment.strip(), api_key)
                     st.divider()
-                    st.markdown("## 🧠 Analysis Results")
+                    st.markdown("## Analysis Results")
                     show_results(result, prescribed_future.strip())
                 except openai.AuthenticationError:
-                    st.error("❌ Invalid API key.")
+                    st.error("Invalid API key.")
                 except openai.RateLimitError:
-                    st.error("⏳ Rate limit reached. Please wait a moment.")
+                    st.error("Rate limit reached. Please wait a moment.")
                 except Exception as e:
-                    st.error(f"❌ Unexpected error: {e}")
+                    st.error(f"Unexpected error: {e}")
 
     # ═══════════════════════════════════════
     # MODE 2: DOCUMENT / CORPUS ANALYSIS
@@ -2068,13 +2114,13 @@ def main():
             "segments at once."
         )
 
-        st.markdown("### 📌 Step 1 — Define the Prescribed Future")
+        st.markdown("### Step 1 -- Define the Prescribed Future")
 
-        with st.expander("ℹ️ What type of intervention is this? (Web Appendix A — optional but recommended)"):
+        with st.expander("What type of intervention is this? (optional but recommended)"):
             it_key_doc = st.selectbox("Intervention type:", list(INTERVENTION_TYPES.keys()), key="it_doc")
             it_data_doc = INTERVENTION_TYPES.get(it_key_doc, {})
             if it_data_doc.get("note"):
-                st.caption(f"**Example in the paper:** {it_data_doc['example']}")
+                st.caption(f"**Example:** {it_data_doc['example']}")
                 st.caption(it_data_doc["note"])
 
         pf_doc_default = st.session_state.get("pf_doc_prefill", PF_EV)
@@ -2084,27 +2130,27 @@ def main():
         )
         preset_cols = st.columns(3)
         with preset_cols[0]:
-            if st.button("↑ Use ZEV/EV preset", type="secondary"):
+            if st.button("Use ZEV/EV preset", type="secondary"):
                 st.session_state["pf_doc_prefill"] = PF_EV
                 st.rerun()
         with preset_cols[1]:
-            if st.button("↑ Use NVES preset", type="secondary"):
+            if st.button("Use NVES preset", type="secondary"):
                 st.session_state["pf_doc_prefill"] = PF_NVES
                 st.rerun()
         with preset_cols[2]:
-            if st.button("↑ Use AI-Healthcare preset", type="secondary"):
+            if st.button("Use AI-Healthcare preset", type="secondary"):
                 st.session_state["pf_doc_prefill"] = PF_AI_HEALTH
                 st.rerun()
 
-        st.markdown("### 📄 Step 2 — Provide the Document")
+        st.markdown("### Step 2 -- Provide the Document")
         doc_input_method = st.radio(
             "Input method:",
-            ["📂 Upload file (.txt, .md, .pdf)", "📝 Paste text"],
+            ["Upload file (.txt, .md, .pdf)", "Paste text"],
             horizontal=True
         )
 
         raw_text = ""
-        if doc_input_method == "📂 Upload file (.txt, .md, .pdf)":
+        if doc_input_method == "Upload file (.txt, .md, .pdf)":
             uploaded_doc = st.file_uploader("Upload document:", type=["txt", "md", "pdf"])
             if uploaded_doc:
                 if uploaded_doc.name.lower().endswith(".pdf"):
@@ -2113,7 +2159,7 @@ def main():
                 else:
                     raw_text = uploaded_doc.read().decode("utf-8", errors="ignore")
                 if raw_text:
-                    st.success(f"✅ Extracted {len(raw_text):,} characters from '{uploaded_doc.name}'")
+                    st.success(f"Extracted {len(raw_text):,} characters from '{uploaded_doc.name}'")
         else:
             raw_text = st.text_area(
                 "Paste large text here (works even if PDF extraction is unavailable):",
@@ -2121,7 +2167,7 @@ def main():
             )
 
         if raw_text.strip():
-            st.markdown("### ⚙️ Step 3 — Configure Segmentation")
+            st.markdown("### Step 3 -- Configure Segmentation")
 
             id_hits = len(re.findall(r'\b\d{6,7}\s+(?:Name\s+withheld|[A-Z][a-z]+)', raw_text))
             looks_like_consultation = id_hits >= 5
@@ -2131,7 +2177,7 @@ def main():
             if looks_like_consultation:
                 granularity_options.insert(
                     0,
-                    f"🗳️ Public consultation responses (auto-detected {id_hits} respondent IDs)"
+                    f"Public consultation responses (auto-detected {id_hits} respondent IDs)"
                 )
 
             gcol1, gcol2 = st.columns(2)
@@ -2142,10 +2188,10 @@ def main():
                 if granularity.startswith("Sentence"):
                     sentences_per_chunk = st.slider("Sentences per segment", 2, 6, 3)
 
-            if granularity.startswith("🗳️"):
+            if granularity.startswith("Public consultation"):
                 chunks = extract_public_consultation_responses(raw_text)
                 st.success(
-                    f"✅ Extracted **{len(chunks)}** individual respondent comments "
+                    f"Extracted {len(chunks)} individual respondent comments "
                     f"(NULL/empty responses automatically excluded)."
                 )
             elif granularity.startswith("Sentence"):
@@ -2154,34 +2200,34 @@ def main():
                 chunks = split_into_chunks(raw_text, granularity="paragraph")
 
             if not chunks:
-                st.warning("⚠️ No analyzable segments found. Try pasting more text or a different granularity.")
+                st.warning("No analyzable segments found. Try pasting more text or a different granularity.")
             else:
-                st.info(f"📊 Document split into **{len(chunks)}** analyzable segments.")
+                st.info(f"Document split into {len(chunks)} analyzable segments.")
 
                 max_possible = min(len(chunks), 300)
                 default_val = min(30, max_possible)
                 max_chunks = st.slider(
-                    "Maximum segments to analyze (controls cost & time)",
+                    "Maximum segments to analyze (controls cost and time)",
                     min_value=1, max_value=max_possible, value=default_val
                 )
                 est_seconds = round(max_chunks / DOC_MAX_WORKERS * 2.5)
                 est_cost = round(max_chunks * 0.00075, 3)
                 st.caption(
-                    f"⏱️ Estimated time: ~{est_seconds}s | API calls: {max_chunks} "
+                    f"Estimated time: ~{est_seconds}s | API calls: {max_chunks} "
                     f"(parallelized, {DOC_MAX_WORKERS} at a time) | "
-                    f"Estimated OpenAI cost: ~${est_cost}"
+                    f"Estimated cost: ~${est_cost}"
                 )
 
-                with st.expander(f"👁️ Preview first segments (of {len(chunks)} total)"):
+                with st.expander(f"Preview first segments (of {len(chunks)} total)"):
                     for i, c in enumerate(chunks[:10]):
-                        st.caption(f"**[{i+1}]** {c[:200]}{'...' if len(c) > 200 else ''}")
+                        st.caption(f"[{i+1}] {c[:200]}{'...' if len(c) > 200 else ''}")
 
                 run_doc_analysis = st.button(
-                    "🔍 Analyze Document", type="primary", use_container_width=True,
+                    "Analyze Document", type="primary", use_container_width=True,
                     disabled=not api_key
                 )
                 if not api_key:
-                    st.warning("⚠️ Please configure your OpenAI API key above.")
+                    st.warning("Please configure your OpenAI API key above.")
 
                 if run_doc_analysis:
                     chunks_to_run = chunks[:max_chunks]
@@ -2196,13 +2242,13 @@ def main():
 
         if "doc_results" in st.session_state:
             st.divider()
-            st.markdown("## 🧠 Document-Level Analysis")
+            st.markdown("## Document-Level Analysis")
             show_document_summary(
                 st.session_state["doc_results"],
                 st.session_state.get("doc_prescribed_future", PF_EV),
                 st.session_state.get("doc_intervention_type")
             )
-            if st.button("🗑️ Clear document results"):
+            if st.button("Clear document results"):
                 del st.session_state["doc_results"]
                 st.rerun()
 
@@ -2210,23 +2256,23 @@ def main():
     # ADVANCED / DEVELOPER TOOLS (always visible, collapsed)
     # ─────────────────────────────────────────
     st.markdown("---")
-    with st.expander("🔧 Advanced / Developer Tools"):
+    with st.expander("Advanced / Developer Tools"):
         st.caption(
             "Internal quality-control tool. Not needed for regular use. "
             "Run this after any change to the model, prompt, or temperature "
-            "to confirm the app still matches the categories in Web Appendix D, Table WD1."
+            "to confirm the app still matches the intended coding categories."
         )
-        if st.button("▶️ Run Validation Suite (Table WD1)"):
+        if st.button("Run Validation Suite"):
             if not api_key:
-                st.warning("⚠️ Configure your API key above first.")
+                st.warning("Configure your API key above first.")
             else:
-                with st.spinner("Running validation across all 12 examples..."):
+                with st.spinner("Running validation across all built-in examples..."):
                     report = run_validation_suite(api_key)
                 if report["results"]:
                     st.metric("Overall Accuracy", f"{report['overall_accuracy']*100:.1f}%")
                     for r in report["results"]:
-                        icon = "✅" if r["match"] else "❌"
-                        with st.expander(f"{icon} {r['example']}"):
+                        status = "PASS" if r["match"] else "FAIL"
+                        with st.expander(f"[{status}] {r['example']}"):
                             st.write("**Expected:**", r["expected"])
                             st.write("**Predicted:**", r["predicted"])
                             if r.get("error"):
