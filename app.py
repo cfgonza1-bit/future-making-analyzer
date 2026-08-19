@@ -23,7 +23,7 @@ PAPER_URL   = "REPLACE_WITH_YOUR_DOI_OR_URL"
 DOC_MAX_WORKERS = 5  # parallel API calls for document analysis
 
 # ─────────────────────────────────────────
-# MODE LABELS (kept as constants so labels are consistent everywhere)
+# MODE LABELS
 # ─────────────────────────────────────────
 MODE_SINGLE = "single"
 MODE_DOC = "document"
@@ -715,6 +715,12 @@ following AS MAJOR, SUBSTANTIVE content:
   if urgency phrases bookend them. If the passage is thin on independent
   evidentiary content and mostly consists of the call to action itself
   plus brief supporting reasons, this favors NEGOTIATION.
+  IMPORTANT: A passage containing ZERO imperative/call-to-action phrases
+  at all (no "we need to," "let's," "should," aimed at mobilizing others)
+  is automatically EVALUATION regardless of how confident or declarative
+  its tone is -- confidence and strong language alone never indicate
+  Negotiation. Only classify as NEGOTIATION when an actual call-to-action
+  or adversarial/address structure is present per (a)-(d).
 
 STEP 3 -- EVALUATION (default):
 If neither Step 1 nor Step 2 applies, classify as EVALUATION. Apply the
@@ -1076,18 +1082,16 @@ EXAMPLES = {
     "CATALYZER | Evaluation -> Simplify": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "SIMPLIFY", "orientation": "CATALYZER",
         "comment": (
-            "We need to move on climate with urgency [...] Boldness will encourage "
-            "innovation here as we more fully join the international efforts "
-            "towards zero fossil fuels. "
-            "All the studies I've seen say about 12,000 miles or 3 to 5 years for "
-            "lifetime emissions to be better than ICE. "
-            "There's no discussion about whether they're better for the "
-            "environment. The math and science is extremely clear and it's "
-            "ridiculous to even compare them with how much better EVs are. "
-            "Climate change is an urgent threat, and we need to accelerate the "
-            "decarbonisation of transport quickly and efficiently [...] At a time "
-            "of higher concern about the cost of living will deliver the most "
-            "benefits to Australian households. Let's lift the ambition."
+            "EVs are already cheaper to run than petrol cars once you factor in "
+            "fuel and servicing costs, and battery prices have dropped so fast "
+            "that price parity with ICE vehicles is basically here already. "
+            "The range anxiety argument is outdated too, most new EVs now do "
+            "400-500km on a single charge, which covers almost every day-to-day "
+            "trip. Charging infrastructure has expanded so quickly in the last "
+            "two years that finding a charger is rarely an issue in metro areas "
+            "anymore. The transition is happening now, faster than most people "
+            "expected, and every year the previous concerns keep getting "
+            "resolved one by one."
         )
     },
     "CATALYZER | Negotiation -> Advocate": {
@@ -1383,11 +1387,13 @@ call-to-action phrases co-occur with evidentiary content, explicitly apply
 TEST E: mentally remove the call-to-action phrases and check whether the
 remaining evidentiary content still stands as a complete, self-sufficient
 judgment (EVALUATION) or only makes sense as support for the removed call
-to action (NEGOTIATION). Verify your activity_subtype belongs to the valid
-pairing table for your main_orientation before responding. Return EXACTLY
-ONE value per enum field. Complete Section I (likely_opposing_orientation
-+ potential_challenge_rationale), framing the rationale in terms of
-Fragile Futures risk where relevant. Populate policy_recommendations and
+to action (NEGOTIATION). A passage with NO imperative/call-to-action
+phrases at all is automatically EVALUATION regardless of tone. Verify your
+activity_subtype belongs to the valid pairing table for your
+main_orientation before responding. Return EXACTLY ONE value per enum
+field. Complete Section I (likely_opposing_orientation +
+potential_challenge_rationale), framing the rationale in terms of Fragile
+Futures risk where relevant. Populate policy_recommendations and
 manager_recommendations with content SPECIFIC to the prescribed future
 given above.
 """
@@ -1821,8 +1827,6 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
     st.markdown("---")
     st.markdown("### Segment-Level Detail")
     df = build_results_dataframe(results)
-    # show a compact view in the table (drop the long rationale text columns
-    # from the visible table, but keep them in the CSV export)
     display_cols = ["segment", "text_preview", "orientation", "activity",
                      "subtype", "potential_challenge", "likely_opposing_orientation"]
     display_cols = [c for c in display_cols if c in df.columns]
@@ -1836,12 +1840,6 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
         mime="text/csv"
     )
 
-    # ── SEGMENT RATIONALE EXPLORER ──
-    # Reuses the same rich, single-comment style rendering (orientation /
-    # activity / challenge cards + Orientation Rationale, Activity
-    # Rationale, and Challenge Rationale tabs) for one selected segment at
-    # a time, so users get the same depth of explanation available in
-    # single-comment mode without rendering hundreds of panels at once.
     st.markdown("---")
     st.markdown("### Segment Rationale Explorer")
     st.caption(
@@ -2102,8 +2100,7 @@ def show_results(result: dict, prescribed_future: str):
 
 
 # ─────────────────────────────────────────
-# MODE SELECTOR -- colored buttons instead of a plain radio, to make the
-# two options (single comment vs. document/corpus) visually distinct
+# MODE SELECTOR
 # ─────────────────────────────────────────
 
 def render_mode_selector():
@@ -2424,7 +2421,7 @@ def main():
                 st.rerun()
 
     # ─────────────────────────────────────────
-    # ADVANCED / DEVELOPER TOOLS (always visible, collapsed)
+    # ADVANCED / DEVELOPER TOOLS
     # ─────────────────────────────────────────
     st.markdown("---")
     with st.expander("Advanced / Developer Tools"):
