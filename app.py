@@ -23,6 +23,14 @@ PAPER_URL   = "REPLACE_WITH_YOUR_DOI_OR_URL"
 DOC_MAX_WORKERS = 5  # parallel API calls for document analysis
 
 # ─────────────────────────────────────────
+# MODE LABELS (kept as constants so labels are consistent everywhere)
+# ─────────────────────────────────────────
+MODE_SINGLE = "single"
+MODE_DOC = "document"
+MODE_SINGLE_LABEL = "Analyze a Single Comment"
+MODE_DOC_LABEL = "Map Orientations Across a Document"
+
+# ─────────────────────────────────────────
 # DETERMINISTIC ACTIVITY -> CHALLENGE MAPPING
 # ─────────────────────────────────────────
 ACTIVITY_TO_CHALLENGE = {
@@ -103,11 +111,7 @@ INTERVENTION_TYPES = {
 }
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT v10 — adds explicit orientation-subtype pairing rule to
-# prevent invalid combinations (e.g., EXPANDER + AVOID), plus a
-# disambiguation example distinguishing "not the solution" (simple
-# categorical dismissal -> Resistant/Avoid) from "false solution ...
-# because [systemic reasoning]" (Expander/Complexify).
+# SYSTEM PROMPT v11
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
 You are an expert qualitative coder and policy/managerial advisor applying a
@@ -169,6 +173,12 @@ Coding criteria (ALL must apply):
     declarative claim (e.g., "a false solution if you care about the
     environment at all") does NOT make the passage Negotiation -- the
     sentence remains declarative in mood, not imperative or adversarial.
+  - CRITICAL: Urgency-framing phrases that BOOKEND (open and/or close) an
+    otherwise self-standing evaluative judgment ("We need to move on
+    climate with urgency [...evidence...] Let's lift the ambition") do NOT
+    convert the passage into Negotiation if the evidentiary content in the
+    middle would still read as a complete, meaningful, self-contained
+    judgment WITHOUT those framing phrases. See TEST E in Section H.
   - CRITICAL DISAMBIGUATION -- "not the solution" (simple dismissal) vs.
     "false solution ... because [systemic reasoning]" (systemic critique):
     A brief categorical dismissal with NO elaborated systemic reasoning
@@ -194,10 +204,14 @@ Sub-types by orientation:
 
 --- NEGOTIATION ---
 Operational definition: References to how consumers compared, contested,
-defended, or expanded preferred futures. See Section H for the precise,
-four-part test used to distinguish Negotiation from Evaluation.
+defended, or expanded preferred futures. See Section H for the precise
+tests used to distinguish Negotiation from Evaluation.
 Sub-types by orientation:
-  ADVOCATE  (Catalyzer)  -- recruits others, calls for stronger policy/rollout
+  ADVOCATE  (Catalyzer)  -- recruits others, calls for stronger policy/rollout;
+    uses evidentiary or descriptive claims AS REASONS OFFERED IN SUPPORT OF
+    a call to action (advocacy structure: "we need to act because X, so
+    let's do Y" -- the evidence is instrumentally deployed to persuade, not
+    presented as a self-standing judgment)
   QUESTION  (Ambivalent) -- polite skepticism, asks for proof FROM OTHERS,
     or proposes a STAGED/INTERIM compromise pathway WITHIN THE SAME
     PARADIGM (e.g., "transition to hybrid vehicles instead of EVs until
@@ -552,20 +566,60 @@ still isn't in place [concrete action]. I plan to drive my current 10
 year old hybrid as long as I can [firm intention]."
 -> ENACTMENT / DELAY / AMBIVALENT
 
-Example 13 -- CRITICAL: a brief, unelaborated closing rallying phrase
-does NOT override an otherwise clearly Evaluation-dominant passage:
-"There's no discussion about whether they're better for the environment.
-The math and science is extremely clear and it's ridiculous to even
-compare them with how much better EVs are. Climate change is an urgent
-threat, and we need to accelerate the decarbonisation of transport
-quickly and efficiently [...] Let's lift the ambition." (Source: forum,
-public consultation)
-Why EVALUATION/SIMPLIFY, NOT Negotiation: "Let's lift the ambition" is a
-single, brief, unelaborated closing phrase (does not satisfy criterion d,
-which requires SUBSTANTIAL, ELABORATED collective calls to action across
-multiple clauses). The passage's dominant content is a standalone,
-declarative judgment about the state of evidence.
--> EVALUATION / SIMPLIFY / CATALYZER
+Example 13 -- CRITICAL, HIGH-CONFUSION PAIR -- read both passages below
+CAREFULLY and note how nearly identical vocabulary ("we need to," "let's,"
+climate urgency) produces DIFFERENT classifications depending on
+STRUCTURAL ROLE, per TEST E in Section H:
+
+  PASSAGE 13a (EVALUATION, NOT Negotiation):
+  "We need to move on climate with urgency [...] Boldness will encourage
+  innovation here as we more fully join the international efforts towards
+  zero fossil fuels. All the studies I've seen say about 12,000 miles or 3
+  to 5 years for lifetime emissions to be better than ICE. There's no
+  discussion about whether they're better for the environment. The math
+  and science is extremely clear and it's ridiculous to even compare them
+  with how much better EVs are. Climate change is an urgent threat, and we
+  need to accelerate the decarbonisation of transport quickly and
+  efficiently [...] At a time of higher concern about the cost of living
+  will deliver the most benefits to Australian households. Let's lift the
+  ambition." (Source: forum, public consultation)
+  Apply TEST E: remove "We need to move on climate with urgency,"
+  "we need to accelerate the decarbonisation... efficiently," and "Let's
+  lift the ambition." What remains: "All the studies I've seen say about
+  12,000 miles or 3 to 5 years for lifetime emissions to be better than
+  ICE. There's no discussion about whether they're better for the
+  environment. The math and science is extremely clear... At a time of
+  higher concern about the cost of living will deliver the most benefits
+  to Australian households." This remainder is STILL a complete,
+  substantively rich, self-standing evaluative judgment about scientific
+  evidence -- nothing about its meaning depends on the removed framing
+  phrases. The urgency phrases are DETACHABLE BOOKENDS, not load-bearing
+  argumentative content. TEST E result: EVALUATION.
+  -> EVALUATION / SIMPLIFY / CATALYZER
+
+  PASSAGE 13b (NEGOTIATION, NOT Evaluation -- contrast with 13a):
+  "We need to act on transport emissions as quickly as possible. People
+  are still buying new Internal Combustion Energy vehicles due to the lack
+  of choice of Electric Vehicles. Australia has demonstrated that it has
+  an appetite for EVs, so let's get moving." (Source: public consultation)
+  Apply TEST E: remove "We need to act on transport emissions as quickly
+  as possible" and "so let's get moving." What remains: "People are still
+  buying new Internal Combustion Energy vehicles due to the lack of choice
+  of Electric Vehicles. Australia has demonstrated that it has an appetite
+  for EVs." Critically, THIS remainder does NOT stand as an independent
+  judgment -- it only makes sense AS A REASON supporting the call to
+  action that was removed ("we need to act... [because of this] ... so
+  let's get moving"). The evidentiary content is structurally SUBORDINATE
+  to and IN SERVICE OF the surrounding advocacy, not self-standing. TEST E
+  result: NEGOTIATION.
+  -> NEGOTIATION / ADVOCATE / CATALYZER
+
+THE KEY DIFFERENCE: In 13a, removing the action phrases leaves a complete,
+self-sufficient evaluative argument (evidence is the point). In 13b,
+removing the action phrases leaves fragments that only make sense as
+support FOR the removed call to action (evidence is a means to persuade,
+not the point itself). Apply this same test whenever a passage mixes
+evaluative and advocacy-like language.
 
 Example 14 (AMBIVALENT vs. EXPANDER disambiguation -- staged/interim
 compromise WITHIN the same paradigm remains AMBIVALENT despite an
@@ -614,11 +668,10 @@ list for," "I moved to...")?
 
 STEP 2 -- NEGOTIATION (check only if not Enactment):
 Classify as NEGOTIATION if the passage satisfies AT LEAST ONE of the
-following AS MAJOR, SUBSTANTIVE content (not a single unelaborated aside):
+following AS MAJOR, SUBSTANTIVE content:
   (a) An imperative, command, or rhetorical challenge urging the audience
       to reconsider or change a specific belief or action ("ride a
-      bicycle," "does it have to be a car?", "let's get moving" -- IF
-      elaborated, not standalone).
+      bicycle," "does it have to be a car?").
   (b) Framing the prescribed future -- or the authority/institution behind
       it (government, politicians, corporations, elites, "the policy") --
       as illegitimate, coercive, or imposed, refusing or contesting that
@@ -629,29 +682,51 @@ following AS MAJOR, SUBSTANTIVE content (not a single unelaborated aside):
   (c) Direct, specific address to a named individual (e.g., "John, you
       are so right") or explicit rebuttal of a claim just made by another
       identified speaker in a visible exchange.
-  (d) A SUBSTANTIAL, ELABORATED collective call to action spanning
-      multiple clauses/sentences (e.g., "We need to invest in
-      infrastructure... We should transition to X instead...").
+  (d) A call to action where surrounding evidentiary/descriptive content
+      functions AS REASONS SUPPORTING that call to action (an advocacy
+      structure), such that the evidentiary content does NOT stand as an
+      independent judgment on its own -- see TEST E below.
   EXCLUSION: A conditional "if you..." clause that merely QUALIFIES a
-  declarative claim (e.g., "a false solution if you care about the
-  environment at all") does NOT satisfy (a)-(d) -- remains EVALUATION.
+  declarative claim does NOT satisfy (a)-(d) -- remains EVALUATION.
   -> If (a), (b), (c), or (d) is present as major content: classify as
     NEGOTIATION (apply REJECT vs. CONTEST per the disambiguation in
     Section B). Stop here.
 
+  --- TEST E: STRUCTURAL NECESSITY TEST (apply whenever a passage mixes
+  urgency/call-to-action phrases with evidentiary or descriptive content,
+  to determine whether criterion (d) is satisfied) ---
+  Identify the call-to-action phrase(s) (e.g., "we need to...", "let's...").
+  Mentally REMOVE them from the passage. Examine what remains:
+    -> If the REMAINING content still reads as a COMPLETE, MEANINGFUL,
+       SELF-STANDING evaluative judgment whose meaning does NOT depend on
+       the removed phrases (the call-to-action phrases were detachable
+       bookends/framing) -> criterion (d) is NOT satisfied. Classify as
+       EVALUATION (see Example 13, Passage 13a).
+    -> If the REMAINING content becomes FRAGMENTARY or only makes sense AS
+       SUPPORT FOR the removed call-to-action (the evidentiary content was
+       structurally subordinate, existing to justify the action) ->
+       criterion (d) IS satisfied. Classify as NEGOTIATION (see Example
+       13, Passage 13b).
+  When applying this test, count how many DISTINCT, elaborated,
+  self-standing evidentiary/declarative claims exist in the passage. If
+  there are multiple such claims (e.g., a claim about scientific evidence,
+  a claim about cost-of-living benefit) that together form a substantial,
+  independently meaningful body of judgment, this favors EVALUATION even
+  if urgency phrases bookend them. If the passage is thin on independent
+  evidentiary content and mostly consists of the call to action itself
+  plus brief supporting reasons, this favors NEGOTIATION.
+
 STEP 3 -- EVALUATION (default):
-If neither Step 1 nor Step 2 applies, classify as EVALUATION. This
-includes passages with a brief, UNELABORATED incidental phrase that
-superficially resembles (a)-(d) but is not the passage's main point.
-Apply the disambiguation in Section B between AVOID (narrow, unelaborated
-dismissal) and COMPLEXIFY (elaborated systemic critique) when the
-orientation is unclear between Resistant and Expander.
+If neither Step 1 nor Step 2 applies, classify as EVALUATION. Apply the
+disambiguation in Section B between AVOID (narrow, unelaborated dismissal)
+and COMPLEXIFY (elaborated systemic critique) when the orientation is
+unclear between Resistant and Expander.
 
 STEP 4 -- MANDATORY TIE-BREAKER (last resort only, if Steps 1-3 genuinely
 cannot resolve a dominant activity): ENACTMENT > NEGOTIATION > EVALUATION.
 
 IMPORTANT: When in doubt between Evaluation and Negotiation, DEFAULT TO
-EVALUATION unless (a), (b), (c), or (d) is clearly satisfied.
+EVALUATION unless (a), (b), (c), or (d) is clearly satisfied per Test E.
 
 NOTE ON PUBLIC CONSULTATION / SURVEY TEXT: Many submissions to public
 consultations are standalone opinions written in response to a prompt
@@ -683,7 +758,8 @@ CRITICAL OUTPUT RULE
 
 Select EXACTLY ONE value for each enum field below. There is no "MIXED"
 option for any field. Always resolve to exactly one value using the
-Decision Procedure (Section H).
+Decision Procedure (Section H), applying Test E whenever urgency/call-to-
+action phrases co-occur with evidentiary content.
 
 MANDATORY ORIENTATION-SUBTYPE PAIRING (never violate this table):
   CATALYZER  -> SIMPLIFY (Evaluation) | ADVOCATE (Negotiation) | ACCELERATE (Enactment)
@@ -692,9 +768,8 @@ MANDATORY ORIENTATION-SUBTYPE PAIRING (never violate this table):
   EXPANDER   -> COMPLEXIFY (Evaluation) | CONTEST (Negotiation) | REROUTE (Enactment)
 Before finalizing your answer, verify that "activity_subtype" belongs to
 the row matching your "main_orientation" and "main_activity". If it does
-not, you have made an error -- re-evaluate which orientation is correct
-given the subtype, or which subtype is correct given the orientation, and
-resolve the inconsistency before responding.
+not, you have made an error -- re-evaluate and resolve the inconsistency
+before responding.
 
 ====================================================================
 OUTPUT FORMAT -- Return ONLY valid JSON
@@ -705,7 +780,7 @@ OUTPUT FORMAT -- Return ONLY valid JSON
 
   "main_activity": "one single value: EVALUATION, NEGOTIATION, or ENACTMENT",
   "activity_subtype": "one single value: SIMPLIFY, STALL, AVOID, COMPLEXIFY, ADVOCATE, QUESTION, REJECT, CONTEST, ACCELERATE, DELAY, PREVENT, REROUTE",
-  "activity_rationale": "State which Decision Procedure step/criterion (a-d) matched, citing specific phrases",
+  "activity_rationale": "State which Decision Procedure step/criterion (a-d) matched, INCLUDING the result of Test E if urgency/call-to-action phrases co-occur with evidentiary content, citing specific phrases",
   "secondary_activities": [],
 
   "main_orientation": "one single value: CATALYZER, AMBIVALENT, RESISTANT, or EXPANDER",
@@ -796,8 +871,6 @@ CHALLENGES = {
     }
 }
 
-# subtypes map subtype -> canonical orientation key, used both for display
-# and for the automatic consistency-correction safeguard
 ACTIVITY_META = {
     "EVALUATION":  {
         "color": "#2980B9", "bg": "#EBF5FB",
@@ -807,7 +880,7 @@ ACTIVITY_META = {
     },
     "NEGOTIATION": {
         "color": "#E67E22", "bg": "#FEF9E7",
-        "definition": "Imperative, adversarial framing of authority, named address, or elaborated collective call to action.",
+        "definition": "Imperative, adversarial framing of authority, named address, or evidence subordinate to a call to action.",
         "subtypes": {"ADVOCATE": "CATALYZER", "QUESTION": "AMBIVALENT",
                      "REJECT": "RESISTANT", "CONTEST": "EXPANDER"}
     },
@@ -994,8 +1067,7 @@ CROSS_ORIENTATION_WARNING = (
 )
 
 # ─────────────────────────────────────────
-# EXAMPLES -- built-in coded illustrations, used both as UI shortcuts and
-# as ground truth for the validation suite
+# EXAMPLES -- built-in coded illustrations
 # ─────────────────────────────────────────
 EXAMPLES = {
     "Select an example": {
@@ -1305,17 +1377,19 @@ TEXT TO ANALYZE:
 
 Remember: read the ENTIRE passage first (Step 0), then apply the DECISION
 PROCEDURE (Section H) in order. ENACTMENT (Step 1) is an ABSOLUTE priority
-whenever any substantive first-person action is described, regardless of
-surrounding content. For NEGOTIATION (Step 2), apply criteria (a)-(d) --
-remember that criterion (b), adversarial framing of authorities like
-"politicians" or "corporations," applies even in THIRD PERSON and does
-NOT require a literal direct address. Verify your activity_subtype belongs
-to the valid pairing table for your main_orientation before responding.
-Return EXACTLY ONE value per enum field. Complete Section I
-(likely_opposing_orientation + potential_challenge_rationale), framing the
-rationale in terms of Fragile Futures risk where relevant. Populate
-policy_recommendations and manager_recommendations with content SPECIFIC
-to the prescribed future given above.
+whenever any substantive first-person action is described. For
+NEGOTIATION (Step 2), apply criteria (a)-(d) -- if urgency or
+call-to-action phrases co-occur with evidentiary content, explicitly apply
+TEST E: mentally remove the call-to-action phrases and check whether the
+remaining evidentiary content still stands as a complete, self-sufficient
+judgment (EVALUATION) or only makes sense as support for the removed call
+to action (NEGOTIATION). Verify your activity_subtype belongs to the valid
+pairing table for your main_orientation before responding. Return EXACTLY
+ONE value per enum field. Complete Section I (likely_opposing_orientation
++ potential_challenge_rationale), framing the rationale in terms of
+Fragile Futures risk where relevant. Populate policy_recommendations and
+manager_recommendations with content SPECIFIC to the prescribed future
+given above.
 """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -1623,6 +1697,9 @@ def render_pct_bars(counts: dict, meta_dict: dict, total: int, label_key_name=No
 
 
 def build_results_dataframe(results: list) -> pd.DataFrame:
+    """Builds a compact overview dataframe AND includes the full
+    rationale text fields, so a CSV export gives complete data even
+    if a user does not use the interactive rationale explorer."""
     rows = []
     for r in results:
         if not r:
@@ -1633,7 +1710,8 @@ def build_results_dataframe(results: list) -> pd.DataFrame:
                 "text_preview": (r.get("_chunk_text", "")[:120] + "...") if r.get("_chunk_text") else "",
                 "orientation": "ERROR", "activity": "", "subtype": "",
                 "potential_challenge": "", "likely_opposing_orientation": "",
-                "error": r.get("_error", "")
+                "orientation_rationale": "", "activity_rationale": "",
+                "potential_challenge_rationale": "", "error": r.get("_error", "")
             })
             continue
         act = _clean_enum((r.get("main_activity") or "")).upper()
@@ -1645,6 +1723,9 @@ def build_results_dataframe(results: list) -> pd.DataFrame:
             "subtype": _clean_enum((r.get("activity_subtype") or "")).upper(),
             "potential_challenge": CHALLENGES.get(derive_potential_challenge(act), {}).get("label", ""),
             "likely_opposing_orientation": _clean_enum((r.get("likely_opposing_orientation") or "")).upper(),
+            "orientation_rationale": r.get("orientation_rationale", ""),
+            "activity_rationale": r.get("activity_rationale", ""),
+            "potential_challenge_rationale": r.get("potential_challenge_rationale", ""),
             "error": ""
         })
     return pd.DataFrame(rows)
@@ -1740,15 +1821,52 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
     st.markdown("---")
     st.markdown("### Segment-Level Detail")
     df = build_results_dataframe(results)
-    st.dataframe(df, use_container_width=True, height=350)
+    # show a compact view in the table (drop the long rationale text columns
+    # from the visible table, but keep them in the CSV export)
+    display_cols = ["segment", "text_preview", "orientation", "activity",
+                     "subtype", "potential_challenge", "likely_opposing_orientation"]
+    display_cols = [c for c in display_cols if c in df.columns]
+    st.dataframe(df[display_cols] if display_cols else df, use_container_width=True, height=350)
 
     csv_bytes = df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        "Download full results as CSV",
+        "Download full results as CSV (includes complete rationale text)",
         data=csv_bytes,
         file_name="future_making_document_analysis.csv",
         mime="text/csv"
     )
+
+    # ── SEGMENT RATIONALE EXPLORER ──
+    # Reuses the same rich, single-comment style rendering (orientation /
+    # activity / challenge cards + Orientation Rationale, Activity
+    # Rationale, and Challenge Rationale tabs) for one selected segment at
+    # a time, so users get the same depth of explanation available in
+    # single-comment mode without rendering hundreds of panels at once.
+    st.markdown("---")
+    st.markdown("### Segment Rationale Explorer")
+    st.caption(
+        "Select an individual segment below to see its full orientation "
+        "rationale, activity rationale, and challenge rationale, presented "
+        "the same way as in the single-comment analysis view."
+    )
+
+    valid_indexed = [(i, r) for i, r in enumerate(results) if r and "_error" not in r]
+    if valid_indexed:
+        option_labels = [
+            f"Segment {i + 1}: {r.get('_chunk_text', '')[:90]}..."
+            for i, r in valid_indexed
+        ]
+        chosen_pos = st.selectbox(
+            "Choose a segment to inspect:",
+            options=range(len(option_labels)),
+            format_func=lambda x: option_labels[x]
+        )
+        chosen_idx, chosen_result = valid_indexed[chosen_pos]
+        st.markdown("**Full segment text:**")
+        st.info(chosen_result.get("_chunk_text", ""))
+        show_results(chosen_result, prescribed_future)
+    else:
+        st.caption("No valid segments available to explore.")
 
 
 # ─────────────────────────────────────────
@@ -1984,6 +2102,62 @@ def show_results(result: dict, prescribed_future: str):
 
 
 # ─────────────────────────────────────────
+# MODE SELECTOR -- colored buttons instead of a plain radio, to make the
+# two options (single comment vs. document/corpus) visually distinct
+# ─────────────────────────────────────────
+
+def render_mode_selector():
+    st.markdown("""
+    <style>
+    div.st-key-mode_single_btn button {
+        background-color: #EBF5FB !important;
+        border: 2px solid #2980B9 !important;
+        color: #2980B9 !important;
+        font-weight: bold !important;
+    }
+    div.st-key-mode_single_btn button:hover {
+        background-color: #2980B9 !important;
+        color: white !important;
+    }
+    div.st-key-mode_doc_btn button {
+        background-color: #F5EEF8 !important;
+        border: 2px solid #8E44AD !important;
+        color: #8E44AD !important;
+        font-weight: bold !important;
+    }
+    div.st-key-mode_doc_btn button:hover {
+        background-color: #8E44AD !important;
+        color: white !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    if "app_mode" not in st.session_state:
+        st.session_state["app_mode"] = MODE_SINGLE
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button(MODE_SINGLE_LABEL, key="mode_single_btn", use_container_width=True):
+            st.session_state["app_mode"] = MODE_SINGLE
+    with col2:
+        if st.button(MODE_DOC_LABEL, key="mode_doc_btn", use_container_width=True):
+            st.session_state["app_mode"] = MODE_DOC
+
+    active_mode = st.session_state["app_mode"]
+    active_label = MODE_SINGLE_LABEL if active_mode == MODE_SINGLE else MODE_DOC_LABEL
+    active_color = "#2980B9" if active_mode == MODE_SINGLE else "#8E44AD"
+    active_bg = "#EBF5FB" if active_mode == MODE_SINGLE else "#F5EEF8"
+    st.markdown(f"""
+    <div style="background:{active_bg};border-left:4px solid {active_color};
+                padding:8px 14px;border-radius:6px;margin:10px 0 16px 0;">
+        <strong style="color:{active_color};">Current mode:</strong> {active_label}
+    </div>
+    """, unsafe_allow_html=True)
+
+    return active_mode
+
+
+# ─────────────────────────────────────────
 # MAIN APP
 # ─────────────────────────────────────────
 
@@ -2008,17 +2182,13 @@ def main():
             api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
 
     st.markdown("---")
-
-    mode = st.radio(
-        "What would you like to do?",
-        ["Analyze a Single Comment", "Analyze a Document / Corpus"],
-        horizontal=True
-    )
+    st.markdown("### What would you like to do?")
+    mode = render_mode_selector()
 
     # ═══════════════════════════════════════
     # MODE 1: SINGLE COMMENT
     # ═══════════════════════════════════════
-    if mode == "Analyze a Single Comment":
+    if mode == MODE_SINGLE:
         st.markdown("### Step 1 -- Define the Prescribed Future")
 
         with st.expander("What type of intervention is this? (optional but recommended)"):
@@ -2111,7 +2281,8 @@ def main():
             "public consultation submissions, social media export, or a policy "
             "document) to get an aggregate assessment of future-making "
             "orientations, activities, and potential challenges across many "
-            "segments at once."
+            "segments at once, plus a full rationale explorer for individual "
+            "segments."
         )
 
         st.markdown("### Step 1 -- Define the Prescribed Future")
