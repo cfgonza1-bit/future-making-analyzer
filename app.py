@@ -18,7 +18,7 @@ st.set_page_config(
 # CITATION CONSTANTS
 # ─────────────────────────────────────────
 PAPER_TITLE   = "Futures in the Making: How Consumers Respond to Future-Oriented Interventions"
-PAPER_JOURNAL = "(under review)"
+PAPER_JOURNAL = "Journal of Marketing (under review)"
 PAPER_URL     = "REPLACE_WITH_YOUR_DOI_OR_URL"
 
 DATA_SOURCE_CODES = {
@@ -111,8 +111,9 @@ INTERVENTION_TYPES = {
 }
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT v7 — realigned to Web Appendices (A, D, E) +
-# Fragile Futures terminology + cross-domain generalization (EV + AI healthcare)
+# SYSTEM PROMPT v8 — adds DOMINANCE PRINCIPLE to Decision Procedure
+# (fixes over-triggering on incidental phrases vs. dominant thrust of
+# excerpt), restores dropped "John" direct-address in Contest example
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
 You are an expert qualitative coder and policy/managerial advisor applying the
@@ -148,6 +149,16 @@ Evaluations and Expander critique, because the pathway itself is undefined).
 B. FUTURE-MAKING ACTIVITIES — Select the ONE primary activity
 ════════════════════════════════════════════════════════════════
 
+IMPORTANT PRINCIPLE — CLASSIFY THE DOMINANT THRUST OF THE WHOLE PASSAGE,
+NOT ANY SINGLE SENTENCE: A passage may aggregate several sentences or
+quotes to illustrate one coded pattern. Some passages contain a brief
+INCIDENTAL phrase of a different activity type (e.g., a closing rallying
+call, an opening throwaway remark) that is NOT the main point of the
+passage. Do not let a single incidental sentence — especially one at the
+very beginning or very end of the passage — override the classification
+that fits the passage's OVERALL, MAJORITY content. See Section I (Section
+"Dominance Test") for the full procedure.
+
 ─── EVALUATION ───────────────────────────────────────────────
 Operational definition: References to how consumers made sense of the
 prescribed future.
@@ -158,19 +169,21 @@ Coding criteria (ALL must apply):
   • The assessment must have an identifiable object (e.g., EVs, AI diagnostic
     tools, infrastructure, regulation, environmental or health impacts,
     transition timeline).
-  • The comment is a STANDALONE assessment — it does NOT primarily call
-    others to act, persuade, or describe the speaker's own concrete
-    practice change.
+  • The PASSAGE AS A WHOLE is a STANDALONE assessment — it does NOT
+    primarily call others to act, persuade, or describe the speaker's own
+    concrete practice change, EVEN IF a brief incidental phrase elsewhere
+    in the passage uses rallying language (see Dominance Test, Section I).
   • Rhetorical or self-directed questions used to weigh complexity
     ("The question is...", "What about...") COUNT as Evaluation.
   • CRITICAL: STRONG, CATEGORICAL, or NEGATIVE language ("not the
     solution," "false solution," "not the future," "muddle point," "a poor
     replacement for expert judgment") DOES NOT by itself indicate
     Negotiation. A firmly-worded standalone opinion about the TOPIC is
-    still Evaluation, unless it ALSO meets the Negotiation criteria below.
+    still Evaluation, unless the passage AS A WHOLE ALSO meets the
+    Negotiation criteria below.
   • CRITICAL: Generic/impersonal "you" (meaning "people in general," "one,"
     or a hypothetical reader) does NOT count as second-person address to a
-    real interlocutor. See the GENERIC-YOU TEST in Section H.
+    real interlocutor. See the GENERIC-YOU TEST in Section I.
 Sub-types by orientation:
   SIMPLIFY   (Catalyzer)  — narrows focus, treats difficulties as temporary
     or already solved (e.g., "AI is already more accurate than humans")
@@ -185,16 +198,21 @@ Sub-types by orientation:
 ─── NEGOTIATION ──────────────────────────────────────────────
 Operational definition: References to how consumers compared, contested,
 defended, or expanded preferred futures.
-Coding criteria: Makes a RELATIONAL claim — responds to another position,
-compares alternative futures, challenges/defends a pathway, attributes
-responsibility or authority, or persuades/calls on OTHERS regarding what
-future should be pursued.
-Signals that STRONGLY indicate Negotiation over Evaluation:
+Coding criteria: The passage AS A WHOLE makes a RELATIONAL claim as its
+DOMINANT thrust — responds to another position, compares alternative
+futures, challenges/defends a pathway, attributes responsibility or
+authority, or persuades/calls on OTHERS regarding what future should be
+pursued.
+Signals that STRONGLY indicate Negotiation over Evaluation (must represent
+the passage's dominant content, not an isolated aside):
   • Imperative or collective calls to action ("we need to...", "let's...",
-    "should")
+    "should") that constitute a MAJOR part of the passage's content or its
+    central argumentative move — not a single closing rallying phrase
+    appended to an otherwise evaluative passage.
   • Direct SECOND-PERSON address to a SPECIFIC, REAL interlocutor or
-    opponent ("you," "have you," "your") — NOT a generic/impersonal "you."
-    See the GENERIC-YOU TEST in Section H before using this signal.
+    opponent ("you," "have you," "your," or a NAMED individual like "John,
+    you are so right") — NOT a generic/impersonal "you." See the
+    GENERIC-YOU TEST in Section I before using this signal.
   • Attribution of blame, responsibility, or authority to specific named
     actors (e.g., "politicians," "the government," "the vendor")
   • Explicit rebuttal of a claim JUST MADE by another named/implied speaker
@@ -212,9 +230,9 @@ Sub-types by orientation:
     alternative pathway, typically addressed to a real audience/opponent
 
   DISAMBIGUATION — REJECT vs. CONTEST (apply ONLY once Negotiation is
-  already established — do NOT use this to push an Evaluation-level
-  comment into Negotiation):
-  Use REJECT when the comment refuses an imposition without proposing an
+  already established as the DOMINANT activity — do NOT use this to push
+  an Evaluation-dominant passage into Negotiation):
+  Use REJECT when the passage refuses an imposition without proposing an
   alternative future. Use CONTEST when it proposes a different, broader
   future.
 
@@ -232,6 +250,22 @@ Sub-types by orientation (Enactment):
   DISAMBIGUATION — DELAY vs. PREVENT: DELAY ties non-adoption to a
   resolvable condition; PREVENT frames it as a permanent, identity-based
   stance ("no matter what," "til it dies," "will never").
+
+─── ENACTMENT ────────────────────────────────────────────────
+Operational definition: References to how consumers gave form to futures
+through imagined, planned, or actual changes in everyday practices and
+material arrangements.
+Coding criteria: The passage AS A WHOLE specifies, as its DOMINANT
+content, what the consumer THEMSELVES does, intends, expects, or imagines
+doing in practice. At least ONE substantial practice element must be
+identifiable: an action/routine, a material arrangement/technology, a
+competence, or a temporally situated commitment.
+Signals: first-person accounts of purchases/ownership/refusals; described
+routines actually performed; firm personal intentions ("I plan to...");
+relocation or acquisition/divestment of material objects. When these
+signals constitute the majority of the passage's substantive content, the
+passage is ENACTMENT even if it is followed or preceded by a brief
+collective appeal or evaluative remark (see Dominance Test, Section I).
 
 ════════════════════════════════════════════════════════════════
 C. FUTURE-MAKING ORIENTATIONS — Select the ONE primary orientation
@@ -310,7 +344,7 @@ Together, these three challenges may contribute to FRAGILE FUTURES:
 multiple, volatile, and conflicting preferred futures that interfere with
 the actualization of the prescribed future. This mapping is applied
 automatically by the calling application based on your "main_activity"
-classification. Your job is to explain, in Section I below, HOW this
+classification. Your job is to explain, in Section J below, HOW this
 specific text's content would likely generate friction with an opposing
 orientation.
 
@@ -400,7 +434,8 @@ Example 1 (EVALUATION, not Negotiation):
 fast... EVs can stand on their own merits now." (Source: W)
 → EVALUATION / SIMPLIFY / CATALYZER
 
-Example 2 (NEGOTIATION, not Evaluation — real call to action):
+Example 2 (NEGOTIATION, not Evaluation — real call to action AS THE MAIN
+POINT of the passage):
 "We need to act on transport emissions as quickly as possible... so
 let's get moving." (Source: PC)
 → NEGOTIATION / ADVOCATE / CATALYZER
@@ -430,8 +465,14 @@ Example 7 (NEGOTIATION/REJECT — direct address + named actors):
 car we can have." (Source: YT)
 → NEGOTIATION / REJECT / RESISTANT
 
-Example 8 (NEGOTIATION/CONTEST — addressed rhetorical challenge):
-"Does it have to be a car?" (Source: FG)
+Example 8 (NEGOTIATION/CONTEST — NAMED direct address to "John"):
+"Consumerism trumps facts. John you are so right but the first sentence
+prevails in modern society... Does it have to be a car?" (Source: YT/FG)
+Why NEGOTIATION and not Evaluation: "John you are so right" is a NAMED,
+SPECIFIC direct address to a real interlocutor in the conversation — this
+is the strongest possible Negotiation signal (Section I, Test A), and it
+is reinforced by the closing rhetorical challenge "Does it have to be a
+car?" addressed to the same audience.
 → NEGOTIATION / CONTEST / EXPANDER
 
 Example 9 — ⚠️ CRITICAL CONTRAST — EVALUATION, NOT Negotiation, despite
@@ -443,9 +484,7 @@ future, just a muddle point." (Source: PC)
 Example 10 — ⚠️ CRITICAL CONTRAST — EVALUATION, NOT Negotiation, despite
 containing "you" (GENERIC-YOU, not a real interlocutor):
 "Electric vehicle is a false solution if you care about the environment
-at all." (Source: FG) — this quote illustrates COMPLEXIFY, not CONTEST,
-because it is a standalone systemic judgment, not an address to a real
-opponent.
+at all." (Source: FG)
 → EVALUATION / COMPLEXIFY / EXPANDER
 
 Example 11 — ⚠️ CRITICAL: heterogeneous single input with signals from
@@ -456,87 +495,106 @@ still isn't in place [concrete action]. I plan to drive my current 10
 year old hybrid as long as I can [firm intention]."
 → ENACTMENT / DELAY / AMBIVALENT
 
-Example 12 (cross-domain: AI healthcare, EVALUATION/SIMPLIFY, Catalyzer):
-"AI is already more accurate than humans and will inevitably improve
-healthcare." (Source: adapted from Web Appendix E)
-Why CATALYZER/EVALUATION/SIMPLIFY: standalone claim of inevitability and
-superiority, no interlocutor addressed, no described own practice.
+Example 12 — ⚠️ CRITICAL: DOMINANCE TEST — passage is EVALUATION-dominant
+despite containing a brief closing collective appeal:
+"There's no discussion about whether they're better for the environment.
+The math and science is extremely clear and it's ridiculous to even
+compare them with how much better EVs are. Climate change is an urgent
+threat, and we need to accelerate the decarbonisation of transport
+quickly and efficiently [...] Let's lift the ambition." (Source: FG/PC)
+Why EVALUATION/SIMPLIFY, NOT Negotiation: the passage's overwhelming
+content is a standalone judgment about the state of scientific evidence
+and the urgency of the problem — a classic Simplify move (treating the
+evidence as settled/clear). The closing phrase "Let's lift the ambition"
+is a brief rallying flourish, not the passage's central argumentative
+move, and does NOT override the dominant Evaluation classification. Apply
+the Dominance Test: ask "if I removed this one closing phrase, would the
+passage's meaning and primary point change?" Here, the answer is NO — the
+passage remains a coherent evaluative statement without it.
 → EVALUATION / SIMPLIFY / CATALYZER
 
-Example 13 (cross-domain: AI healthcare, EVALUATION/AVOID, Resistant):
+Example 13 — ⚠️ CRITICAL: DOMINANCE TEST — passage is ENACTMENT-dominant
+despite ending with a Negotiation-like appeal:
+"We tend to do most of our shopping by bike rather than with the ute
+because the ute's inconvenient to park and navigate in small car parks.
+The future is less cars, in higher density pedestrian, bike and
+train-orientated urban environments. We need more viable alternatives to
+driving. An investment in bicycle infrastructure and public transport
+will greatly help this cause." (Source: I/FG/PC)
+Why ENACTMENT/REROUTE, NOT Negotiation: the passage's substantive core is
+a first-person description of an actual rerouted practice ("we tend to do
+most of our shopping by bike"), reinforced by a stated vision. The
+trailing sentence "We need more viable alternatives to driving" is an
+appended collective appeal, but it does NOT constitute the passage's
+primary content or point — the firsthand described practice change does.
+Apply the Dominance Test: the passage remains substantively about the
+speaker's own rerouted practice even without the final sentence.
+→ ENACTMENT / REROUTE / EXPANDER
+
+Example 14 (cross-domain: AI healthcare, EVALUATION/SIMPLIFY, Catalyzer):
+"AI is already more accurate than humans and will inevitably improve
+healthcare." (Source: adapted from Web Appendix E)
+→ EVALUATION / SIMPLIFY / CATALYZER
+
+Example 15 (cross-domain: AI healthcare, EVALUATION/AVOID, Resistant):
 "AI is a tool for surveillance, cost reduction, and a poor replacement
 for expert judgment." (Source: adapted from Web Appendix E)
-Why RESISTANT/EVALUATION/AVOID, not Negotiation: categorical standalone
-dismissal with no named actor addressed and no call to action.
 → EVALUATION / AVOID / RESISTANT
 
-Example 14 (cross-domain: AI healthcare, EVALUATION/COMPLEXIFY, Expander):
+Example 16 (cross-domain: AI healthcare, EVALUATION/COMPLEXIFY, Expander):
 "A more efficient algorithm does not solve unequal access to healthcare."
 (Source: adapted from Web Appendix E)
-Why EXPANDER/EVALUATION/COMPLEXIFY: zooms out from the tool itself
-(efficiency) to the underlying systemic problem (unequal access) — a
-hallmark Expander move regardless of domain.
 → EVALUATION / COMPLEXIFY / EXPANDER
 
-Example 15 (public consultation register, EVALUATION not Negotiation):
+Example 17 (public consultation register, EVALUATION not Negotiation):
 "Do not support either one as for industries which require vehicles for
 outback and certain trades will not be able to access sufficient
 technology in vehicles such as utes." (Source: PC)
-Why RESISTANT/EVALUATION/AVOID and not Negotiation: standalone judgment
-of impracticality for a specific use case; no named actor addressed.
 → EVALUATION / AVOID / RESISTANT
 
 ════════════════════════════════════════════════════════════════
 H. DECISION PROCEDURE — Apply in this exact order, for EVERY text
 ════════════════════════════════════════════════════════════════
 
-STEP 1 — Check ENACTMENT first:
-  Does ANY part of the text describe a concrete action taken, planned,
-  refused, or firmly intended BY THE SPEAKER THEMSELVES?
+STEP 0 — READ THE ENTIRE PASSAGE FIRST. Do not classify sentence-by-
+sentence. Form a holistic impression of what the passage is PRIMARILY
+about before applying the tests below.
+
+STEP 1 — Check ENACTMENT first (as the DOMINANT thrust):
+  Does the MAJORITY of the passage's substantive content describe a
+  concrete action taken, planned, refused, or firmly intended BY THE
+  SPEAKER THEMSELVES?
   → If YES: classify as ENACTMENT (apply DELAY vs. PREVENT). This holds
-    EVEN IF other parts of the same input also contain evaluative or
-    negotiation-like language — Enactment signals always take priority.
-    Stop here.
+    even if the passage ALSO contains a brief evaluative or negotiation-
+    like remark elsewhere, AS LONG AS that remark is not itself the
+    passage's main point (apply the Dominance Test in Section I). Stop
+    here.
 
-STEP 2 — If NOT Enactment, check NEGOTIATION using BOTH tests below:
+STEP 2 — If NOT Enactment-dominant, check NEGOTIATION (as the DOMINANT
+thrust) using the tests in Section I (Generic-You Test, Rhetorical-
+Question Test, Standalone-Judgment Test, Dominance Test):
+  → If the passage's PRIMARY content is relational (responds to another
+    position, persuades a real audience, issues a substantial collective
+    call to action, or addresses/rebuts a specific named party):
+    classify as NEGOTIATION (apply REJECT vs. CONTEST). Stop here.
 
-  ─── TEST A: GENERIC-YOU TEST (apply if the text contains "you") ───
-  Replace every instance of "you" with "one," "a person," or "people in
-  general." Does the sentence still read naturally and mean the same
-  thing?
-    → If YES → the "you" is GENERIC/IMPERSONAL. Do NOT use it as
-      Negotiation evidence.
-    → If NO → genuine second-person address. Count it as Negotiation
-      evidence.
+STEP 3 — If neither Enactment-dominant nor Negotiation-dominant, classify
+as EVALUATION. This includes passages that contain a brief incidental
+negotiation- or enactment-like phrase that is NOT the passage's main
+point.
 
-  ─── TEST B: RHETORICAL-QUESTION TEST (apply if question marks present) ───
-  If I removed any genuine second-person address (per Test A) and any
-  explicit rebuttal of a SPECIFIC claim just made by another named/implied
-  speaker, would the statement still stand as an independent,
-  self-contained judgment?
-    → If YES → EVALUATION, not Negotiation. Proceed to Step 3.
-    → If NO → NEGOTIATION. Continue below.
-
-  ─── TEST C: STANDALONE-JUDGMENT TEST (apply regardless of tone) ───
-  Strong, categorical, or dismissive language about the TOPIC ITSELF is
-  NOT sufficient on its own to indicate Negotiation.
-    → If it only states a firm opinion about the topic → EVALUATION.
-    → If it explicitly refuses/rebuts a named actor or issues a
-      collective call to action → NEGOTIATION.
-
-  ─── GENERAL NEGOTIATION CRITERIA (apply only if Tests A-C support it) ───
-  → If YES: classify as NEGOTIATION (apply REJECT vs. CONTEST). Stop here.
-
-STEP 3 — If neither Enactment nor Negotiation, classify as EVALUATION.
-
-STEP 4 — MANDATORY TIE-BREAKER:
-  If signals from more than one activity are present, resolve using this
-  strict PRIORITY ORDER: 1) ENACTMENT always wins. 2) NEGOTIATION wins
-  over Evaluation. 3) Otherwise EVALUATION. Never combine or split.
+STEP 4 — MANDATORY TIE-BREAKER (only if Steps 1-3 genuinely cannot
+determine a dominant activity, e.g., the passage is evenly split between
+two activities with no clear majority):
+  Resolve using this strict PRIORITY ORDER: 1) ENACTMENT wins. 2)
+  NEGOTIATION wins over Evaluation. 3) Otherwise EVALUATION. Never
+  combine or split. This tie-breaker is a LAST RESORT — first attempt to
+  identify the genuinely dominant activity using Steps 1-3 and the
+  Dominance Test in Section I.
 
 IMPORTANT: When in doubt between Evaluation and Negotiation, DEFAULT TO
 EVALUATION unless there is a clear, specific, real interlocutor or named
-actor being addressed/refused/persuaded.
+actor being addressed/refused/persuaded AS THE PASSAGE'S MAIN POINT.
 
 NOTE ON PUBLIC CONSULTATION / SURVEY TEXT: Many submissions to public
 consultations or open-ended survey questions are standalone opinions
@@ -544,10 +602,61 @@ written in response to a prompt ("Why did you choose this option?")
 rather than direct replies to another person. Words like "government,"
 "the policy," or "manufacturers" used generically should usually be
 treated as EVALUATION unless the text explicitly demands accountability
-from them or issues a direct collective call to action.
+from them or issues a direct collective call to action AS ITS MAIN POINT.
 
 ════════════════════════════════════════════════════════════════
-I. POTENTIAL CHALLENGE CONTRIBUTION
+I. SUPPORTING TESTS (apply as part of Steps 1-3 above)
+════════════════════════════════════════════════════════════════
+
+─── TEST A: GENERIC-YOU TEST (apply if the text contains "you") ───
+Replace every instance of "you" with "one," "a person," or "people in
+general." Does the sentence still read naturally and mean the same
+thing?
+  → If YES → the "you" is GENERIC/IMPERSONAL. Do NOT use it as
+    Negotiation evidence.
+  → If NO (only makes sense addressing a SPECIFIC real person/opponent,
+    e.g., "Have you thought about...", or a NAMED individual like "John,
+    you are so right") → genuine second-person address. Count it as
+    strong Negotiation evidence.
+
+─── TEST B: RHETORICAL-QUESTION TEST (apply if question marks present) ───
+If I removed any genuine second-person address (per Test A) and any
+explicit rebuttal of a SPECIFIC claim just made by another named/implied
+speaker, would the passage still stand as an independent, self-contained
+judgment?
+  → If YES → EVALUATION, not Negotiation.
+  → If NO → NEGOTIATION.
+
+─── TEST C: STANDALONE-JUDGMENT TEST (apply regardless of tone) ───
+Strong, categorical, or dismissive language about the TOPIC ITSELF is NOT
+sufficient on its own to indicate Negotiation.
+  → If the passage only states a firm opinion about the topic →
+    EVALUATION.
+  → If it explicitly refuses/rebuts a named actor or issues a substantial
+    collective call to action AS ITS MAIN POINT → NEGOTIATION.
+
+─── TEST D: DOMINANCE TEST (apply whenever a passage contains signals of
+more than one activity) ───
+Ask: "If I removed the SHORTEST, most peripheral sentence or phrase that
+seems to point toward a different activity, would the passage's overall
+meaning and primary point remain intact?"
+  → If YES (the passage still makes complete sense and conveys its main
+    point without that phrase) → that phrase is INCIDENTAL. Classify
+    based on the REMAINING, dominant content.
+  → If NO (removing it would eliminate the passage's actual point) →
+    that phrase IS the dominant content. Classify accordingly.
+
+Apply Test D especially when:
+  • A clearly evaluative passage ends with a brief rallying phrase
+    ("let's...", "we need to...") that is NOT elaborated or central to
+    the argument (see Example 12).
+  • A clearly enactment-based passage (describing the speaker's own
+    practice) is followed by a brief collective appeal (see Example 13).
+  • A clearly negotiation-based passage (with named/direct address)
+    opens or closes with an incidental evaluative remark.
+
+════════════════════════════════════════════════════════════════
+J. POTENTIAL CHALLENGE CONTRIBUTION
 ════════════════════════════════════════════════════════════════
 
 For EVERY text, in addition to classifying its activity/subtype/
@@ -568,7 +677,8 @@ CRITICAL OUTPUT RULE
 
 Select EXACTLY ONE value for each enum field below. There is no "MIXED"
 option for any field. Always resolve to exactly one value using the
-Decision Procedure (Section H, including the mandatory tie-breaker).
+Decision Procedure (Section H), applying the Dominance Test (Section I,
+Test D) before resorting to the mandatory tie-breaker.
 
 ════════════════════════════════════════════════════════════════
 OUTPUT FORMAT — Return ONLY valid JSON
@@ -579,7 +689,7 @@ OUTPUT FORMAT — Return ONLY valid JSON
 
   "main_activity": "one single value: EVALUATION, NEGOTIATION, or ENACTMENT",
   "activity_subtype": "one single value: SIMPLIFY, STALL, AVOID, COMPLEXIFY, ADVOCATE, QUESTION, REJECT, CONTEST, ACCELERATE, DELAY, PREVENT, REROUTE",
-  "activity_rationale": "State which Decision Procedure step/test matched, citing specific phrases",
+  "activity_rationale": "State which Decision Procedure step/test matched, INCLUDING the result of the Dominance Test if the passage contained mixed signals, citing specific phrases",
   "secondary_activities": [],
 
   "main_orientation": "one single value: CATALYZER, AMBIVALENT, RESISTANT, or EXPANDER",
@@ -724,8 +834,7 @@ PF_AI_HEALTH = (
 )
 
 # ─────────────────────────────────────────
-# POLICY & MANAGERIAL GUIDANCE — enriched per Web Appendix E structure
-# (implications + monitor signals + instruments), generalized across domains
+# POLICY & MANAGERIAL GUIDANCE (unchanged from previous version)
 # ─────────────────────────────────────────
 POLICY_GUIDANCE = {
     "CATALYZER": {
@@ -880,7 +989,9 @@ CROSS_ORIENTATION_WARNING = (
 )
 
 # ─────────────────────────────────────────
-# EXAMPLES — realigned strictly to Table WD1 (Web Appendix D) verbatim quotes
+# EXAMPLES — realigned to Table WD1 (Web Appendix D), with the CONTEST
+# quote corrected to restore the "John you are so right" direct address
+# that had been accidentally trimmed
 # ─────────────────────────────────────────
 EXAMPLES = {
     "— Select an example from the paper —": {
@@ -1014,19 +1125,21 @@ EXAMPLES = {
     "🛡️ RESISTANT  |  💬 Negotiation  →  Reject": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "REJECT", "orientation": "RESISTANT",
         "comment": (
-            "The current electricity infrastructure can't keep up with the "
-            "demand now let alone if everyone wants electric cars (AD). "
             "I would be more concerned about the embarrassment of being seen in "
             "one of these battery-operated vehicles. Being a normal bloke, I'll "
-            "stick with a normal car — V8 (FG). "
+            "stick with a normal car — V8. Preferably one with the catalytic "
+            "[converter] removed (FG). "
             "Is this communism — take away our freedom of choice! (FG). "
             "Australians are not as ignorant as the politicians think, and they "
             "research government push and now question the purpose behind these "
             "pushes. There's always big corporations behind any government move "
             "and if this country is taxed just for an ideology then the "
             "potential for even greater social unrest is likely (PC). "
-            "I think it's like being a vegan of the car world. It's social "
-            "policing because you're deviating from the norm (FG)."
+            "I think it's like being a vegan of the car world. People think it's "
+            "a virtue signal — that you must be a snooty holier-than-thou type "
+            "judging their non-participation and lifestyle which they take "
+            "pride in and identify with. It's social policing because you're "
+            "deviating from the norm (FG)."
         )
     },
     "🛡️ RESISTANT  |  ⚙️ Enactment  →  Prevent": {
@@ -1056,12 +1169,9 @@ EXAMPLES = {
             "This doesn't cover the destruction of the fabric of cities to "
             "accommodate cars. Gasoline or electric, the most significant "
             "environmental destruction that's caused by cars are the blight it "
-            "causes to cities. Electric vehicle is a false solution if you care "
-            "about the environment at all (FG). "
-            "More to electric cars, they say. But are we ready to have electric "
-            "cars claiming our public spaces? And what about communities that "
-            "may not be able to afford cars, let alone electric cars? Time to "
-            "rethink public transport! #COP26 #ElectricVehicles (X)."
+            "causes to cities. 60% of the land in car-dependent cities are "
+            "dedicated to cars, mainly parking and roads. Electric vehicle is a "
+            "false solution if you care about the environment at all (FG)."
         )
     },
     "🌍 EXPANDER  |  💬 Negotiation  →  Contest": {
@@ -1071,13 +1181,15 @@ EXAMPLES = {
             "people at scale and generate congestion. Within an urban core, "
             "e-scooters offer an attractive alternative, one that he believes is "
             "superior to traditional, pedal-powered share bikes (NM). "
-            "Consumerism trumps facts. Why save the environment by keeping the "
-            "car you already own and using it less, when you can join the "
-            "Joneses and spend money on that flash new hybrid/EV/hydrogen "
-            "powered four wheeled status symbol that shows you earn more money "
-            "than you need (YT). "
+            "Consumerism trumps facts. John you are so right but the first "
+            "sentence prevails in modern society, why save the environment by "
+            "keeping the car you already own and using it less, when you can "
+            "join the Joneses, Smiths or whoever your neighbour is and spend "
+            "money on that flash new hybrid/EV/hydrogen powered four wheeled "
+            "status symbol that shows you earn more money than you need. But "
+            "hey who am I to judge (YT). "
             "Does it have to be a car? (FG). "
-            "If your main priority was the environment, ride a bicycle… you're "
+            "If your main priority was the environment, ride a bicycle… You're "
             "buying a 2-tonne metal box powered by a giant battery — let's not "
             "pretend we're saving the planet, we're just picking a lesser evil "
             "but it's still not good for the planet (R)."
@@ -1097,18 +1209,13 @@ EXAMPLES = {
             "parks (I). "
             "The future is less cars, in higher density pedestrian, bike and "
             "train-orientated urban environments, where cars are secondary "
-            "transport really only for those who really need it (FG). "
-            "We need more viable alternatives to driving. An investment in "
-            "bicycle infrastructure and public transport will greatly help this "
-            "cause. If we continue to invest in car infrastructure we set "
-            "ourselves up for failure (PC)."
+            "transport really only for those who really need it (FG)."
         )
     },
 }
 
 # ─────────────────────────────────────────
-# GENERALIZATION TESTS — expanded with cross-domain (AI healthcare) case
-# per Web Appendix E, to demonstrate framework generalizability
+# GENERALIZATION TESTS — cross-domain (EV + AI healthcare), per Web Appendix E
 # ─────────────────────────────────────────
 GENERALIZATION_TESTS = {
     "— Select a generalization test —": {"comment": "", "note": "", "prescribed": ""},
@@ -1166,15 +1273,17 @@ PRESCRIBED FUTURE:
 TEXT TO ANALYZE:
 {comment}
 
-Remember: apply the DECISION PROCEDURE (Section H) in order — including
-the Generic-You Test, Rhetorical-Question Test, Standalone-Judgment Test,
-and the mandatory Step 4 tie-breaker if signals from more than one
-activity are present. Return EXACTLY ONE value per enum field. Complete
-Section I (likely_opposing_orientation + potential_challenge_rationale),
-framing the rationale in terms of Fragile Futures risk where relevant.
-Populate policy_recommendations and manager_recommendations with content
-SPECIFIC to the prescribed future given above (not generic EV language
-unless the prescribed future is actually about vehicles).
+Remember: read the ENTIRE passage first (Step 0), then apply the DECISION
+PROCEDURE (Section H) — including the Dominance Test (Section I, Test D)
+whenever the passage contains signals from more than one activity. Do NOT
+let a single incidental sentence at the start or end of the passage
+override the classification that fits the passage's overall, majority
+content. Return EXACTLY ONE value per enum field. Complete Section J
+(likely_opposing_orientation + potential_challenge_rationale), framing the
+rationale in terms of Fragile Futures risk where relevant. Populate
+policy_recommendations and manager_recommendations with content SPECIFIC
+to the prescribed future given above (not generic EV language unless the
+prescribed future is actually about vehicles).
 """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -1190,7 +1299,7 @@ unless the prescribed future is actually about vehicles).
 
 def run_validation_suite(api_key: str) -> dict:
     """Internal QA tool: validates the 12 single-comment examples,
-    now realigned strictly to Table WD1 (Web Appendix D)."""
+    realigned strictly to Table WD1 (Web Appendix D)."""
     results = []
     for name, ex in EXAMPLES.items():
         if not ex.get("comment"):
@@ -1754,7 +1863,7 @@ def show_results(result: dict, prescribed_future: str):
             st.markdown("**📋 Notable Conditions**"); st.caption(result.get("notable_conditions_of_adoption", "—"))
 
     with tab_act:
-        st.markdown("**Why this activity is primary? (Decision Procedure applied)**")
+        st.markdown("**Why this activity is primary? (Decision Procedure + Dominance Test applied)**")
         st.write(result.get("activity_rationale", "—"))
         sec = result.get("secondary_activities", [])
         if sec:
