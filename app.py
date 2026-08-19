@@ -18,7 +18,7 @@ st.set_page_config(
 # CITATION CONSTANTS
 # ─────────────────────────────────────────
 PAPER_TITLE   = "Futures in the Making: How Consumers Respond to Future-Oriented Interventions"
-PAPER_JOURNAL = "Journal of Marketing"
+PAPER_JOURNAL = 
 PAPER_URL     = "REPLACE_WITH_YOUR_DOI_OR_URL"
 
 DATA_SOURCE_CODES = {
