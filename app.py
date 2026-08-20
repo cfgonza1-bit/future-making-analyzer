@@ -9,7 +9,7 @@ import pandas as pd
 # PAGE CONFIG
 # ─────────────────────────────────────────
 st.set_page_config(
-    page_title="Future-Making Orientation Analyzer",
+    page_title="Future-Making Analyzer",
     page_icon="FM",
     layout="wide"
 )
@@ -23,50 +23,167 @@ PAPER_URL   = "REPLACE_WITH_YOUR_DOI_OR_URL"
 DOC_MAX_WORKERS = 5  # parallel API calls for document analysis
 
 # ─────────────────────────────────────────
+# INTERPRETIVE-USE NOTE (shown near input and before corpus results)
+# ─────────────────────────────────────────
+INTERPRETIVE_USE_NOTE = (
+    "**Interpretive-use note.** For comparability, the application assigns a "
+    "dominant orientation and activity to each analyzed segment. This is an "
+    "analytical simplification: future-making activities are interdependent "
+    "and recursive, and consumers may adopt, combine, or move between "
+    "orientations across contexts and over time. Review outputs alongside "
+    "the complete text, the surrounding interaction, the specified "
+    "intervention, and relevant behavioral evidence. Corpus percentages "
+    "refer only to analyzed segments and should not be interpreted as "
+    "population estimates. Future-making challenges and Fragile Futures "
+    "require evidence that differently oriented performances coexist, "
+    "clash, or interfere with one another."
+)
+
+HOMEPAGE_DESCRIPTION = """
+Use this application to support the diagnosis of consumer future-making in
+response to a policy or market intervention. After defining the prescribed
+future, users can analyze a single meaning-bearing text segment or selected
+segments from a document or corpus. The application identifies the dominant
+future-making orientation -- Catalyzer, Ambivalent, Resistant, or Expander --
+and examines how evaluation, negotiation, or enactment is being performed.
+Across multiple texts, it maps recurring patterns and flags where differently
+oriented performances may contribute to convoluted evaluations,
+confrontational negotiations, or competing enactments.
+
+The framework was developed through qualitative research on Australian Zero
+Emission Vehicle interventions. Its application to AI-integrated healthcare
+illustrates its expected transferability to another future-oriented context;
+it does not constitute independent empirical validation. Orientations are
+situated ways of performing future-making, not fixed consumer types or
+stable market segments. Results support interpretive diagnosis and should
+be reviewed in context: corpus summaries describe only the analyzed text
+segments and do not, by themselves, demonstrate population prevalence,
+future-making challenges, or Fragile Futures.
+
+*Based on: "Futures in the Making: How Consumers Respond to Future-Oriented
+Interventions."*
+"""
+
+# ─────────────────────────────────────────
 # MODE LABELS
 # ─────────────────────────────────────────
 MODE_SINGLE = "single"
 MODE_DOC = "document"
 MODE_SINGLE_LABEL = "Analyze a Single Comment"
-MODE_DOC_LABEL = "Map Orientations Across a Document"
+MODE_DOC_LABEL = "Map Orientations Across Selected Segments"
 
 # ─────────────────────────────────────────
-# DETERMINISTIC ACTIVITY -> CHALLENGE MAPPING
+# DETERMINISTIC ACTIVITY -> POTENTIAL CHALLENGE PATHWAY MAPPING
 # ─────────────────────────────────────────
-ACTIVITY_TO_CHALLENGE = {
+ACTIVITY_TO_CHALLENGE_PATHWAY = {
     "EVALUATION":  "CONVOLUTED_EVALUATIONS",
     "NEGOTIATION": "CONFRONTATIONAL_NEGOTIATIONS",
     "ENACTMENT":   "COMPETING_ENACTMENTS",
 }
 
 
-def _clean_enum(value: str) -> str:
+def _clean_enum(value) -> str:
     if not value:
-        return value
+        return ""
+    value = str(value)
     for sep in ["|", "/", " or "]:
         if sep in value:
             return value.split(sep)[0].strip()
     return value.strip()
 
 
-def derive_potential_challenge(main_activity: str) -> str:
+def derive_potential_challenge_pathway(main_activity: str) -> str:
+    """Deterministic mapping. Returns the pathway KEY, not a claim that the
+    challenge has been observed -- the pathway is only a potential
+    contribution to friction if a differently oriented performance of the
+    same activity is also present elsewhere in the discussion or market."""
     act = _clean_enum(main_activity).upper() if main_activity else ""
-    return ACTIVITY_TO_CHALLENGE.get(act, "N/A")
+    return ACTIVITY_TO_CHALLENGE_PATHWAY.get(act, "N/A")
+
+
+def derive_challenge_pathways(main_activity: str, secondary_classifications: list) -> list:
+    """Returns a deduplicated, ordered list of potential challenge pathway
+    keys derived from the primary activity plus any secondary
+    classifications attached to the same segment."""
+    pathways = []
+    primary = derive_potential_challenge_pathway(main_activity)
+    if primary != "N/A":
+        pathways.append(primary)
+    for sec in (secondary_classifications or []):
+        act = _clean_enum(sec.get("activity", "")).upper()
+        p = derive_potential_challenge_pathway(act)
+        if p != "N/A" and p not in pathways:
+            pathways.append(p)
+    return pathways
+
+
+# ─────────────────────────────────────────
+# BACKWARD-COMPATIBILITY GETTERS
+# (handle results generated under older field names)
+# ─────────────────────────────────────────
+
+def get_secondary_classifications(result: dict) -> list:
+    sec = result.get("secondary_classifications")
+    if sec:
+        cleaned = []
+        for item in sec:
+            if isinstance(item, dict):
+                cleaned.append({
+                    "activity": _clean_enum(item.get("activity", "")).upper(),
+                    "activity_subtype": _clean_enum(item.get("activity_subtype", "")).upper(),
+                    "orientation": _clean_enum(item.get("orientation", "")).upper(),
+                    "rationale": item.get("rationale", "")
+                })
+        return cleaned
+    # Backward compatibility: older versions used "secondary_activities" as
+    # a flat list of activity strings with no subtype/orientation/rationale.
+    legacy = result.get("secondary_activities")
+    if legacy:
+        return [
+            {"activity": _clean_enum(str(a)).upper(), "activity_subtype": "",
+             "orientation": "", "rationale": "(legacy field -- no detail available)"}
+            for a in legacy if a
+        ]
+    return []
+
+
+def get_contrasting_orientation(result: dict) -> str:
+    val = result.get("theoretically_contrasting_orientation")
+    if not val:
+        # Backward compatibility with the earlier field name.
+        val = result.get("likely_opposing_orientation", "")
+    return _clean_enum(val).upper()
+
+
+def get_policy_considerations(result: dict) -> dict:
+    return (result.get("policy_diagnostic_considerations")
+            or result.get("policy_recommendations")
+            or {})
+
+
+def get_manager_considerations(result: dict) -> dict:
+    return (result.get("manager_diagnostic_considerations")
+            or result.get("manager_recommendations")
+            or {})
+
+
+def get_input_scope_warning(result: dict) -> str:
+    return result.get("input_scope_warning", "") or ""
 
 
 # ─────────────────────────────────────────
 # SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (context typology)
+# Purely descriptive -- does not predetermine expected orientations,
+# activities, or challenge pathways.
 # ─────────────────────────────────────────
 INTERVENTION_TYPES = {
     "Fixed Intervention (Narrow scope, Highly prescriptive)": {
         "scope": "Narrow", "prescriptiveness": "Highly",
         "example": "Ban on single-use plastic bags (Gonzalez-Arcos et al. 2021)",
         "note": (
-            "Predominantly initiated by governmental policies or laws with clear "
-            "targets and strong regulatory specification. Requires consumers to "
-            "change one or a few interconnected practices. Expect fast, visible "
-            "Negotiation and Enactment; monitor closely for Resistant/Reject and "
-            "Resistant/Prevent responses aimed directly at the mandate itself."
+            "Predominantly initiated by governmental policies or laws with "
+            "clear targets and strong regulatory specification. Requires "
+            "consumers to change one or a few interconnected practices."
         )
     },
     "Bounded Intervention (Broad scope, Highly prescriptive)": {
@@ -74,34 +191,28 @@ INTERVENTION_TYPES = {
         "example": "ZEV policies and strategies (Holtsmark and Skonhoft 2014)",
         "note": (
             "Highly prescriptive and predominantly initiated by governmental "
-            "targets, followed by incentives, penalties, and firm strategies that "
-            "move consumers and market actors across a wide range of practices. "
-            "Fragile Futures risk is elevated: expect Convoluted Evaluations, "
-            "Confrontational Negotiations, and Competing Enactments to co-occur "
-            "across all four orientations simultaneously."
+            "targets, followed by incentives, penalties, and firm strategies "
+            "that move consumers and market actors across a wide range of "
+            "practices."
         )
     },
     "Flexible Intervention (Narrow scope, Lowly prescriptive)": {
         "scope": "Narrow", "prescriptiveness": "Lowly",
         "example": "Meat-free Mondays (Semba et al. 2024)",
         "note": (
-            "New behavioral guidelines for a specific consumption practice, often "
-            "arising from consumer movements or social marketers rather than "
-            "regulation. Expect predominantly Evaluation and light Enactment; "
-            "lower likelihood of strong Resistant backlash given the voluntary, "
-            "narrow nature of the ask."
+            "New behavioral guidelines for a specific consumption practice, "
+            "often arising from consumer movements or social marketers "
+            "rather than regulation."
         )
     },
     "Open Intervention (Broad scope, Lowly prescriptive)": {
         "scope": "Broad", "prescriptiveness": "Lowly",
-        "example": "Adoption of AI in healthcare (Poon et al. 2025)",
+        "example": "Decentralized adoption of AI in healthcare (Poon et al. 2025)",
         "note": (
-            "Arises primarily from technological or societal developments rather "
-            "than explicit policy goals; high uncertainty, multiple possible "
-            "trajectories, no predefined societal outcome. Expect substantial "
-            "Convoluted Evaluations and Expander critique, since the shape of the "
-            "intervention itself is still being negotiated across many possible "
-            "uses and applications."
+            "Arises primarily from technological or societal developments "
+            "rather than explicit policy goals; characterized by high "
+            "uncertainty, multiple possible trajectories, and no predefined "
+            "societal outcome."
         )
     },
 }
@@ -110,17 +221,18 @@ INTERVENTION_TYPES = {
 def augment_prescribed_future(base_pf: str, it_key: str) -> str:
     """If the user selected an intervention type, append its scope/
     prescriptiveness classification to the prescribed future text so the
-    model actually uses it to calibrate its analysis (per Section A of the
-    coding framework). Without this, the intervention type selector would
-    be purely decorative and would not affect the LLM's output."""
+    model has this contextual information available. This context helps
+    interpret what the prescribed future requires; it does not predetermine
+    which orientations, activities, or challenge pathways will be found."""
     base_pf = (base_pf or "").strip()
     if not it_key or it_key not in INTERVENTION_TYPES:
         return base_pf
     it_data = INTERVENTION_TYPES[it_key]
     type_name = it_key.split(" (")[0]
     addition = (
-        f"[Intervention type: {type_name} -- {it_data['scope']} scope, "
-        f"{it_data['prescriptiveness']} prescriptive.]"
+        f"[Intervention type (context only, not predictive): {type_name} -- "
+        f"{it_data['scope']} scope, {it_data['prescriptiveness']} "
+        f"prescriptive.]"
     )
     if addition in base_pf:
         return base_pf
@@ -128,163 +240,155 @@ def augment_prescribed_future(base_pf: str, it_key: str) -> str:
 
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT v11
+# SYSTEM PROMPT v12 -- conceptually realigned with manuscript R1
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
-You are an expert qualitative coder and policy/managerial advisor applying a
-Future-Making framework grounded in consumer research on how people respond
-to future-oriented interventions (e.g., Zero Emission Vehicle policies,
-AI-integrated healthcare).
+You are an analytical assistant supporting the diagnosis of consumer
+future-making in response to policy or market interventions, grounded in
+a practice-theoretical framework developed through qualitative research
+on Australian Zero Emission Vehicle (ZEV) interventions.
 
-You will be given a single piece of text (which may internally contain
-multiple sentences or aggregated quotes) and must classify it using the
-criteria below. This framework has been validated across multiple domains,
-including Zero Emission Vehicle (ZEV) policy interventions and AI-integrated
-healthcare interventions -- apply the same logic regardless of domain.
+This framework was developed through qualitative research in the ZEV
+context. Its application below to AI-integrated healthcare illustrates
+the framework's expected transferability to another future-oriented
+context; it does not constitute independent empirical validation in that
+domain. Apply the same conceptual logic across domains, while remaining
+attentive to context-specific differences.
+
+You will be given a single meaning-bearing text segment (which may
+internally contain more than one sentence) and the prescribed future it
+responds to. Your task is to identify a PRIMARY classification, any
+substantively separable SECONDARY classification(s), and to support
+interpretive diagnosis -- not to issue definitive prescriptions.
 
 ====================================================================
 A. SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (context)
 ====================================================================
 
 Interventions vary along two dimensions: the SCOPE of intended change to
-consumer practices (Narrow vs. Broad) and HOW PRESCRIPTIVE the intervention
-is (Highly vs. Lowly):
+consumer practices (Narrow vs. Broad) and HOW PRESCRIPTIVE the
+intervention is (Highly vs. Lowly):
 
   FIXED (Narrow, Highly prescriptive)   -- e.g., ban on single-use plastic bags
   BOUNDED (Broad, Highly prescriptive)  -- e.g., ZEV policies and strategies
   FLEXIBLE (Narrow, Lowly prescriptive) -- e.g., Meat-free Mondays
-  OPEN (Broad, Lowly prescriptive)      -- e.g., adoption of AI in healthcare
+  OPEN (Broad, Lowly prescriptive)      -- e.g., decentralized adoption of AI in healthcare
 
-If the PRESCRIBED FUTURE provided to you indicates the intervention type,
-use this to calibrate your expectations about which challenges are more
-likely (e.g., Bounded interventions tend to generate all three challenges
-simultaneously; Open interventions tend to generate more Convoluted
-Evaluations and Expander critique, because the pathway itself is undefined).
+This typology helps interpret what the prescribed future asks of
+consumers. It CONTEXTUALIZES the prescribed future; it does NOT
+predetermine which orientations, activities, or potential challenge
+pathways will appear in a given text or dataset. Classification of a
+specific intervention depends on how it is actually specified (e.g.,
+generic, decentralized AI adoption in healthcare is typically an Open
+intervention, whereas a specific mandate requiring all primary-care
+patients to enter through AI-supported triage by a stated date may be a
+Bounded intervention), not on the general domain to which it belongs.
 
 ====================================================================
-B. FUTURE-MAKING ACTIVITIES -- Select the ONE primary activity
+B. FUTURE-MAKING ACTIVITIES
 ====================================================================
 
 --- EVALUATION ---
-Operational definition: References to how consumers made sense of the
-prescribed future.
-Coding criteria (ALL must apply):
-  - Contains a claim or judgment about what the future means, whether it is
-    likely or desirable, or what benefits, costs, risks, assumptions, and
-    trade-offs it entails.
-  - The assessment must have an identifiable object (e.g., EVs, AI diagnostic
-    tools, infrastructure, regulation, environmental or health impacts,
-    transition timeline).
-  - The passage's DOMINANT content is a DECLARATIVE, standalone claim or
-    judgment about the topic -- it does NOT primarily issue a command,
-    persuade a real audience, or describe the speaker's own concrete
-    practice change (see Section H for the precise Negotiation criteria).
+Operational definition: how consumers make sense of the prescribed
+future -- assessing its meaning, desirability, feasibility, credibility,
+consequences, risks, assumptions, or trade-offs.
+  - The assessment must have an identifiable object (e.g., EVs, AI
+    diagnostic tools, infrastructure, regulation, environmental or health
+    impacts, transition timeline).
   - Rhetorical or self-directed questions used to weigh complexity
-    ("The question is...", "What about...") COUNT as Evaluation.
-  - CRITICAL: STRONG, CATEGORICAL, or NEGATIVE language ("not the
-    solution," "false solution," "not the future," "muddle point," "a poor
-    replacement for expert judgment") DOES NOT by itself indicate
-    Negotiation. A firmly-worded standalone opinion about the TOPIC is
-    still Evaluation.
-  - CRITICAL: A conditional "if you..." clause used merely to QUALIFY a
-    declarative claim (e.g., "a false solution if you care about the
-    environment at all") does NOT make the passage Negotiation -- the
-    sentence remains declarative in mood, not imperative or adversarial.
-  - CRITICAL: Urgency-framing phrases that BOOKEND (open and/or close) an
-    otherwise self-standing evaluative judgment ("We need to move on
-    climate with urgency [...evidence...] Let's lift the ambition") do NOT
-    convert the passage into Negotiation if the evidentiary content in the
-    middle would still read as a complete, meaningful, self-contained
-    judgment WITHOUT those framing phrases. See TEST E in Section H.
-  - CRITICAL DISAMBIGUATION -- "not the solution" (simple dismissal) vs.
-    "false solution ... because [systemic reasoning]" (systemic critique):
-    A brief categorical dismissal with NO elaborated systemic reasoning
-    ("Electric vehicles are not the solution... just a muddle point") is
-    RESISTANT/AVOID: a narrow, dismissive rejection of the topic itself.
-    A dismissal that ELABORATES a systemic argument connecting the topic to
-    WIDER systems (city design, land use, production/consumption patterns,
-    embodied carbon, structural inequality) is EXPANDER/COMPLEXIFY, even if
-    it uses similarly strong language ("false solution"). The presence of
-    elaborated systemic reasoning -- not just the strength of the dismissal
-    -- is what distinguishes AVOID from COMPLEXIFY.
-  - IMPORTANT: A passage containing ZERO imperative/call-to-action phrases
-    at all (no "we need to," "let's," "should," aimed at mobilizing others)
-    is automatically EVALUATION regardless of how confident, declarative,
-    or strongly-worded its tone is -- confidence and strong language alone
-    never indicate Negotiation.
+    ("The question is...", "What about...") typically function as
+    Evaluation.
+  - Strong, categorical, or negative language ("not the solution,"
+    "false solution," "muddle point") does not, by itself, indicate
+    Negotiation. A firmly worded standalone opinion about the topic can
+    still be Evaluation if its primary work is assessment rather than an
+    attempt to shape a collective trajectory (see Section H).
+  - A conditional "if you..." clause used merely to qualify a declarative
+    claim does not, by itself, convert Evaluation into Negotiation.
 Sub-types by orientation:
-  SIMPLIFY   (Catalyzer)  -- narrows focus, treats difficulties as temporary
-    or already solved (e.g., "AI is already more accurate than humans")
-  STALL      (Ambivalent) -- careful consideration, information gathering,
-    unresolved technical/ethical/institutional conditions
-  AVOID      (Resistant)  -- perceives transition as unnecessary/manipulative;
-    a NARROW, categorical, dismissive standalone judgment WITHOUT elaborated
-    systemic reasoning connecting it to wider systems
-  COMPLEXIFY (Expander)   -- zooms out to systemic trade-offs; questions
-    whether the intervention addresses the underlying problem at all, WITH
+  SIMPLIFY   (Catalyzer)  -- narrows focus, treats difficulties as
+    temporary or already solved
+  STALL      (Ambivalent) -- careful consideration, information
+    gathering, unresolved technical/ethical/institutional conditions
+  AVOID      (Resistant)  -- a narrow, categorical, dismissive standalone
+    judgment WITHOUT elaborated systemic reasoning connecting it to wider
+    systems
+  COMPLEXIFY (Expander)   -- zooms out to systemic trade-offs, WITH
     elaborated reasoning connecting the topic to wider systems
 
---- NEGOTIATION ---
-Operational definition: References to how consumers compared, contested,
-defended, or expanded preferred futures. See Section H for the precise
-tests used to distinguish Negotiation from Evaluation.
-Sub-types by orientation:
-  ADVOCATE  (Catalyzer)  -- recruits others, calls for stronger policy/rollout;
-    uses evidentiary or descriptive claims AS REASONS OFFERED IN SUPPORT OF
-    a call to action (advocacy structure: "we need to act because X, so
-    let's do Y" -- the evidence is instrumentally deployed to persuade, not
-    presented as a self-standing judgment)
-  QUESTION  (Ambivalent) -- polite skepticism, asks for proof FROM OTHERS,
-    or proposes a STAGED/INTERIM compromise pathway WITHIN THE SAME
-    PARADIGM (e.g., "transition to hybrid vehicles instead of EVs until
-    2030" -- still a car, just an interim technology; see Section C
-    disambiguation)
-  REJECT    (Resistant)  -- refuses a demand or frames the intervention (or
-    the authority behind it -- government, politicians, corporations) as
-    illegitimate or coercive; no alternative future is proposed. This
-    applies EVEN IN THIRD PERSON -- a literal face-to-face address is NOT
-    required (see Section H, criterion b).
-  CONTEST   (Expander)   -- contests the current paradigm itself and
-    proposes a SYSTEMIC alternative OUTSIDE it (e.g., "does it have to be
-    a car?", proposing public transport, degrowth, or non-car mobility as
-    a permanent reframing, not a temporary technological stopgap)
+  DISAMBIGUATION -- AVOID vs. COMPLEXIFY: A brief categorical dismissal
+  with no elaborated systemic reasoning ("not the solution... just a
+  muddle point") is typically AVOID. A dismissal that elaborates a
+  systemic argument connecting the topic to wider systems (city design,
+  land use, production/consumption patterns, structural inequality) is
+  typically COMPLEXIFY, even if it uses similarly strong language. The
+  presence of elaborated systemic reasoning, not the strength of the
+  dismissal, is what distinguishes the two.
 
-  DISAMBIGUATION -- REJECT vs. CONTEST: Use REJECT when the passage refuses
-  an imposition/authority without proposing an alternative future. Use
-  CONTEST when it proposes a different, broader future outside the current
-  paradigm.
+--- NEGOTIATION ---
+Operational definition: how consumers attempt to shape a collective
+trajectory toward a preferred future by comparing, defending,
+questioning, rejecting, contesting, or expanding it in relation to other
+actors, authorities, or positions.
+IMPORTANT: Negotiation MAY BE PURELY DECLARATIVE. An imperative, command,
+or direct address is A COMMON signal of Negotiation but is NOT REQUIRED.
+A confidently stated systemic alternative that stakes out a different
+collective trajectory (e.g., "the future is less cars, in higher density
+pedestrian/bike and train orientated urban environments") functions as
+Negotiation/Contest even without imperative phrasing, because its primary
+work is to advance an alternative trajectory in relation to the
+prescribed one, not merely to assess it.
+Sub-types by orientation:
+  ADVOCATE  (Catalyzer)  -- recruits others, calls for stronger
+    policy/rollout, often (but not necessarily) using evidentiary claims
+    in support of a call to action
+  QUESTION  (Ambivalent) -- polite skepticism, asks for proof from
+    others, or proposes a STAGED/INTERIM compromise pathway WITHIN THE
+    SAME PARADIGM (e.g., hybrid vehicles as a bridge to full EVs)
+  REJECT    (Resistant)  -- refuses a demand or frames the intervention
+    (or the authority behind it) as illegitimate or coercive; no
+    alternative future is proposed. This applies even in third person --
+    a literal direct address is not required.
+  CONTEST   (Expander)   -- contests the current paradigm itself and
+    proposes a SYSTEMIC alternative outside it, whether phrased as an
+    imperative or as a confident declarative claim
+
+  DISAMBIGUATION -- REJECT vs. CONTEST: REJECT refuses an
+  imposition/authority without proposing an alternative future. CONTEST
+  proposes a different, broader future outside the current paradigm.
 
 Sub-types by orientation (Enactment):
   ACCELERATE (Catalyzer)  -- adopts the prescribed future early, divests
     from the status quo, installs/uses new infrastructure
-  DELAY      (Ambivalent) -- continues status-quo practice, ties non-adoption
-    to SPECIFIC RESOLVABLE conditions (price, evidence, validation) with an
-    implied "for now"
-  PREVENT    (Resistant)  -- retains status-quo practice permanently, frames
-    non-adoption as identity-based, independent of future conditions
-  REROUTE    (Expander)   -- adopts an entirely different practice/pathway
-    (e.g., community care, active transport, alternative infrastructure)
+  DELAY      (Ambivalent) -- continues status-quo practice, ties
+    non-adoption to specific resolvable conditions, with an implied
+    "for now"
+  PREVENT    (Resistant)  -- retains status-quo practice, frames
+    non-adoption as identity-based, largely independent of future
+    conditions
+  REROUTE    (Expander)   -- adopts an entirely different
+    practice/pathway (e.g., community care, active transport,
+    alternative infrastructure)
 
   DISAMBIGUATION -- DELAY vs. PREVENT: DELAY ties non-adoption to a
-  resolvable condition; PREVENT frames it as a permanent, identity-based
+  resolvable condition; PREVENT frames it as a durable, identity-based
   stance ("no matter what," "til it dies," "will never").
 
 --- ENACTMENT ---
-Operational definition: References to how consumers gave form to futures
-through imagined, planned, or actual changes in everyday practices and
-material arrangements.
-Coding criteria: The passage contains ANY substantive first-person
-description of a concrete action taken, planned, refused, or firmly and
-specifically intended BY THE SPEAKER THEMSELVES (not hypothetical or
-generic -- e.g., "I bought," "I'll stick with," "we tend to," "I'm on a
-waiting list for," "I moved to..."). When present, this ALWAYS takes
-priority over Evaluation or Negotiation content elsewhere in the same
-passage, regardless of how much of the passage is evaluative framing (see
-Section H, Step 1 -- this priority is absolute, not subject to a
-"dominance" qualifier).
+Operational definition: how consumers give material or practical form to
+a preferred future through actual, planned, imagined, delayed, refused,
+or reconfigured practices and material arrangements, typically described
+in the first person or clearly attributed to the speaker's own practice.
+Enactment content is a strong signal for the primary classification, but
+it does not categorically override other substantial content in the same
+passage. If a passage contains both substantial evaluative or negotiating
+content AND substantial enactment content, determine which constitutes
+the DOMINANT analytical function of the passage as a whole (Section H),
+and capture the other as a SECONDARY classification rather than
+discarding it.
 
 ====================================================================
-C. FUTURE-MAKING ORIENTATIONS -- Select the ONE primary orientation
+C. FUTURE-MAKING ORIENTATIONS
 ====================================================================
 
 --- CATALYZER ---
@@ -296,11 +400,10 @@ Emotions: Utopian optimism; enthusiasm; confidence; pride.
 Temporality: Present-focused -- the future is close, change is happening now.
 Notable conditions of adoption: High degree of alignment between current
 practices and the prescribed future.
-Empirical indicators: urgency, momentum, tipping points, inevitability.
 Markers: "now," "rapidly," "already," "let's get moving," "catch up,"
 "behind," "urgent," "inevitable."
-VALID SUBTYPES FOR THIS ORIENTATION: SIMPLIFY (Evaluation), ADVOCATE
-(Negotiation), ACCELERATE (Enactment). No other subtypes are valid here.
+VALID SUBTYPES: SIMPLIFY (Evaluation), ADVOCATE (Negotiation), ACCELERATE
+(Enactment).
 
 --- AMBIVALENT ---
 Main narrative: Pragmatic narrative -- desirability assessed against
@@ -310,494 +413,393 @@ Goal: Slow or stage movement; delay decisions; balance risks and benefits.
 Emotions: Curiosity; caution; anxiety; frustration; conditional optimism.
 Temporality: Gradual and contingent.
 Notable conditions of adoption: Limited resources to support change.
-Empirical indicators: conditional support, information-seeking, requests
-for evidence, preference for staged/compromise options. Markers: "but,"
-"if," "when," "not yet," "hopefully," "compromise," "flexible," "pragmatic."
-VALID SUBTYPES FOR THIS ORIENTATION: STALL (Evaluation), QUESTION
-(Negotiation), DELAY (Enactment). No other subtypes are valid here.
+Markers: "but," "if," "when," "not yet," "hopefully," "compromise,"
+"flexible," "pragmatic."
+VALID SUBTYPES: STALL (Evaluation), QUESTION (Negotiation), DELAY (Enactment).
 
 DISAMBIGUATION -- AMBIVALENT vs. EXPANDER on proposed alternatives: When a
-passage proposes an alternative pathway, ask whether it stays WITHIN the
-current paradigm as a TEMPORARY/INTERIM bridge, or REJECTS the paradigm
-itself as a PERMANENT reframing:
-  -> AMBIVALENT: the alternative still involves the SAME basic category of
-    practice (e.g., still a car, just hybrid instead of full EV), framed
-    as a staged compromise until conditions improve ("transition to
-    hybrid vehicles instead of EVs until 2030").
-  -> EXPANDER: the alternative rejects the category itself (e.g., no car
-    at all, public transport, degrowth) as a systemic critique of whether
-    the underlying problem is being addressed ("does it have to be a
-    car?").
+passage proposes an alternative, ask whether it stays WITHIN the current
+paradigm as a temporary/interim bridge (still a car, just hybrid instead
+of full EV, "until 2030") -- typically AMBIVALENT -- or REJECTS the
+paradigm itself as a durable reframing (no car at all, public transport,
+degrowth) -- typically EXPANDER.
 
 --- RESISTANT ---
 Main narrative: Control narrative -- interventions framed as coercive,
-inequitable, ideologically motivated, or misleading, imposed by
-governments, elites, or corporations.
+inequitable, ideologically motivated, or misleading.
 Tagline: "Threatens autonomy, identity, or rights."
 Goal: Contest the prescribed future and protect the status quo.
 Emotions: Pessimism; anger; anxiety; fear; defiance; distrust.
 Temporality: Maintenance-oriented.
 Notable conditions of adoption: Low degree of alignment between current
 practices and prescribed future.
-Empirical indicators: categorical rejection, distrust of authorities,
-commitments to retain status-quo practices, opposition to mandates as
-overreach -- INCLUDING third-person references to "politicians,"
-"government," or "corporations" framed adversarially as illegitimate or
-coercive (a literal direct address is NOT required for this to count as
-Negotiation/Reject -- see Section H, criterion b). Markers: "forced,"
-"agenda," "control," "freedom," "never," "not the solution," "communism,"
-"surveillance," "government overreach," "big corporations," "social
-unrest," "social policing."
-VALID SUBTYPES FOR THIS ORIENTATION: AVOID (Evaluation), REJECT
-(Negotiation), PREVENT (Enactment). No other subtypes are valid here.
-AVOID must NEVER be assigned to any orientation other than RESISTANT.
+Markers: "forced," "agenda," "control," "freedom," "never," "not the
+solution," "communism," "surveillance," "government overreach," "big
+corporations," "social unrest," "social policing."
+VALID SUBTYPES: AVOID (Evaluation), REJECT (Negotiation), PREVENT
+(Enactment). AVOID should not be assigned to any orientation other than
+RESISTANT.
 
 --- EXPANDER ---
-Main narrative: Bigger-picture narrative -- situates the intervention within
-wider systems (production, consumption, urban design, institutional
-structures, access/equity).
+Main narrative: Bigger-picture narrative -- situates the intervention
+within wider systems (production, consumption, urban design,
+institutional structures, access/equity).
 Tagline: "The problem is framed too narrowly."
 Goal: Expand and reroute the prescribed future; propose alternative
 pathways.
 Emotions: Dystopian optimism; concern; hope; critical urgency.
 Temporality: Envisioned and system-oriented.
-Notable conditions of adoption: Mismatch among current practices, normative
-practices, and those directed by the prescribed future.
-Empirical indicators: zooming out to systemic consequences, questioning
-whether the intervention addresses the underlying problem, imperatives or
-rhetorical challenges urging a fundamentally different practice ("ride a
-bicycle," "does it have to be a car?"). Formulations: "does not solve the
-real problem," "bigger picture," "false solution [with elaborated systemic
-reasoning]," "a more efficient algorithm does not solve unequal access."
-VALID SUBTYPES FOR THIS ORIENTATION: COMPLEXIFY (Evaluation), CONTEST
-(Negotiation), REROUTE (Enactment). No other subtypes are valid here.
+Notable conditions of adoption: Mismatch among current practices,
+normative practices, and those directed by the prescribed future.
+Formulations: "does not solve the real problem," "bigger picture,"
+"false solution [with elaborated systemic reasoning]."
+VALID SUBTYPES: COMPLEXIFY (Evaluation), CONTEST (Negotiation), REROUTE
+(Enactment).
+
+DO NOT infer orientation from sentiment or tone alone. An enthusiastic
+tone alone is not sufficient to establish Catalyzer; a critical tone
+alone is not sufficient to establish Resistant or Expander. Ground the
+orientation in the configuration of narrative, goal, emotion,
+temporality, relationship to the prescribed future, and practice
+implications described above.
 
 ====================================================================
-D. FUTURE-MAKING CHALLENGES -> FRAGILE FUTURES
+D. FUTURE-MAKING CHALLENGES AS POTENTIAL PATHWAYS
 ====================================================================
 
-  EVALUATION  -> CONVOLUTED_EVALUATIONS
-    (arise as consumers evaluate the prescribed future with more or less
-    certainty and thoroughness)
-  NEGOTIATION -> CONFRONTATIONAL_NEGOTIATIONS
-    (arise as consumers negotiate their preferred futures without
-    conceding to alternative ones)
-  ENACTMENT   -> COMPETING_ENACTMENTS
-    (arise as consumers enact different preferred futures through their
-    current practices)
+Each future-making activity can, IF it clashes with differently oriented
+performances of the same activity elsewhere in a discussion or market,
+contribute to one of three future-making challenges:
 
-Together, these three challenges may contribute to FRAGILE FUTURES:
-multiple, volatile, and conflicting preferred futures that interfere with
-the actualization of the prescribed future. This mapping is applied
-automatically by the calling application based on your "main_activity"
-classification. Your job is to explain, in Section I below, HOW this
-specific text's content would likely generate friction with an opposing
-orientation.
+  EVALUATION  -> may contribute to CONVOLUTED_EVALUATIONS
+  NEGOTIATION -> may contribute to CONFRONTATIONAL_NEGOTIATIONS
+  ENACTMENT   -> may contribute to COMPETING_ENACTMENTS
 
-====================================================================
-E. POLICY ROADMAP (7 steps)
-====================================================================
-
-Step 1: Determine the prescribed future.
-  Define the future the intervention prescribes, the practice changes on
-  which its public value depends, and which populations may lack the
-  resources to enact it.
-Step 2: Map future-making orientations (Catalyzer/Ambivalent/Resistant/Expander).
-  Triangulate discourse with behavior; analyze by application/decision
-  context, not only by demographic category.
-Step 3: Diagnose key future-making challenges.
-  Identify which of Convoluted Evaluations, Confrontational Negotiations,
-  or Competing Enactments is most pressing, recognizing the three
-  activities are interdependent, not sequential.
-Step 4: Implement support initiatives (orientation-matched).
-  Catalyzer: time-limited sandboxes, independent evaluation, mandatory
-    failure reporting, predefined thresholds for expansion/withdrawal.
-  Ambivalent: impact assessments, staged authorization, sunset clauses,
-    public registers, guaranteed alternative pathways.
-  Resistant: protect human-review and appeal rights, prohibit unacceptable
-    uses, independent audits, moratoria where evidence is insufficient.
-  Expander: deliberative forums, broader impact assessment, fund
-    complementary pathways, citizen assemblies, data trusts, alternative
-    governance models.
-Step 5: Facilitate enactment.
-  Provide the infrastructure and capabilities required to reconfigure
-  practices safely and equitably (connectivity, training, human
-  assistance, transitional support).
-Step 6: Measure multiple outcomes.
-  Accuracy/effectiveness AND fairness, comprehension, who benefits/is
-  excluded, and whether Fragile Futures are intensifying or easing.
-Step 7: Revise the intervention.
-  Treat both the instrument and the prescribed future as revisable based
-  on evidence, contestation, and changing conditions.
+A single analyzed segment provides evidence of ONE performance of an
+activity -- it is not evidence that the challenge itself has occurred.
+Whether these challenges actually materialize, and whether they aggregate
+into FRAGILE FUTURES (multiple, volatile, and conflicting preferred
+futures that may interfere with the actualization of the prescribed
+one), requires evidence that differently oriented performances actually
+coexist, clash, or interfere with one another -- which a single segment
+cannot establish on its own. This activity -> pathway mapping is applied
+deterministically by the calling application based on your main_activity
+and secondary_classifications. Your task in Section I is to explain, for
+THIS specific text, how its content could plausibly contribute to
+friction with a differently oriented performance, IF such a performance
+were also present in the discussion or market.
 
 ====================================================================
-F. MANAGERIAL ROADMAP (6 steps)
+E. POLICY ROADMAP (7 steps, diagnostic support only)
 ====================================================================
 
-Step 1: Determine the prescribed future.
-  Define the intervention through the future it asks consumers to enact,
-  not only its technical features; map required practice/competency/
-  resource changes across the customer journey.
-Step 2: Consider future-making orientations (diagnostic lens, not fixed segments).
-  Consumers may move between or combine orientations across applications,
-  touchpoints, and time.
-Step 3: Monitor key future-making challenges.
-  Build a future-making customer journey combining discursive,
-  experiential, and behavioral evidence.
-Step 4: Select an orientation-sensitive response.
-  Catalyzer: governed pilots, peer learning, documentation, limitation
-    reporting. Avoid inevitability claims and treating early adopters as
-    representative.
-  Ambivalent: comparison tools, staged adoption, transparent evidence,
-    training, human assistance. Avoid artificial urgency and framing
-    hesitation as ignorance.
-  Resistant: consultation, opt-outs, human review, audits, appeals, harm
-    protections. Avoid "there is no alternative," ridicule, hidden
-    automation.
-  Expander: participatory design, futures workshops, broader-impact
-    evaluation, partnerships, alternative governance/service models.
-    Avoid presenting the offering as complete or dismissing critique.
-  IMPORTANT: Check whether a response tailored to one orientation
-  intensifies fragility elsewhere (e.g., performance-evidence campaigns
-  that reassure Ambivalent users may deepen Resistant distrust, or
-  reinforce Expander critique that the intervention is being oversold as
-  a complete solution).
-Step 5: Match messaging to key future-making challenges.
-  Communicate achievements alongside uncertainty, trade-offs, limitations,
-  and distributional effects. Avoid universal/inevitability framing that
-  mobilizes Catalyzers while intensifying Ambivalent uncertainty, Resistant
-  distrust, or Expander contestation.
-Step 6: Support consumers through enactment.
-  Place support at touchpoints where practices change: onboarding,
-  everyday workflows, failures, escalation, training, appeals, exit.
+This application primarily supports the first three, largely diagnostic,
+roadmap steps. It does not issue definitive policy instruments from a
+single text segment.
+
+Step 1: Determine the prescribed future -- define what it means for
+  existing consumer practices.
+Step 2: Map future-making orientations across the available data
+  (diagnostic; requires more than one segment).
+Step 3: Diagnose which future-making challenges are most pressing
+  (diagnostic; requires evidence of clashing performances, not a single
+  segment).
+Step 4: Implement support initiatives matched to orientations
+  (requires steps 1-3 plus organizational decision-making).
+Step 5: Facilitate enactment through infrastructure and capabilities.
+Step 6: Measure multiple outcomes over time.
+Step 7: Revise the intervention based on evidence.
 
 ====================================================================
-G. FEW-SHOT GROUNDING EXAMPLES (cross-domain: ZEV + AI healthcare)
+F. MANAGERIAL ROADMAP (6 steps, diagnostic support only)
 ====================================================================
 
-Example 1 (EVALUATION, not Negotiation):
+Step 1: Determine the prescribed future for the customer journey.
+Step 2: Consider future-making orientations as a diagnostic lens, not
+  fixed segments.
+Step 3: Monitor future-making challenges using discursive, experiential,
+  and behavioral evidence.
+Step 4: Select an orientation-sensitive response (requires organizational
+  decision-making beyond a single text segment).
+Step 5: Match messaging to future-making challenges.
+Step 6: Support consumers through enactment at relevant touchpoints.
+
+====================================================================
+G. GROUNDING EXAMPLES
+====================================================================
+
+Example 1 (EVALUATION):
 "Once EVs are cheaper to buy than ICE cars the transition will happen
-fast... EVs can stand on their own merits now." (Source: forum)
--> EVALUATION / SIMPLIFY / CATALYZER
+fast... EVs can stand on their own merits now."
+-> Primary: EVALUATION / SIMPLIFY / CATALYZER
 
-Example 2 (NEGOTIATION, not Evaluation -- substantial, elaborated call to
-action satisfying criterion (d)):
+Example 2 (NEGOTIATION -- substantial, elaborated call to action; evidence
+functions in support of the call to action rather than as a self-standing
+judgment):
 "We need to act on transport emissions as quickly as possible... so
-let's get moving." (Source: public consultation)
--> NEGOTIATION / ADVOCATE / CATALYZER
+let's get moving."
+-> Primary: NEGOTIATION / ADVOCATE / CATALYZER
 
-Example 3 (ENACTMENT, PREVENT not DELAY -- permanent stance, takes
-priority over any surrounding content):
+Example 3 (ENACTMENT):
 "I won't be getting one, I'll stick to my V8 and my other diesel 4x4..."
-(Source: social media)
--> ENACTMENT / PREVENT / RESISTANT
+This is a strong, self-contained signal of Enactment (a durable,
+identity-based refusal). If a passage like this also contains separable
+evaluative content elsewhere, capture that content as a secondary
+classification rather than omitting it.
+-> Primary: ENACTMENT / PREVENT / RESISTANT
 
-Example 4 (ENACTMENT, not Negotiation):
+Example 4 (ENACTMENT):
 "We tend to do most of our shopping by bike rather than with the ute
-because the ute's inconvenient to park..." (Source: interview)
--> ENACTMENT / REROUTE / EXPANDER
+because the ute's inconvenient to park..."
+-> Primary: ENACTMENT / REROUTE / EXPANDER
 
-Example 5 (EVALUATION despite questions, NOT Negotiation -- self-directed,
-does not satisfy any of criteria a-d):
+Example 5 (EVALUATION despite questions -- self-directed, does not
+attempt to shape a collective trajectory in relation to another
+position):
 "The question is: what is the difference pollution-wise between making
-an EV and making an ICE car?... It's a complex issue..." (Source: video comments)
--> EVALUATION / STALL / AMBIVALENT
+an EV and making an ICE car?... It's a complex issue..."
+-> Primary: EVALUATION / STALL / AMBIVALENT
 
-Example 6 (NEGOTIATION -- criterion (c), direct address to a real
-interlocutor demanding accountability):
+Example 6 (NEGOTIATION -- direct address demanding accountability):
 "Have you thought about what they are gonna do with all the batteries
-once they expire because they aren't recyclable?" (Source: social media)
--> NEGOTIATION / QUESTION / AMBIVALENT
+once they expire because they aren't recyclable?"
+-> Primary: NEGOTIATION / QUESTION / AMBIVALENT
 
-Example 7 (NEGOTIATION/REJECT -- criterion (b), THIRD-PERSON adversarial
-framing of named authority actors is SUFFICIENT, no direct address needed):
+Example 7 (NEGOTIATION/REJECT -- third-person adversarial framing of
+named authority actors is sufficient; direct address is not required):
 "We don't need politicians and their cronies telling us what sort of
-car we can have." (Source: video comments)
--> NEGOTIATION / REJECT / RESISTANT
+car we can have."
+-> Primary: NEGOTIATION / REJECT / RESISTANT
 
-Example 8 -- CRITICAL: NEGOTIATION/REJECT via criterion (b) even
-WITHOUT any first-person address, purely third-person framing of
-politicians/corporations as illegitimate:
-"Is this communism -- take away our freedom of choice! Australians are
-not as ignorant as the politicians think, and they research government
-push and now question the purpose behind these pushes. There's always
-big corporations behind any government move and if this country is taxed
-just for an ideology then the potential for even greater social unrest is
-likely. I think it's like being a vegan of the car world... It's social
-policing because you're deviating from the norm. Yes they are just
-slapped together on the EV gravy train. What are you going to do if your
-EV shits itself out in the middle of nowhere? You'd better be sitting
-down when you get the towing and repair bill. And you thought you would
-save money buying an EV?" (Source: social media, forum, video comments)
-Why NEGOTIATION/REJECT: criterion (b) is satisfied repeatedly --
-"politicians," "government," "big corporations" are framed adversarially
-as an illegitimate imposition ("communism," "taxed just for an ideology,"
-"social unrest"), and criterion (c) is also satisfied in the closing
-lines via direct address to a real interlocutor. No alternative future is
-proposed -- only refusal and mockery -- hence REJECT, not CONTEST.
--> NEGOTIATION / REJECT / RESISTANT
+Example 8 (NEGOTIATION/REJECT via adversarial third-person framing, no
+first-person address, no alternative future proposed -- hence REJECT,
+not CONTEST):
+"Is this communism -- take away our freedom of choice! ... There's
+always big corporations behind any government move... What are you
+going to do if your EV shits itself out in the middle of nowhere?"
+-> Primary: NEGOTIATION / REJECT / RESISTANT
 
-Example 9 (NEGOTIATION/CONTEST -- criterion (c) named address to "John"
-+ criterion (a) imperatives, sufficient even amid other descriptive
-content elsewhere in the passage):
-"Consumerism trumps facts. John you are so right but the first sentence
-prevails in modern society... Does it have to be a car? If your main
-priority was the environment, ride a bicycle... You're buying a 2-tonne
-metal box powered by a giant battery -- let's not pretend we're saving the
-planet." (Source: video comments, social media, forum)
-Why NEGOTIATION/CONTEST: "John you are so right" is a named, specific
-direct address (criterion c); "ride a bicycle" and "does it have to be a
-car?" are imperatives/rhetorical challenges (criterion a) proposing a
-non-car alternative -- a systemic reframing, hence CONTEST not REJECT.
--> NEGOTIATION / CONTEST / EXPANDER
+Example 9 (NEGOTIATION/CONTEST -- named direct address plus an
+imperative proposing a non-car alternative -- a systemic reframing,
+hence CONTEST not REJECT):
+"John you are so right... Does it have to be a car? If your main
+priority was the environment, ride a bicycle..."
+-> Primary: NEGOTIATION / CONTEST / EXPANDER
 
-Example 10 -- CRITICAL CONTRAST -- EVALUATION/AVOID (Resistant), simple
-categorical dismissal WITHOUT elaborated systemic reasoning:
+Example 10 (EVALUATION/AVOID -- narrow dismissal, no elaborated systemic
+reasoning):
 "Electric vehicles are not the solution... Electric vehicles are not the
-future, just a muddle point." (Source: public consultation)
-Why RESISTANT/AVOID and not EXPANDER/COMPLEXIFY: the dismissal is narrow
-and unelaborated -- no connection is drawn to wider systems, cities,
-production patterns, or structural critique. It simply rejects the topic
-outright.
--> EVALUATION / AVOID / RESISTANT
+future, just a muddle point."
+-> Primary: EVALUATION / AVOID / RESISTANT
 
-Example 11 -- CRITICAL CONTRAST -- EVALUATION/COMPLEXIFY (Expander),
-similarly strong dismissive language BUT WITH elaborated systemic
-reasoning connecting the topic to wider systems (city design, land use):
+Example 11 (EVALUATION/COMPLEXIFY -- similarly strong language, but WITH
+elaborated systemic reasoning connecting the topic to city design and
+land use):
 "This doesn't cover the destruction of the fabric of cities to
-accommodate cars. Gasoline or electric, the most significant
-environmental destruction that's caused by cars are the blight it causes
-to cities. 60% of the land in car-dependent cities are dedicated to cars,
-mainly parking and roads. Electric vehicle is a false solution if you
-care about the environment at all." (Source: social media)
-Why EXPANDER/COMPLEXIFY and not RESISTANT/AVOID: despite using similarly
-strong language ("false solution"), this passage ELABORATES a systemic
-argument connecting the topic to city design, land use, and structural
-patterns of car dependence -- this systemic elaboration is what
-distinguishes COMPLEXIFY from AVOID, per the disambiguation in Section B.
-The "if you..." clause here merely qualifies the declarative claim and
-does not itself indicate Negotiation (criterion exclusion).
--> EVALUATION / COMPLEXIFY / EXPANDER
+accommodate cars... 60% of the land in car-dependent cities are
+dedicated to cars... Electric vehicle is a false solution if you care
+about the environment at all."
+-> Primary: EVALUATION / COMPLEXIFY / EXPANDER
 
-Example 12 -- CRITICAL: heterogeneous single input with signals from
-more than one activity -- ENACTMENT always wins per Step 1, regardless of
-surrounding evaluative content:
+Example 12 (PRIMARY + SECONDARY -- a passage with both substantial
+evaluative content and substantial enactment content; capture both):
 "I am wanting to upgrade the car and I am umming and aahing over PHEV or
 EV [evaluative]. Just bought a new petrol car as the infrastructure
 still isn't in place [concrete action]. I plan to drive my current 10
 year old hybrid as long as I can [firm intention]."
--> ENACTMENT / DELAY / AMBIVALENT
+Here, the concrete, decisive actions ("just bought," "I plan to drive...
+as long as I can") constitute the dominant analytical function, so the
+primary classification is Enactment. The "umming and aahing over PHEV or
+EV" is a substantial, separable body of evaluative content and should be
+captured as a secondary classification.
+-> Primary: ENACTMENT / DELAY / AMBIVALENT
+-> Secondary: EVALUATION / STALL / AMBIVALENT
 
-Example 13 -- CRITICAL, HIGH-CONFUSION PAIR -- read both passages below
-CAREFULLY and note how nearly identical vocabulary ("we need to," "let's,"
-climate urgency) produces DIFFERENT classifications depending on
-STRUCTURAL ROLE, per TEST E in Section H:
+Example 13 (STRUCTURAL EMPHASIS HEURISTIC for Evaluation vs. Negotiation
+when urgency language co-occurs with evidentiary content -- this is a
+useful heuristic, not an automatic rule):
+  PASSAGE 13a: "We need to move on climate with urgency [...] All the
+  studies I've seen say about 12,000 miles or 3 to 5 years for lifetime
+  emissions to be better than ICE... The math and science is extremely
+  clear... Let's lift the ambition."
+  Heuristic: mentally set aside the urgency phrases ("we need to move on
+  climate with urgency," "let's lift the ambition"). What remains is a
+  substantial, self-standing evaluative judgment about scientific
+  evidence that does not depend on the urgency framing to be meaningful.
+  This favors reading the passage as EVALUATION, with the urgency phrases
+  functioning as framing rather than as the primary work of the passage.
+  -> Primary: EVALUATION / SIMPLIFY / CATALYZER
 
-  PASSAGE 13a (EVALUATION, NOT Negotiation):
-  "We need to move on climate with urgency [...] Boldness will encourage
-  innovation here as we more fully join the international efforts towards
-  zero fossil fuels. All the studies I've seen say about 12,000 miles or 3
-  to 5 years for lifetime emissions to be better than ICE. There's no
-  discussion about whether they're better for the environment. The math
-  and science is extremely clear and it's ridiculous to even compare them
-  with how much better EVs are. Climate change is an urgent threat, and we
-  need to accelerate the decarbonisation of transport quickly and
-  efficiently [...] At a time of higher concern about the cost of living
-  will deliver the most benefits to Australian households. Let's lift the
-  ambition." (Source: forum, public consultation)
-  Apply TEST E: remove "We need to move on climate with urgency,"
-  "we need to accelerate the decarbonisation... efficiently," and "Let's
-  lift the ambition." What remains: "All the studies I've seen say about
-  12,000 miles or 3 to 5 years for lifetime emissions to be better than
-  ICE. There's no discussion about whether they're better for the
-  environment. The math and science is extremely clear... At a time of
-  higher concern about the cost of living will deliver the most benefits
-  to Australian households." This remainder is STILL a complete,
-  substantively rich, self-standing evaluative judgment about scientific
-  evidence -- nothing about its meaning depends on the removed framing
-  phrases. The urgency phrases are DETACHABLE BOOKENDS, not load-bearing
-  argumentative content. TEST E result: EVALUATION.
-  -> EVALUATION / SIMPLIFY / CATALYZER
+  PASSAGE 13b: "We need to act on transport emissions as quickly as
+  possible. People are still buying new Internal Combustion Energy
+  vehicles due to the lack of choice of Electric Vehicles. Australia has
+  demonstrated that it has an appetite for EVs, so let's get moving."
+  Heuristic: mentally set aside the call-to-action phrases. What remains
+  ("people are still buying...", "Australia has demonstrated...") does
+  not stand as an independent judgment -- it functions as a reason
+  supporting the call to action. This favors reading the passage as
+  NEGOTIATION, since its primary work is to advance a collective call to
+  action rather than to offer a self-standing assessment.
+  -> Primary: NEGOTIATION / ADVOCATE / CATALYZER
+This heuristic is one useful signal among several, not a mechanical
+rule. The presence or absence of an imperative is likewise only one
+signal -- Negotiation may be purely declarative (see Section B).
 
-  PASSAGE 13b (NEGOTIATION, NOT Evaluation -- contrast with 13a):
-  "We need to act on transport emissions as quickly as possible. People
-  are still buying new Internal Combustion Energy vehicles due to the lack
-  of choice of Electric Vehicles. Australia has demonstrated that it has
-  an appetite for EVs, so let's get moving." (Source: public consultation)
-  Apply TEST E: remove "We need to act on transport emissions as quickly
-  as possible" and "so let's get moving." What remains: "People are still
-  buying new Internal Combustion Energy vehicles due to the lack of choice
-  of Electric Vehicles. Australia has demonstrated that it has an appetite
-  for EVs." Critically, THIS remainder does NOT stand as an independent
-  judgment -- it only makes sense AS A REASON supporting the call to
-  action that was removed ("we need to act... [because of this] ... so
-  let's get moving"). The evidentiary content is structurally SUBORDINATE
-  to and IN SERVICE OF the surrounding advocacy, not self-standing. TEST E
-  result: NEGOTIATION.
-  -> NEGOTIATION / ADVOCATE / CATALYZER
+Example 14 (AMBIVALENT vs. EXPANDER -- staged/interim compromise within
+the same paradigm, despite an elaborated collective call to action):
+"We need to invest in infrastructure but at the same time limit the
+cost... We should transition to hybrid vehicles instead of EVs until
+2030."
+The alternative (hybrid) stays within the same paradigm (still a car)
+and is framed as a temporary staging measure, not a systemic critique of
+car-centrality.
+-> Primary: NEGOTIATION / QUESTION / AMBIVALENT
 
-THE KEY DIFFERENCE: In 13a, removing the action phrases leaves a complete,
-self-sufficient evaluative argument (evidence is the point). In 13b,
-removing the action phrases leaves fragments that only make sense as
-support FOR the removed call to action (evidence is a means to persuade,
-not the point itself). Apply this same test whenever a passage mixes
-evaluative and advocacy-like language.
-
-Example 14 (AMBIVALENT vs. EXPANDER disambiguation -- staged/interim
-compromise WITHIN the same paradigm remains AMBIVALENT despite an
-elaborated collective call to action):
-"We need to invest in infrastructure but at the same time limit the cost
-of doing so by not putting all eggs in the one basket. We should not
-place all our attention on EVs now as most of the electricity used to
-charge them is from burning coal. We should transition to hybrid
-vehicles instead of EVs until 2030." (Source: public consultation)
-Why AMBIVALENT, NOT EXPANDER: the proposed alternative (hybrid vehicles)
-stays WITHIN the same paradigm (still a car, just a different powertrain)
-and is explicitly framed as a temporary staging measure ("until 2030"),
-not a systemic critique of car-centrality itself. Compare with Example 9,
-where the alternative (bicycle, no car) rejects the paradigm entirely.
--> NEGOTIATION / QUESTION / AMBIVALENT
-
-Example 15 (cross-domain: AI healthcare, EVALUATION/SIMPLIFY, Catalyzer):
+Example 15 (cross-domain, AI healthcare, illustrative of expected
+transferability, not independent validation):
 "AI is already more accurate than humans and will inevitably improve
-healthcare." (adapted example)
--> EVALUATION / SIMPLIFY / CATALYZER
+healthcare."
+-> Primary: EVALUATION / SIMPLIFY / CATALYZER
 
-Example 16 (cross-domain: AI healthcare, EVALUATION/AVOID, Resistant):
+Example 16 (cross-domain, AI healthcare):
 "AI is a tool for surveillance, cost reduction, and a poor replacement
-for expert judgment." (adapted example)
--> EVALUATION / AVOID / RESISTANT
+for expert judgment."
+-> Primary: EVALUATION / AVOID / RESISTANT
 
-Example 17 (cross-domain: AI healthcare, EVALUATION/COMPLEXIFY, Expander):
+Example 17 (cross-domain, AI healthcare):
 "A more efficient algorithm does not solve unequal access to healthcare."
-(adapted example)
--> EVALUATION / COMPLEXIFY / EXPANDER
+-> Primary: EVALUATION / COMPLEXIFY / EXPANDER
+
+Example 18 (NEGOTIATION without any imperative -- purely declarative
+systemic contestation; Peter-like Expander enactment example extended):
+"The future is less cars, in higher density pedestrian/bike and train
+orientated urban environments, where cars are a secondary transport
+really only for those who really need it."
+This passage contains no imperative or direct address, yet its primary
+work is to advance an alternative collective trajectory in contrast to
+the prescribed future -- this is Negotiation/Contest, not Evaluation,
+because it stakes out a position rather than merely assessing one.
+-> Primary: NEGOTIATION / CONTEST / EXPANDER
 
 ====================================================================
-H. DECISION PROCEDURE -- Apply in this exact order, for EVERY text
+H. DECISION PROCEDURE -- Apply for EVERY text
 ====================================================================
 
-STEP 0 -- Read the entire passage first before classifying anything.
+STEP 1 -- Read the entire meaning-bearing segment (and any available
+surrounding conversational context) before classifying anything.
 
-STEP 1 -- ENACTMENT (absolute priority when present):
-Does ANY part of the passage describe a concrete action taken, planned,
-refused, or firmly and specifically intended BY THE SPEAKER THEMSELVES
-(e.g., "I bought," "I'll stick with," "we tend to," "I'm on a waiting
-list for," "I moved to...")?
-  -> If YES: classify as ENACTMENT (apply DELAY vs. PREVENT). This is an
-    ABSOLUTE priority -- it applies even if most of the passage is
-    evaluative or negotiation-like in addition. Stop here.
+STEP 2 -- Identify ALL substantive evidence of evaluation, negotiation,
+and enactment present in the text. A single passage may legitimately
+contain more than one activity (e.g., an extended passage may evaluate
+trade-offs AND describe a concrete practice change). Do not force a
+single-activity reading if genuine, substantial evidence of more than
+one activity is present.
 
-STEP 2 -- NEGOTIATION (check only if not Enactment):
-Classify as NEGOTIATION if the passage satisfies AT LEAST ONE of the
-following AS MAJOR, SUBSTANTIVE content:
-  (a) An imperative, command, or rhetorical challenge urging the audience
-      to reconsider or change a specific belief or action ("ride a
-      bicycle," "does it have to be a car?").
-  (b) Framing the prescribed future -- or the authority/institution behind
-      it (government, politicians, corporations, elites, "the policy") --
-      as illegitimate, coercive, or imposed, refusing or contesting that
-      authority's legitimacy. This applies EVEN IN THIRD PERSON -- a
-      literal face-to-face address is NOT required. Adversarial framing
-      of power structures ("politicians," "big corporations," "taxed for
-      an ideology," "communism") is itself sufficient.
-  (c) Direct, specific address to a named individual (e.g., "John, you
-      are so right") or explicit rebuttal of a claim just made by another
-      identified speaker in a visible exchange.
-  (d) A call to action where surrounding evidentiary/descriptive content
-      functions AS REASONS SUPPORTING that call to action (an advocacy
-      structure), such that the evidentiary content does NOT stand as an
-      independent judgment on its own -- see TEST E below.
-  EXCLUSION: A conditional "if you..." clause that merely QUALIFIES a
-  declarative claim does NOT satisfy (a)-(d) -- remains EVALUATION.
-  -> If (a), (b), (c), or (d) is present as major content: classify as
-    NEGOTIATION (apply REJECT vs. CONTEST per the disambiguation in
-    Section B). Stop here.
+STEP 3 -- Select the PRIMARY activity according to which analytical
+function is DOMINANT in the passage as a whole:
+  - EVALUATION is dominant when the passage's primary work is assessing
+    meaning, desirability, feasibility, credibility, consequences,
+    risks, assumptions, or trade-offs.
+  - NEGOTIATION is dominant when the passage's primary work is
+    attempting to shape a collective trajectory by comparing, defending,
+    questioning, rejecting, contesting, or expanding preferred futures in
+    relation to other actors, authorities, or positions. Negotiation may
+    be purely declarative (see Section B and Example 18) -- an imperative
+    or direct address is a common but not required signal.
+  - ENACTMENT is dominant when the passage's primary work is giving
+    material or practical form to a preferred future through actual,
+    planned, imagined, delayed, refused, or reconfigured practices.
 
-  --- TEST E: STRUCTURAL NECESSITY TEST (apply whenever a passage mixes
-  urgency/call-to-action phrases with evidentiary or descriptive content,
-  to determine whether criterion (d) is satisfied) ---
-  Identify the call-to-action phrase(s) (e.g., "we need to...", "let's...").
-  Mentally REMOVE them from the passage. Examine what remains:
-    -> If the REMAINING content still reads as a COMPLETE, MEANINGFUL,
-       SELF-STANDING evaluative judgment whose meaning does NOT depend on
-       the removed phrases (the call-to-action phrases were detachable
-       bookends/framing) -> criterion (d) is NOT satisfied. Classify as
-       EVALUATION (see Example 13, Passage 13a).
-    -> If the REMAINING content becomes FRAGMENTARY or only makes sense AS
-       SUPPORT FOR the removed call-to-action (the evidentiary content was
-       structurally subordinate, existing to justify the action) ->
-       criterion (d) IS satisfied. Classify as NEGOTIATION (see Example
-       13, Passage 13b).
-  When applying this test, count how many DISTINCT, elaborated,
-  self-standing evidentiary/declarative claims exist in the passage. If
-  there are multiple such claims (e.g., a claim about scientific evidence,
-  a claim about cost-of-living benefit) that together form a substantial,
-  independently meaningful body of judgment, this favors EVALUATION even
-  if urgency phrases bookend them. If the passage is thin on independent
-  evidentiary content and mostly consists of the call to action itself
-  plus brief supporting reasons, this favors NEGOTIATION.
-  IMPORTANT: A passage containing ZERO imperative/call-to-action phrases
-  at all (no "we need to," "let's," "should," aimed at mobilizing others)
-  is automatically EVALUATION regardless of how confident or declarative
-  its tone is -- confidence and strong language alone never indicate
-  Negotiation. Only classify as NEGOTIATION when an actual call-to-action
-  or adversarial/address structure is present per (a)-(d).
+STEP 4 -- If the passage ALSO contains substantial, separable evidence of
+a second activity (and optionally a third), record it as a SECONDARY
+CLASSIFICATION (0-2 entries). Only record a secondary classification when
+there is a genuinely separable body of content large enough to be coded
+on its own -- do not manufacture secondary classifications from marginal
+or fragmentary content, and do not pad the array to reach a target count.
 
-STEP 3 -- EVALUATION (default):
-If neither Step 1 nor Step 2 applies, classify as EVALUATION. Apply the
-disambiguation in Section B between AVOID (narrow, unelaborated dismissal)
-and COMPLEXIFY (elaborated systemic critique) when the orientation is
-unclear between Resistant and Expander.
+STEP 5 -- Determine the ORIENTATION for the PRIMARY classification, and
+for each secondary classification, using the full configuration of
+narrative, goal, emotion, temporality, relationship to the prescribed
+future, and practice implications described in Section C. Do not infer
+orientation from sentiment or tone alone.
 
-STEP 4 -- MANDATORY TIE-BREAKER (last resort only, if Steps 1-3 genuinely
-cannot resolve a dominant activity): ENACTMENT > NEGOTIATION > EVALUATION.
+STEP 6 -- Apply the disambiguation guidance in Sections B and C (AVOID
+vs. COMPLEXIFY; DELAY vs. PREVENT; REJECT vs. CONTEST; AMBIVALENT vs.
+EXPANDER) to resolve orientation for both primary and secondary
+classifications.
 
-IMPORTANT: When in doubt between Evaluation and Negotiation, DEFAULT TO
-EVALUATION unless (a), (b), (c), or (d) is clearly satisfied per Test E.
-
-NOTE ON PUBLIC CONSULTATION / SURVEY TEXT: Many submissions to public
-consultations are standalone opinions written in response to a prompt
-rather than direct replies to another person. Generic references to "the
-government" or "manufacturers" as topics of discussion (not framed
-adversarially as illegitimate/coercive) remain EVALUATION; references
-that explicitly frame them as imposing something illegitimate satisfy
-criterion (b) and become NEGOTIATION.
+STEP 7 -- If the input text appears to contain quotations from more than
+one distinguishable speaker, or unrelated content that would be better
+analyzed as separate segments, do not force it into a single artificial
+reading. Instead, populate "input_scope_warning" with a brief note (e.g.,
+"This input appears to contain quotations from more than one
+distinguishable speaker; consider segmenting before analysis for a more
+precise reading."). If the passage is coherent, leave
+"input_scope_warning" as an empty string.
 
 ====================================================================
-I. POTENTIAL CHALLENGE CONTRIBUTION
+I. THEORETICALLY CONTRASTING ORIENTATION AND POTENTIAL CHALLENGE PATHWAYS
 ====================================================================
 
-For EVERY text, in addition to classifying its activity/subtype/
-orientation, identify:
-  1. "likely_opposing_orientation": which of the OTHER THREE orientations
-     holds the MOST CONTRASTING narrative/goal/emotion/temporality
-     relative to THIS SPECIFIC text.
-  2. "potential_challenge_rationale": a CONTENT-SPECIFIC explanation
-     citing specific phrases from THIS text, framed in terms of how this
-     friction could contribute to Fragile Futures if left unaddressed.
+For EVERY text, in addition to classifying its primary (and any
+secondary) activity/subtype/orientation, identify:
+  1. "theoretically_contrasting_orientation": which of the OTHER THREE
+     orientations holds the most contrasting narrative/goal/emotion/
+     temporality relative to THIS SPECIFIC text. This is a theoretical
+     contrast inferred from the framework, not an observed interaction,
+     unless the source text itself preserves a visible exchange between
+     different speakers.
+  2. "potential_challenge_rationale": a content-specific explanation,
+     citing specific phrases from THIS text, of how this text's
+     performance COULD contribute to friction with a differently
+     oriented performance IF one were also present in the same
+     discussion or market. Do not state that the challenge has already
+     occurred from this segment alone.
 
-Do NOT compute the challenge label yourself -- it is derived
-deterministically from your "main_activity" by the calling application.
+Do NOT compute the challenge pathway label(s) yourself -- they are
+derived deterministically from your main_activity and
+secondary_classifications by the calling application.
 
 ====================================================================
-CRITICAL OUTPUT RULE
+J. DIAGNOSTIC-SUPPORT OUTPUTS (NOT definitive recommendations)
 ====================================================================
 
-Select EXACTLY ONE value for each enum field below. There is no "MIXED"
-option for any field. Always resolve to exactly one value using the
-Decision Procedure (Section H), applying Test E whenever urgency/call-to-
-action phrases co-occur with evidentiary content.
+This application supports the diagnostic steps of the roadmaps in
+Sections E and F. For a single text segment, do not issue definitive
+policy instruments or managerial interventions. Instead, for
+policy_diagnostic_considerations and manager_diagnostic_considerations,
+identify:
+  - Which roadmap diagnostic step is most relevant to this text.
+  - What additional evidence should be collected before acting.
+  - Which assumptions or conditions this text suggests should be
+    investigated.
+  - What behavioral or interactional evidence would be needed before
+    committing to a response.
+  - Which general roadmap response directions may merit consideration
+    (from Sections E/F), phrased as something to investigate, not as a
+    definitive instruction.
+Use hedged language: "could consider," "should investigate," "requires
+additional evidence" -- rather than categorical prescriptions.
 
-MANDATORY ORIENTATION-SUBTYPE PAIRING (never violate this table):
+====================================================================
+OUTPUT RULES
+====================================================================
+
+Select exactly ONE value for main_activity, activity_subtype, and
+main_orientation. There is no "MIXED" option for these three fields.
+Provide zero to two secondary_classifications ONLY when substantive,
+separable evidence supports them (Section H, Step 4).
+
+MANDATORY ORIENTATION-SUBTYPE PAIRING (applies to the primary
+classification AND to every secondary classification -- never violate
+this table):
   CATALYZER  -> SIMPLIFY (Evaluation) | ADVOCATE (Negotiation) | ACCELERATE (Enactment)
   AMBIVALENT -> STALL (Evaluation)    | QUESTION (Negotiation) | DELAY (Enactment)
   RESISTANT  -> AVOID (Evaluation)    | REJECT (Negotiation)   | PREVENT (Enactment)
   EXPANDER   -> COMPLEXIFY (Evaluation) | CONTEST (Negotiation) | REROUTE (Enactment)
-Before finalizing your answer, verify that "activity_subtype" belongs to
-the row matching your "main_orientation" and "main_activity". If it does
-not, you have made an error -- re-evaluate and resolve the inconsistency
-before responding.
+Before finalizing your answer, verify that every activity_subtype (main
+and secondary) belongs to the row matching its own orientation. If it
+does not, re-evaluate and resolve the inconsistency before responding.
 
 ====================================================================
 OUTPUT FORMAT -- Return ONLY valid JSON
@@ -808,25 +810,34 @@ OUTPUT FORMAT -- Return ONLY valid JSON
 
   "main_activity": "one single value: EVALUATION, NEGOTIATION, or ENACTMENT",
   "activity_subtype": "one single value: SIMPLIFY, STALL, AVOID, COMPLEXIFY, ADVOCATE, QUESTION, REJECT, CONTEST, ACCELERATE, DELAY, PREVENT, REROUTE",
-  "activity_rationale": "State which Decision Procedure step/criterion (a-d) matched, INCLUDING the result of Test E if urgency/call-to-action phrases co-occur with evidentiary content, citing specific phrases",
-  "secondary_activities": [],
+  "activity_rationale": "Which step of the Decision Procedure applied, citing specific phrases",
+
+  "secondary_classifications": [
+    {
+      "activity": "EVALUATION, NEGOTIATION, or ENACTMENT",
+      "activity_subtype": "valid subtype for the orientation below",
+      "orientation": "CATALYZER, AMBIVALENT, RESISTANT, or EXPANDER",
+      "rationale": "brief text-specific explanation"
+    }
+  ],
+  "input_scope_warning": "",
 
   "main_orientation": "one single value: CATALYZER, AMBIVALENT, RESISTANT, or EXPANDER",
   "orientation_confidence": "HIGH, MEDIUM, or LOW",
-  "orientation_rationale": "Empirical indicators, emotions, temporality, cited phrases",
-  "narrative_identified": "Name and description of the single dominant narrative",
+  "orientation_rationale": "Configuration of narrative, goal, emotion, temporality; cited phrases",
+  "narrative_identified": "Name and description of the dominant narrative",
   "dominant_emotions": "Comma-separated list of emotions detected",
   "temporality_expressed": "...",
-  "notable_conditions_of_adoption": "Which single condition applies, if evident",
+  "notable_conditions_of_adoption": "Which condition applies, if evident",
 
-  "likely_opposing_orientation": "One single value among CATALYZER, AMBIVALENT, RESISTANT, EXPANDER -- not the main_orientation",
-  "potential_challenge_rationale": "Content-specific explanation citing THIS text's phrases, framed in terms of Fragile Futures risk",
+  "theoretically_contrasting_orientation": "One value among CATALYZER, AMBIVALENT, RESISTANT, EXPANDER -- not the main_orientation",
+  "potential_challenge_rationale": "Content-specific, hedged explanation citing THIS text's phrases",
 
-  "policy_recommendations": {
-    "step": "...", "objective": "...", "instruments": [], "additional_actions": []
+  "policy_diagnostic_considerations": {
+    "step": "...", "objective": "...", "questions_and_evidence": [], "additional_considerations": []
   },
-  "manager_recommendations": {
-    "step": "...", "objective": "...", "interventions": [], "avoid": [], "messaging_tip": "..."
+  "manager_diagnostic_considerations": {
+    "step": "...", "objective": "...", "issues_to_investigate": [], "avoid": [], "communication_consideration": "..."
   }
 }
 """
@@ -876,45 +887,57 @@ ORIENTATIONS = {
     }
 }
 
-CHALLENGES = {
+CHALLENGE_PATHWAYS = {
     "CONVOLUTED_EVALUATIONS": {
         "label": "Convoluted Evaluations",
         "color": "#2980B9", "bg": "#EBF5FB",
-        "description": "Consumers evaluate the prescribed future with more or less certainty and thoroughness, making coherent sensemaking difficult"
+        "description": (
+            "Signals that could contribute to Convoluted Evaluations if "
+            "this evaluative performance clashes with differently oriented "
+            "evaluations elsewhere in the discussion or market."
+        )
     },
     "CONFRONTATIONAL_NEGOTIATIONS": {
         "label": "Confrontational Negotiations",
         "color": "#E67E22", "bg": "#FEF9E7",
-        "description": "Consumers negotiate their preferred futures without conceding to alternative ones"
+        "description": (
+            "Signals that could contribute to Confrontational Negotiations "
+            "if this negotiating performance clashes with differently "
+            "oriented negotiations elsewhere in the discussion or market."
+        )
     },
     "COMPETING_ENACTMENTS": {
         "label": "Competing Enactments",
         "color": "#8E44AD", "bg": "#F5EEF8",
-        "description": "Consumers enact different preferred futures through their current practices"
+        "description": (
+            "Signals that could contribute to Competing Enactments if this "
+            "practice performance clashes with differently oriented "
+            "enactments elsewhere in the discussion or market."
+        )
     },
     "N/A": {
         "label": "Not Applicable",
         "color": "#999", "bg": "#FAFAFA",
-        "description": "No potential challenge could be derived"
+        "description": "No potential challenge pathway could be derived."
     }
 }
 
 ACTIVITY_META = {
     "EVALUATION":  {
         "color": "#2980B9", "bg": "#EBF5FB",
-        "definition": "Standalone declarative claim or judgment about the prescribed future.",
+        "definition": "Primarily assesses meaning, desirability, feasibility, or trade-offs of the prescribed future.",
         "subtypes": {"SIMPLIFY": "CATALYZER", "STALL": "AMBIVALENT",
                      "AVOID": "RESISTANT", "COMPLEXIFY": "EXPANDER"}
     },
     "NEGOTIATION": {
         "color": "#E67E22", "bg": "#FEF9E7",
-        "definition": "Imperative, adversarial framing of authority, named address, or evidence subordinate to a call to action.",
+        "definition": "Primarily attempts to shape a collective trajectory (may be purely declarative; imperative not required).",
         "subtypes": {"ADVOCATE": "CATALYZER", "QUESTION": "AMBIVALENT",
                      "REJECT": "RESISTANT", "CONTEST": "EXPANDER"}
     },
     "ENACTMENT":   {
         "color": "#8E44AD", "bg": "#F5EEF8",
-        "definition": "Specifies what the consumer themselves does or intends to do (absolute priority when present).",
+        "definition": "Primarily gives material or practical form to a preferred future through the speaker's own practices.",
         "subtypes": {"ACCELERATE": "CATALYZER", "DELAY": "AMBIVALENT",
                      "PREVENT": "RESISTANT", "REROUTE": "EXPANDER"}
     },
@@ -933,174 +956,142 @@ PF_NVES = (
 )
 
 PF_AI_HEALTH = (
-    "Integrate AI-supported triage, diagnostic tools, and predictive risk-scoring "
-    "systems into healthcare service delivery, where AI is expected to contribute "
-    "to healthcare quality and efficiency across sectors"
+    "Transition all patients who enter primary care to AI-supported triage by 2030 "
+    "(a specific, dated mandate -- illustrative of a Bounded intervention in the "
+    "AI-integrated healthcare context)"
 )
 
 # ─────────────────────────────────────────
-# POLICY & MANAGERIAL GUIDANCE
+# POLICY & MANAGERIAL DIAGNOSTIC GUIDANCE (aggregate, document-level)
+# Hedged, diagnostic-support language only.
 # ─────────────────────────────────────────
 POLICY_GUIDANCE = {
     "CATALYZER": {
         "implications": (
-            "Catalyzer performances can generate early evidence and implementation "
-            "momentum, but may also normalize expansion before public value has "
-            "been demonstrated across all affected settings and subgroups. "
-            "Determine which enabling conditions made early success possible "
-            "before scaling broadly."
+            "Catalyzer performances could indicate early evidence and "
+            "implementation momentum, but may also obscure the specific "
+            "conditions that made early adoption possible. Investigate "
+            "which enabling conditions supported this pattern before "
+            "assuming broader public value."
         ),
-        "monitor": (
-            "Urgency and inevitability language; voluntary early adoption; "
-            "advocacy for faster rollout."
-        ),
-        "objective": "Enable responsible acceleration only where public value can be demonstrated.",
-        "instruments": ["Time-limited regulatory sandboxes", "Independent evaluation",
-                         "Mandatory reporting of failures and overrides",
-                         "Subgroup/local validation requirements",
-                         "Predefined thresholds for expansion, modification, or withdrawal"]
+        "monitor": "Urgency and inevitability language; voluntary early adoption; advocacy for faster rollout.",
+        "objective": "Investigate whether responsible acceleration is supported by evidence.",
+        "questions_and_evidence": ["Time-limited pilots with independent evaluation",
+                         "Reporting of failures and overrides",
+                         "Subgroup/local validation before scaling",
+                         "Predefined thresholds for expansion, modification, or withdrawal (to investigate, not to assume)"]
     },
     "AMBIVALENT": {
         "implications": (
-            "Ambivalent actors may regard the prescribed future as potentially "
-            "desirable but consider specific technical, material, ethical, or "
-            "institutional conditions unresolved. Their conditional support "
-            "should be used to formulate the exact conditions under which broader "
-            "authorization becomes legitimate -- not treated merely as an adoption "
-            "barrier."
+            "Ambivalent performances may indicate specific, addressable "
+            "conditions rather than generalized opposition. Investigate "
+            "which technical, material, ethical, or institutional "
+            "conditions are described as unresolved."
         ),
-        "monitor": (
-            "Conditional language ('I would, but...', 'not yet'); trials without "
-            "conversion; requests for evidence; questions about liability, safety, "
-            "or affordability."
-        ),
-        "objective": "Convert uncertainty into explicit conditions for authorization.",
-        "instruments": ["Public impact assessments", "Staged authorization and sunset clauses",
-                         "Citizen juries", "Public registers",
-                         "Guaranteed alternative (human-service) pathways"]
+        "monitor": "Conditional language ('I would, but...', 'not yet'); requests for evidence; questions about liability, safety, or affordability.",
+        "objective": "Investigate whether uncertainty can be converted into explicit, addressable conditions.",
+        "questions_and_evidence": ["Impact assessments", "Staged authorization possibilities",
+                         "Public registers", "Alternative pathway availability (to investigate)"]
     },
     "RESISTANT": {
         "implications": (
-            "Resistant actors perceive threats to autonomy, identity, rights, "
-            "livelihoods, or established practices. The appropriate response "
-            "depends on what is being protected: ideological opposition may call "
-            "for deliberation; identity threats may require clarified authority "
-            "structures; distributional disadvantage may need material support; "
-            "practical exclusion may require preserving non-participation pathways."
+            "Resistant performances may reflect ideological opposition, "
+            "identity threat, material disadvantage, or practical "
+            "exclusion. Investigate which of these applies before "
+            "designing a response, as each requires a different kind of "
+            "evidence and response."
         ),
-        "monitor": (
-            "Language on coercion, surveillance, loss of choice, discrimination, "
-            "and distrust; opt-outs, complaints, refusals, organized opposition, "
-            "legal challenges."
-        ),
-        "objective": "Protect rights and restore legitimacy and accountability.",
-        "instruments": ["Statutory prohibitions on unacceptable uses", "Appeal and human-review rights",
-                         "Independent audits", "Moratoria where evidence is insufficient",
-                         "Preservation of non-participation / opt-out pathways"]
+        "monitor": "Language on coercion, surveillance, loss of choice, discrimination, distrust; complaints, refusals, organized opposition.",
+        "objective": "Investigate legitimacy and accountability concerns raised.",
+        "questions_and_evidence": ["Whether appeal/human-review mechanisms exist", "Independent audit availability",
+                         "Whether non-participation pathways are preserved (to investigate)"]
     },
     "EXPANDER": {
         "implications": (
-            "Expander performances reveal when the prescribed future addresses "
-            "narrow efficiency gains while leaving the underlying public problem "
-            "unchanged. Assess whether the proposed alternative future complements "
-            "the current intervention or requires revising its problem framing "
-            "altogether."
+            "Expander performances may reveal whether the prescribed "
+            "future addresses narrow efficiency gains while leaving the "
+            "underlying public problem unchanged. Investigate whether the "
+            "proposed alternative complements or requires revising the "
+            "current problem framing."
         ),
-        "monitor": (
-            "Claims that the intervention does not solve the underlying problem; "
-            "proposals for collective alternatives; participation in alternative "
-            "infrastructures or services."
-        ),
-        "objective": "Broaden the policy focus; consider alternative futures.",
-        "instruments": ["Citizen assemblies", "Public-interest funding and infrastructure",
-                         "Data trusts", "Competition policy",
-                         "Alternative governance models", "Funding for complementary pathways"]
+        "monitor": "Claims that the intervention does not solve the underlying problem; proposals for collective alternatives.",
+        "objective": "Investigate whether the policy focus should be broadened.",
+        "questions_and_evidence": ["Whether deliberative input has been sought", "Funding availability for complementary pathways (to investigate)"]
     },
 }
 
 MANAGER_GUIDANCE = {
     "CATALYZER": {
         "implications": (
-            "Catalyzer enthusiasm can normalize new practices but may obscure the "
-            "resources and competencies that supported early adoption, making "
-            "results appear more universally replicable than they are."
+            "Catalyzer enthusiasm may not generalize; investigate what "
+            "resources and competencies supported early adoption before "
+            "assuming replicability."
         ),
-        "monitor": (
-            "Urgency/inevitability language, pilot participation, advocacy, "
-            "referrals, rapid voluntary adoption."
-        ),
-        "objective": "Convert enthusiasm into credible and responsible experimentation.",
-        "interventions": ["Governed pilots", "Evidence documentation", "Peer learning",
-                           "Explicit reporting of limitations"],
-        "avoid": ["Inevitability claims", "Treating early adopters as representative of everyone"]
+        "monitor": "Urgency/inevitability language, pilot participation, advocacy, referrals.",
+        "objective": "Investigate whether enthusiasm reflects credible, generalizable experimentation.",
+        "issues_to_investigate": ["Whether pilots are governed and documented", "Whether limitations are being reported",
+                           "Whether early adopters are representative (to investigate, not assume)"],
+        "avoid": ["Treating enthusiasm as evidence of inevitability without investigation"]
     },
     "AMBIVALENT": {
         "implications": (
-            "Ambivalent hesitation can identify specific, addressable barriers "
-            "rather than generalized opposition -- treat it as diagnostic "
-            "information, not resistance to be overcome by persuasion alone."
+            "Ambivalent hesitation may identify specific, addressable "
+            "barriers. Investigate the specific conditions raised rather "
+            "than treating this as generalized resistance to be overcome "
+            "by persuasion alone."
         ),
-        "monitor": (
-            "Conditional language, repeated comparison, requests for evidence/"
-            "assistance, liability questions, trials without conversion, "
-            "abandoned onboarding."
-        ),
-        "objective": "Convert generalized uncertainty into specific, addressable conditions.",
-        "interventions": ["Sandboxes", "Comparison tools", "Staged adoption",
-                           "Transparent performance evidence", "Training", "Human assistance"],
-        "avoid": ["Pressure and artificial urgency", "Framing hesitation as ignorance"]
+        "monitor": "Conditional language, repeated comparison, requests for evidence/assistance, liability questions.",
+        "objective": "Investigate whether generalized uncertainty reflects specific, addressable conditions.",
+        "issues_to_investigate": ["Whether comparison tools or trials are available", "Whether training/human assistance is accessible"],
+        "avoid": ["Assuming hesitation reflects ignorance without investigation", "Applying artificial urgency"]
     },
     "RESISTANT": {
         "implications": (
-            "Distinguish ideological opposition, identity threat, material "
-            "disadvantage, and practical exclusion -- each requires a different "
-            "kind of managerial response, not a single reassurance message."
+            "Investigate whether this reflects ideological opposition, "
+            "identity threat, material disadvantage, or practical "
+            "exclusion -- each requires different evidence before a "
+            "response is designed."
         ),
-        "monitor": (
-            "Language on surveillance, loss of choice, dehumanization, hidden "
-            "automation, professional/practice replacement, discrimination, distrust."
-        ),
-        "objective": "Restore autonomy, legitimacy, and accountability.",
-        "interventions": ["Consultation", "Opt-outs", "Human review", "Independent audits",
-                           "Appeals", "Protections against material harm"],
-        "avoid": ["\"There is no alternative\" messaging", "Ridicule", "Hidden automation"]
+        "monitor": "Language on surveillance, loss of choice, dehumanization, discrimination, distrust.",
+        "objective": "Investigate legitimacy, autonomy, and accountability concerns.",
+        "issues_to_investigate": ["Whether consultation or appeal mechanisms exist", "Whether opt-outs are preserved"],
+        "avoid": ["\"There is no alternative\" messaging without investigation", "Ridicule"]
     },
     "EXPANDER": {
         "implications": (
-            "Expander critique may reveal broader value propositions, necessary "
-            "complementarities, and alternative governance or business models -- "
-            "treat it as market intelligence about unmet systemic needs, not as "
-            "out-of-scope noise."
+            "Expander critique may reveal unmet systemic needs or "
+            "alternative value propositions. Investigate rather than "
+            "treat as out-of-scope."
         ),
-        "monitor": (
-            "Claims the intervention does not solve the underlying problem; "
-            "advocacy for collective alternatives; participation in alternative "
-            "services/infrastructures."
-        ),
-        "objective": "Incorporate systemic critique and explore alternative futures.",
-        "interventions": ["Participatory design", "Futures workshops", "Broader impact evaluation",
-                           "Partnerships", "Alternative governance or service models"],
-        "avoid": ["Presenting the offering as a complete solution", "Dismissing critique as out of scope"]
+        "monitor": "Claims the intervention does not solve the underlying problem; advocacy for collective alternatives.",
+        "objective": "Investigate whether systemic critique warrants incorporation.",
+        "issues_to_investigate": ["Whether participatory design input has been sought", "Whether alternative governance/service models are feasible"],
+        "avoid": ["Presenting the offering as a complete solution without investigation"]
     },
 }
 
 CROSS_ORIENTATION_WARNING = (
-    "Cross-orientation interference check: Before finalizing a response, check "
-    "whether a response tailored to one orientation intensifies fragility "
-    "elsewhere. For example, performance-evidence campaigns that reassure "
-    "Ambivalent users may deepen Resistant distrust, or reinforce Expander "
-    "critique that the intervention is being oversold as a complete solution."
+    "Cross-orientation interference check: before finalizing a response, "
+    "investigate whether a response tailored to one orientation could "
+    "intensify concerns for another (e.g., performance-evidence campaigns "
+    "aimed at Ambivalent audiences may deepen Resistant distrust, or "
+    "reinforce Expander critique that the intervention is being oversold "
+    "as a complete solution). This requires further evidence, not a single "
+    "segment."
 )
 
 # ─────────────────────────────────────────
-# EXAMPLES -- built-in coded illustrations
+# BENCHMARK EXAMPLES -- built-in coded illustrations
+# (used for the Coding Consistency Check, not empirical validation)
 # ─────────────────────────────────────────
 EXAMPLES = {
     "Select an example": {
-        "prescribed": "", "comment": "", "activity": "", "subtype": "", "orientation": ""
+        "prescribed": "", "comment": "", "activity": "", "subtype": "", "orientation": "",
+        "secondary_expected": None
     },
     "CATALYZER | Evaluation -> Simplify": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "SIMPLIFY", "orientation": "CATALYZER",
+        "secondary_expected": None,
         "comment": (
             "EVs are already cheaper to run than petrol cars once you factor in "
             "fuel and servicing costs, and battery prices have dropped so fast "
@@ -1116,6 +1107,7 @@ EXAMPLES = {
     },
     "CATALYZER | Negotiation -> Advocate": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "ADVOCATE", "orientation": "CATALYZER",
+        "secondary_expected": None,
         "comment": (
             "Climate crisis is real. It's time to look at solar energy and "
             "electric vehicles, not the energy sources of the past like fossil "
@@ -1132,6 +1124,7 @@ EXAMPLES = {
     },
     "CATALYZER | Enactment -> Accelerate": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "ACCELERATE", "orientation": "CATALYZER",
+        "secondary_expected": None,
         "comment": (
             "Our family has been living with an EV and a PHEV for 3 years and "
             "they are fantastic. There are many advantages and few disadvantages, "
@@ -1149,6 +1142,7 @@ EXAMPLES = {
     },
     "AMBIVALENT | Evaluation -> Stall": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "STALL", "orientation": "AMBIVALENT",
+        "secondary_expected": None,
         "comment": (
             "Range anxiety is overstated, however if you stay somewhere with no "
             "charging and need to drive 200-300km you are stuffed. "
@@ -1166,6 +1160,7 @@ EXAMPLES = {
     },
     "AMBIVALENT | Negotiation -> Question": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "QUESTION", "orientation": "AMBIVALENT",
+        "secondary_expected": None,
         "comment": (
             "One of the arguments that is used for full EV's is the lower "
             "servicing costs but I'm guessing that a plug in hybrid still needs "
@@ -1184,6 +1179,7 @@ EXAMPLES = {
     },
     "AMBIVALENT | Enactment -> Delay": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "DELAY", "orientation": "AMBIVALENT",
+        "secondary_expected": ("AMBIVALENT", "EVALUATION", "STALL"),
         "comment": (
             "Really good and interesting report! I am wanting to upgrade the car "
             "at a not too distant time and I am umming and aahing over PHEV or "
@@ -1201,6 +1197,7 @@ EXAMPLES = {
     },
     "RESISTANT | Evaluation -> Avoid": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "AVOID", "orientation": "RESISTANT",
+        "secondary_expected": None,
         "comment": (
             "Electric vehicles are not the solution, for Australia to take this "
             "up we are going to have to increase mining of precious minerals at "
@@ -1218,6 +1215,7 @@ EXAMPLES = {
     },
     "RESISTANT | Negotiation -> Reject": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "REJECT", "orientation": "RESISTANT",
+        "secondary_expected": None,
         "comment": (
             "Is this communism, take away our freedom of choice! "
             "Australians are not as ignorant as the politicians think, and they "
@@ -1239,6 +1237,7 @@ EXAMPLES = {
     },
     "RESISTANT | Enactment -> Prevent": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "PREVENT", "orientation": "RESISTANT",
+        "secondary_expected": None,
         "comment": (
             "I have had ICE cars for some 37 years and have found them to be "
             "very reliable. "
@@ -1253,6 +1252,7 @@ EXAMPLES = {
     },
     "EXPANDER | Evaluation -> Complexify": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "COMPLEXIFY", "orientation": "EXPANDER",
+        "secondary_expected": None,
         "comment": (
             "Facilitating greater use of active, shared and public transport can "
             "cut climate pollution further and faster than electrifying "
@@ -1270,6 +1270,7 @@ EXAMPLES = {
     },
     "EXPANDER | Negotiation -> Contest": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "CONTEST", "orientation": "EXPANDER",
+        "secondary_expected": None,
         "comment": (
             "Consumerism trumps facts. John you are so right but the first "
             "sentence prevails in modern society, why save the environment by "
@@ -1287,6 +1288,7 @@ EXAMPLES = {
     },
     "EXPANDER | Enactment -> Reroute": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "REROUTE", "orientation": "EXPANDER",
+        "secondary_expected": ("EXPANDER", "NEGOTIATION", "CONTEST"),
         "comment": (
             "We tend to do most of our shopping by bike rather than with the ute "
             "because the ute's inconvenient to park and navigate in small car "
@@ -1306,83 +1308,55 @@ EXAMPLES = {
 }
 
 # ─────────────────────────────────────────
-# GENERALIZATION TESTS -- cross-domain (EV + AI healthcare), out-of-sample
-# ─────────────────────────────────────────
-GENERALIZATION_TESTS = {
-    "Select a generalization test": {"comment": "", "note": "", "prescribed": ""},
-    "New (EV domain): mechanic cost concern": {
-        "comment": (
-            "I've been thinking about getting an EV for a while but my mechanic "
-            "says the battery replacement cost is insane. Guess I'll wait and see "
-            "what happens with prices in a couple years."
-        ),
-        "note": "Expected: AMBIVALENT / ENACTMENT-DELAY (conditional wait tied to price)",
-        "prescribed": PF_EV
-    },
-    "New (EV domain): degrowth critique": {
-        "comment": (
-            "Honestly the whole EV push ignores that most emissions come from "
-            "manufacturing and shipping, not driving. We need degrowth, not just "
-            "new cars."
-        ),
-        "note": "Expected: EXPANDER / EVALUATION-COMPLEXIFY",
-        "prescribed": PF_EV
-    },
-    "New (cross-domain, AI healthcare): clinician conditional support": {
-        "comment": (
-            "I'd be willing to use the AI triage tool, but only if a clinician "
-            "reviews every recommendation before it reaches the patient. Until "
-            "there's local validation and clear liability rules, I'm not "
-            "handing over consequential decisions to an algorithm."
-        ),
-        "note": "Expected: AMBIVALENT / NEGOTIATION-QUESTION or ENACTMENT-DELAY "
-                "(tests whether the framework generalizes beyond the EV domain)",
-        "prescribed": PF_AI_HEALTH
-    },
-    "New (cross-domain, AI healthcare): patient autonomy rejection": {
-        "comment": (
-            "I refuse to let an algorithm decide whether I get to see a doctor. "
-            "If there's no human I can appeal to, I'm not using this system, "
-            "full stop."
-        ),
-        "note": "Expected: RESISTANT / ENACTMENT-PREVENT or NEGOTIATION-REJECT",
-        "prescribed": PF_AI_HEALTH
-    },
-}
-
-# ─────────────────────────────────────────
-# CONSISTENCY SAFEGUARD
+# CONSISTENCY SAFEGUARD (applies to primary AND secondary classifications)
 # ─────────────────────────────────────────
 
-def _enforce_subtype_orientation_consistency(result: dict) -> dict:
-    """Defensive post-processing: if the model returns an impossible
-    orientation-subtype pairing (e.g., EXPANDER + AVOID, which does not
-    exist in the schema), correct the subtype to match the identified
-    orientation. The orientation classification is trusted as the source
-    of truth, since orientation accuracy is empirically more reliable
-    than subtype accuracy in edge cases."""
+def _fix_pairing(orientation: str, activity: str, subtype: str):
+    """Returns a (possibly corrected) subtype so that it belongs to the
+    valid pairing row for the given orientation/activity, trusting
+    orientation as the more reliable signal. Returns (subtype, note)."""
+    subtype_map = ACTIVITY_META.get(activity, {}).get("subtypes", {})
+    if not subtype_map:
+        return subtype, None
+    expected_orientation = subtype_map.get(subtype)
+    if expected_orientation and expected_orientation != orientation:
+        corrected = next((st for st, ori in subtype_map.items() if ori == orientation), None)
+        if corrected:
+            return corrected, f"subtype adjusted from {subtype} to {corrected} to match orientation {orientation}"
+    return subtype, None
+
+
+def enforce_consistency(result: dict) -> dict:
+    """Defensive post-processing applied to BOTH the primary classification
+    and every secondary classification."""
+    notes = []
+
     main_orientation = _clean_enum(result.get("main_orientation", "")).upper()
     main_activity = _clean_enum(result.get("main_activity", "")).upper()
-    subtype = _clean_enum(result.get("activity_subtype", "")).upper()
+    main_subtype = _clean_enum(result.get("activity_subtype", "")).upper()
+    fixed_subtype, note = _fix_pairing(main_orientation, main_activity, main_subtype)
+    if note:
+        result["activity_subtype"] = fixed_subtype
+        notes.append(f"Primary: {note}.")
+    else:
+        result["activity_subtype"] = main_subtype
 
-    subtype_map = ACTIVITY_META.get(main_activity, {}).get("subtypes", {})
-    if not subtype_map:
-        return result
+    secondary = get_secondary_classifications(result)
+    fixed_secondary = []
+    for i, sec in enumerate(secondary):
+        ori = sec.get("orientation", "")
+        act = sec.get("activity", "")
+        sub = sec.get("activity_subtype", "")
+        if act and sub and ori:
+            fixed_sub, note2 = _fix_pairing(ori, act, sub)
+            if note2:
+                notes.append(f"Secondary #{i+1}: {note2}.")
+            sec["activity_subtype"] = fixed_sub
+        fixed_secondary.append(sec)
+    result["secondary_classifications"] = fixed_secondary
 
-    expected_orientation_for_subtype = subtype_map.get(subtype)
-
-    if expected_orientation_for_subtype and expected_orientation_for_subtype != main_orientation:
-        corrected_subtype = next(
-            (st for st, ori in subtype_map.items() if ori == main_orientation),
-            None
-        )
-        if corrected_subtype:
-            result["activity_subtype"] = corrected_subtype
-            result["_consistency_note"] = (
-                f"Internal consistency check: subtype adjusted from {subtype} "
-                f"to {corrected_subtype} to match the identified orientation "
-                f"({main_orientation})."
-            )
+    if notes:
+        result["_consistency_note"] = " ".join(notes)
     return result
 
 
@@ -1399,24 +1373,24 @@ PRESCRIBED FUTURE:
 TEXT TO ANALYZE:
 {comment}
 
-Remember: read the ENTIRE passage first (Step 0), then apply the DECISION
-PROCEDURE (Section H) in order. ENACTMENT (Step 1) is an ABSOLUTE priority
-whenever any substantive first-person action is described. For
-NEGOTIATION (Step 2), apply criteria (a)-(d) -- if urgency or
-call-to-action phrases co-occur with evidentiary content, explicitly apply
-TEST E: mentally remove the call-to-action phrases and check whether the
-remaining evidentiary content still stands as a complete, self-sufficient
-judgment (EVALUATION) or only makes sense as support for the removed call
-to action (NEGOTIATION). A passage with NO imperative/call-to-action
-phrases at all is automatically EVALUATION regardless of tone. Verify your
-activity_subtype belongs to the valid pairing table for your
-main_orientation before responding. Return EXACTLY ONE value per enum
-field. Complete Section I (likely_opposing_orientation +
-potential_challenge_rationale), framing the rationale in terms of Fragile
-Futures risk where relevant. Populate policy_recommendations and
-manager_recommendations with content SPECIFIC to the prescribed future
-given above, including its intervention type context if provided in
-brackets.
+Read the entire segment first, then apply the Decision Procedure (Section
+H). Identify ALL substantive evidence of evaluation, negotiation, and
+enactment before selecting a primary classification; if a second
+activity is substantively and separably present, populate
+secondary_classifications (0-2 entries, never padded). Negotiation may
+be purely declarative and does not require an imperative or direct
+address. If the input appears to mix content from multiple distinct
+speakers or unrelated quotations, populate input_scope_warning instead of
+forcing a single artificial reading. Verify every activity_subtype
+(primary and secondary) belongs to the valid pairing table for its own
+orientation before responding. Complete Section I
+(theoretically_contrasting_orientation + potential_challenge_rationale)
+using hedged language -- describe what COULD contribute to friction, not
+what has already occurred. Populate policy_diagnostic_considerations and
+manager_diagnostic_considerations as diagnostic support only (Section
+J): identify relevant roadmap steps, evidence to collect, and assumptions
+to investigate -- do not issue definitive recommendations from this
+single text segment.
 """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -1428,13 +1402,16 @@ brackets.
         temperature=0
     )
     parsed = json.loads(response.choices[0].message.content)
-    parsed = _enforce_subtype_orientation_consistency(parsed)
+    parsed = enforce_consistency(parsed)
     return parsed
 
 
-def run_validation_suite(api_key: str) -> dict:
-    """Internal quality-control tool: validates the built-in coded
-    examples against their ground-truth categories."""
+def run_consistency_suite(api_key: str) -> dict:
+    """Internal quality-control tool: tests whether the current prompt
+    reproduces predetermined coding decisions for a set of benchmark
+    examples. This does NOT constitute empirical validation, intercoder
+    reliability, or evidence of generalizability -- it only checks
+    agreement with predetermined benchmark examples."""
     results = []
     for name, ex in EXAMPLES.items():
         if not ex.get("comment"):
@@ -1445,27 +1422,43 @@ def run_validation_suite(api_key: str) -> dict:
             results.append({
                 "example": name, "error": str(e),
                 "expected": (ex["orientation"], ex["activity"], ex["subtype"]),
-                "predicted": (None, None, None), "match": False
+                "predicted": (None, None, None), "match": False,
+                "secondary_expected": ex.get("secondary_expected"),
+                "secondary_match": None
             })
             continue
-        pred_orientation = _clean_enum((pred.get("main_orientation") or "")).upper()
-        pred_activity    = _clean_enum((pred.get("main_activity") or "")).upper()
-        pred_subtype     = _clean_enum((pred.get("activity_subtype") or "")).upper()
+        pred_orientation = _clean_enum(pred.get("main_orientation", "")).upper()
+        pred_activity    = _clean_enum(pred.get("main_activity", "")).upper()
+        pred_subtype     = _clean_enum(pred.get("activity_subtype", "")).upper()
         match = (
             pred_orientation == ex["orientation"]
             and pred_activity == ex["activity"]
             and pred_subtype == ex["subtype"]
         )
+
+        secondary_match = None
+        sec_expected = ex.get("secondary_expected")
+        if sec_expected:
+            secondary_list = get_secondary_classifications(pred)
+            secondary_match = any(
+                sec.get("orientation") == sec_expected[0]
+                and sec.get("activity") == sec_expected[1]
+                and sec.get("activity_subtype") == sec_expected[2]
+                for sec in secondary_list
+            )
+
         results.append({
             "example": name,
             "expected": (ex["orientation"], ex["activity"], ex["subtype"]),
             "predicted": (pred_orientation, pred_activity, pred_subtype),
-            "match": match
+            "match": match,
+            "secondary_expected": sec_expected,
+            "secondary_match": secondary_match
         })
     if not results:
-        return {"results": [], "overall_accuracy": 0.0}
-    accuracy = sum(r["match"] for r in results) / len(results)
-    return {"results": results, "overall_accuracy": accuracy}
+        return {"results": [], "overall_agreement": 0.0}
+    agreement = sum(r["match"] for r in results) / len(results)
+    return {"results": results, "overall_agreement": agreement}
 
 
 # ─────────────────────────────────────────
@@ -1564,28 +1557,65 @@ def extract_public_consultation_responses(text: str, min_words: int = 4) -> list
     return responses
 
 
-def analyze_document(chunks: list, prescribed_future: str, api_key: str, progress_bar=None) -> list:
-    results = [None] * len(chunks)
-    total = len(chunks)
+def compute_evenly_spaced_sample_indices(total: int, k: int) -> list:
+    """Returns up to k distinct 0-based indices evenly distributed across
+    range(total), preserving original document order, so a limited sample
+    is drawn from the beginning, middle, and end rather than always the
+    first k segments."""
+    if total <= 0 or k <= 0:
+        return []
+    if k >= total:
+        return list(range(total))
+    if k == 1:
+        return [total // 2]
+    step = (total - 1) / (k - 1)
+    seen = set()
+    for i in range(k):
+        idx = int(round(i * step))
+        idx = max(0, min(total - 1, idx))
+        probe = idx
+        forward = True
+        while probe in seen:
+            probe = probe + 1 if forward else probe - 1
+            if probe >= total:
+                probe = idx
+                forward = False
+                continue
+            if probe < 0:
+                break
+        seen.add(max(0, min(total - 1, probe)))
+    return sorted(seen)
+
+
+def analyze_document(indexed_chunks: list, prescribed_future: str, api_key: str, progress_bar=None) -> list:
+    """indexed_chunks: list of (original_index, text) tuples. Returns
+    results sorted by original_index to preserve document order."""
+    total = len(indexed_chunks)
+    results = [None] * total
     with concurrent.futures.ThreadPoolExecutor(max_workers=DOC_MAX_WORKERS) as executor:
-        future_to_idx = {
-            executor.submit(analyze_comment, prescribed_future, chunk, api_key): idx
-            for idx, chunk in enumerate(chunks)
+        future_to_pos = {
+            executor.submit(analyze_comment, prescribed_future, text, api_key): pos
+            for pos, (orig_idx, text) in enumerate(indexed_chunks)
         }
         completed = 0
-        for future in concurrent.futures.as_completed(future_to_idx):
-            idx = future_to_idx[future]
+        for future in concurrent.futures.as_completed(future_to_pos):
+            pos = future_to_pos[future]
+            orig_idx, text = indexed_chunks[pos]
             try:
                 r = future.result()
             except Exception as e:
                 r = {"_error": str(e)}
-            r["_chunk_text"] = chunks[idx]
-            r["_chunk_index"] = idx
-            results[idx] = r
+            r["_chunk_text"] = text
+            r["_chunk_index"] = orig_idx
+            results[pos] = r
             completed += 1
             if progress_bar is not None:
                 progress_bar.progress(completed / total, text=f"Analyzed {completed}/{total} segments...")
-    return results
+    results_sorted = sorted(
+        [r for r in results if r is not None],
+        key=lambda r: r.get("_chunk_index", 0)
+    )
+    return results_sorted
 
 
 def summarize_document_results(results: list) -> dict:
@@ -1596,27 +1626,28 @@ def summarize_document_results(results: list) -> dict:
         return {"n_analyzed": 0, "n_errors": len(errors)}
 
     orientation_counts, activity_counts, challenge_counts = {}, {}, {}
-    friction_pairs = {}
+    contrast_pairs = {}
 
     for r in valid:
-        ori = _clean_enum((r.get("main_orientation") or "")).upper()
-        act = _clean_enum((r.get("main_activity") or "")).upper()
-        chal = derive_potential_challenge(act)
-        opp = _clean_enum((r.get("likely_opposing_orientation") or "")).upper()
+        ori = _clean_enum(r.get("main_orientation", "")).upper()
+        act = _clean_enum(r.get("main_activity", "")).upper()
+        secondary = get_secondary_classifications(r)
+        pathways = derive_challenge_pathways(act, secondary)
+        contrast = get_contrasting_orientation(r)
 
         if ori:
             orientation_counts[ori] = orientation_counts.get(ori, 0) + 1
         if act:
             activity_counts[act] = activity_counts.get(act, 0) + 1
-        if chal:
-            challenge_counts[chal] = challenge_counts.get(chal, 0) + 1
-        if ori in ORIENTATIONS and opp in ORIENTATIONS:
-            pair = tuple(sorted([ori, opp]))
-            friction_pairs[pair] = friction_pairs.get(pair, 0) + 1
+        for p in pathways:
+            challenge_counts[p] = challenge_counts.get(p, 0) + 1
+        if ori in ORIENTATIONS and contrast in ORIENTATIONS:
+            pair = tuple(sorted([ori, contrast]))
+            contrast_pairs[pair] = contrast_pairs.get(pair, 0) + 1
 
-    predominant_orientation = max(orientation_counts, key=orientation_counts.get) if orientation_counts else None
-    predominant_activity = max(activity_counts, key=activity_counts.get) if activity_counts else None
-    predominant_challenge = max(challenge_counts, key=challenge_counts.get) if challenge_counts else None
+    most_frequent_orientation = max(orientation_counts, key=orientation_counts.get) if orientation_counts else None
+    most_frequent_activity = max(activity_counts, key=activity_counts.get) if activity_counts else None
+    most_frequent_challenge = max(challenge_counts, key=challenge_counts.get) if challenge_counts else None
 
     return {
         "n_analyzed": n,
@@ -1624,10 +1655,10 @@ def summarize_document_results(results: list) -> dict:
         "orientation_counts": orientation_counts,
         "activity_counts": activity_counts,
         "challenge_counts": challenge_counts,
-        "friction_pairs": friction_pairs,
-        "predominant_orientation": predominant_orientation,
-        "predominant_activity": predominant_activity,
-        "predominant_challenge": predominant_challenge,
+        "contrast_pairs": contrast_pairs,
+        "most_frequent_orientation": most_frequent_orientation,
+        "most_frequent_activity": most_frequent_activity,
+        "most_frequent_challenge": most_frequent_challenge,
     }
 
 
@@ -1638,56 +1669,55 @@ def build_narrative_summary(summary: dict, intervention_type_key: str = None) ->
 
     ori_counts = summary["orientation_counts"]
     chal_counts = summary["challenge_counts"]
-    pred_ori = summary.get("predominant_orientation")
-    pred_chal = summary.get("predominant_challenge")
+    most_freq_ori = summary.get("most_frequent_orientation")
+    most_freq_chal = summary.get("most_frequent_challenge")
 
     def pct(cnt):
         return round(cnt / n * 100, 1)
 
     lines = []
 
-    if pred_ori:
-        ori_meta = ORIENTATIONS.get(pred_ori, {})
+    if most_freq_ori:
+        ori_meta = ORIENTATIONS.get(most_freq_ori, {})
         lines.append(
-            f"Across **{n}** analyzed segments, the predominant future-making orientation is "
-            f"**{pred_ori}** ({pct(ori_counts[pred_ori])}% of segments), "
-            f"reflecting a *{ori_meta.get('narrative','')}* -- \"{ori_meta.get('tagline','')}\""
+            f"Across **{n}** analyzed segments, the most frequently identified "
+            f"dominant orientation is **{most_freq_ori}** "
+            f"({pct(ori_counts[most_freq_ori])}% of segments), associated with a "
+            f"*{ori_meta.get('narrative','')}* -- \"{ori_meta.get('tagline','')}\""
         )
 
     sorted_ori = sorted(ori_counts.items(), key=lambda x: -x[1])
     ori_dist = ", ".join(f"{k} {pct(v)}%" for k, v in sorted_ori)
-    lines.append(f"**Orientation distribution:** {ori_dist}.")
+    lines.append(
+        f"**Orientation distribution among analyzed segments:** {ori_dist}. "
+        f"These percentages describe text segments, not unique consumers, "
+        f"organizations, or population prevalence."
+    )
 
-    if pred_chal and pred_chal != "N/A":
-        chal_meta = CHALLENGES.get(pred_chal, {})
+    if most_freq_chal and most_freq_chal != "N/A":
+        chal_meta = CHALLENGE_PATHWAYS.get(most_freq_chal, {})
         lines.append(
-            f"The predominant potential future-making challenge is "
-            f"**{chal_meta.get('label', pred_chal)}** "
-            f"({pct(chal_counts[pred_chal])}% of segments): {chal_meta.get('description','')}."
+            f"The most frequently identified potential challenge pathway is "
+            f"**{chal_meta.get('label', most_freq_chal)}** "
+            f"({pct(chal_counts[most_freq_chal])}% of segments carry this "
+            f"signal): {chal_meta.get('description','')}"
         )
 
-    significant_orientations = [k for k, v in ori_counts.items() if pct(v) >= 15]
-    if len(significant_orientations) >= 3:
+    n_orientations_present = len([k for k, v in ori_counts.items() if v > 0])
+    if n_orientations_present >= 2:
         lines.append(
-            "High Fragile Futures risk: at least three orientations each represent "
-            "15%+ of the corpus. This fragmented landscape suggests multiple, "
-            "volatile, and conflicting preferred futures are likely co-existing, "
-            "interfering with actualization of the prescribed future -- "
-            "orientation-specific strategies for each major group are likely necessary."
-        )
-    elif len(significant_orientations) == 2:
-        lines.append(
-            "Moderate Fragile Futures risk: two orientations dominate the corpus, "
-            "suggesting the prescribed future is likely to face organized contestation "
-            "from a substantial minority alongside majority support/acceptance."
+            "Multiple future-making orientations were detected within the "
+            "analyzed segments. This heterogeneity identifies a need for "
+            "contextual examination of whether differently oriented "
+            "performances coexist, clash, or interfere with one another. "
+            "Orientation diversity alone does not establish Fragile Futures."
         )
     else:
         lines.append(
-            "Lower Fragile Futures risk: one orientation clearly dominates, "
-            "suggesting relatively more aligned sensemaking around the prescribed "
-            "future -- though minority voices should still be monitored, as they may "
-            "still generate localized Convoluted Evaluations, Confrontational "
-            "Negotiations, or Competing Enactments."
+            "A single orientation was identified across all analyzed "
+            "segments. This does not, by itself, indicate an absence of "
+            "diversity in the broader population -- it describes only the "
+            "analyzed sample."
         )
 
     if intervention_type_key and intervention_type_key in INTERVENTION_TYPES:
@@ -1695,7 +1725,10 @@ def build_narrative_summary(summary: dict, intervention_type_key: str = None) ->
         if it.get("note"):
             lines.append(
                 f"**Intervention type context** ({intervention_type_key.split(' (')[0]}, "
-                f"{it['scope']} scope / {it['prescriptiveness']} prescriptive): {it['note']}"
+                f"{it['scope']} scope / {it['prescriptiveness']} prescriptive): "
+                f"{it['note']} This is contextual information; it does not "
+                f"predetermine the orientations or challenge pathways found "
+                f"above."
             )
 
     return "\n\n".join(lines)
@@ -1723,42 +1756,76 @@ def render_pct_bars(counts: dict, meta_dict: dict, total: int, label_key_name=No
         """, unsafe_allow_html=True)
 
 
+def _serialize_secondary(secondary_list: list) -> str:
+    if not secondary_list:
+        return ""
+    parts = []
+    for sec in secondary_list:
+        parts.append(
+            f"{sec.get('orientation','')}/{sec.get('activity','')}/"
+            f"{sec.get('activity_subtype','')}: {sec.get('rationale','')}"
+        )
+    return " || ".join(parts)
+
+
+def _serialize_considerations(d: dict) -> str:
+    if not d:
+        return ""
+    parts = [f"Step: {d.get('step','')}", f"Objective: {d.get('objective','')}"]
+    for key in ("questions_and_evidence", "additional_considerations",
+                "issues_to_investigate", "avoid"):
+        vals = d.get(key)
+        if vals:
+            parts.append(f"{key}: " + "; ".join(vals))
+    if d.get("communication_consideration"):
+        parts.append(f"communication_consideration: {d.get('communication_consideration')}")
+    return " | ".join(parts)
+
+
 def build_results_dataframe(results: list) -> pd.DataFrame:
-    """Builds a compact overview dataframe AND includes the full
-    rationale text fields, so a CSV export gives complete data even
-    if a user does not use the interactive rationale explorer."""
     rows = []
     for r in results:
         if not r:
             continue
         if "_error" in r:
             rows.append({
-                "segment": r.get("_chunk_index", ""),
-                "text_preview": (r.get("_chunk_text", "")[:120] + "...") if r.get("_chunk_text") else "",
-                "orientation": "ERROR", "activity": "", "subtype": "",
-                "potential_challenge": "", "likely_opposing_orientation": "",
+                "segment_index": r.get("_chunk_index", ""),
+                "segment_text": r.get("_chunk_text", ""),
+                "main_orientation": "ERROR", "main_activity": "", "main_subtype": "",
+                "secondary_classifications": "", "potential_challenge_pathways": "",
+                "theoretically_contrasting_orientation": "",
                 "orientation_rationale": "", "activity_rationale": "",
-                "potential_challenge_rationale": "", "error": r.get("_error", "")
+                "challenge_pathway_rationale": "", "input_scope_warning": "",
+                "policy_diagnostic_considerations": "", "manager_diagnostic_considerations": "",
+                "error": r.get("_error", "")
             })
             continue
-        act = _clean_enum((r.get("main_activity") or "")).upper()
+        act = _clean_enum(r.get("main_activity", "")).upper()
+        secondary = get_secondary_classifications(r)
+        pathways = derive_challenge_pathways(act, secondary)
+        pathway_labels = [CHALLENGE_PATHWAYS.get(p, {}).get("label", p) for p in pathways]
         rows.append({
-            "segment": r.get("_chunk_index", ""),
-            "text_preview": (r.get("_chunk_text", "")[:120] + "...") if r.get("_chunk_text") else "",
-            "orientation": _clean_enum((r.get("main_orientation") or "")).upper(),
-            "activity": act,
-            "subtype": _clean_enum((r.get("activity_subtype") or "")).upper(),
-            "potential_challenge": CHALLENGES.get(derive_potential_challenge(act), {}).get("label", ""),
-            "likely_opposing_orientation": _clean_enum((r.get("likely_opposing_orientation") or "")).upper(),
+            "segment_index": r.get("_chunk_index", ""),
+            "segment_text": r.get("_chunk_text", ""),
+            "main_orientation": _clean_enum(r.get("main_orientation", "")).upper(),
+            "main_activity": act,
+            "main_subtype": _clean_enum(r.get("activity_subtype", "")).upper(),
+            "secondary_classifications": _serialize_secondary(secondary),
+            "potential_challenge_pathways": "; ".join(pathway_labels),
+            "theoretically_contrasting_orientation": get_contrasting_orientation(r),
             "orientation_rationale": r.get("orientation_rationale", ""),
             "activity_rationale": r.get("activity_rationale", ""),
-            "potential_challenge_rationale": r.get("potential_challenge_rationale", ""),
+            "challenge_pathway_rationale": r.get("potential_challenge_rationale", ""),
+            "input_scope_warning": get_input_scope_warning(r),
+            "policy_diagnostic_considerations": _serialize_considerations(get_policy_considerations(r)),
+            "manager_diagnostic_considerations": _serialize_considerations(get_manager_considerations(r)),
             "error": ""
         })
     return pd.DataFrame(rows)
 
 
-def show_document_summary(results: list, prescribed_future: str, intervention_type_key: str = None):
+def show_document_summary(results: list, prescribed_future: str, intervention_type_key: str = None,
+                           total_analyzable: int = None, sampling_description: str = ""):
     summary = summarize_document_results(results)
     n = summary.get("n_analyzed", 0)
     n_errors = summary.get("n_errors", 0)
@@ -1775,6 +1842,11 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
     </div>
     """, unsafe_allow_html=True)
 
+    if sampling_description:
+        st.caption(f"**Sampling:** {sampling_description}")
+
+    st.info(INTERPRETIVE_USE_NOTE)
+
     if n_errors:
         st.warning(f"{n_errors} segment(s) failed to analyze and were excluded from the summary.")
 
@@ -1784,35 +1856,42 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
     st.markdown("---")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown("#### Orientation Distribution")
+        st.markdown("#### Dominant Orientations Within Analyzed Segments")
         render_pct_bars(summary["orientation_counts"], ORIENTATIONS, n)
+        st.caption("Percentages describe analyzed text segments, not unique consumers or population prevalence.")
     with col2:
         st.markdown("#### Activity Distribution")
         render_pct_bars(summary["activity_counts"], ACTIVITY_META, n)
     with col3:
-        st.markdown("#### Potential Challenge Distribution")
-        render_pct_bars(summary["challenge_counts"], CHALLENGES, n, label_key_name="label")
+        st.markdown("#### Potential Challenge Signals")
+        render_pct_bars(summary["challenge_counts"], CHALLENGE_PATHWAYS, n, label_key_name="label")
+        st.caption("A signal indicates a segment's activity could contribute to this pathway if it clashes with a differently oriented performance -- it does not confirm the challenge occurred.")
 
     st.markdown("---")
-    st.markdown("### Most Frequent Likely Friction Pairs")
+    st.markdown("### Most Frequent Theoretical Contrast Pairs")
     st.caption(
-        "These pairs indicate which orientations, if they encountered each other "
-        "in a real exchange, would most likely generate Fragile Futures dynamics."
+        "These pairs represent theoretically contrasting orientations inferred "
+        "from individual segments. They are NOT observed interactions unless "
+        "the source data preserve an actual exchange between speakers."
     )
-    friction_pairs = summary.get("friction_pairs", {})
-    if friction_pairs:
-        sorted_pairs = sorted(friction_pairs.items(), key=lambda x: -x[1])
+    contrast_pairs = summary.get("contrast_pairs", {})
+    if contrast_pairs:
+        sorted_pairs = sorted(contrast_pairs.items(), key=lambda x: -x[1])
         for pair, cnt in sorted_pairs[:6]:
             o1, o2 = pair
             pct_val = round(cnt / n * 100, 1)
             st.markdown(f"- **{o1}** vs. **{o2}**: {cnt} segments ({pct_val}%)")
     else:
-        st.caption("No friction pairs identified.")
+        st.caption("No contrast pairs identified.")
 
     st.markdown("---")
-    st.markdown("### Recommended Focus Areas")
+    st.markdown("### Diagnostic Considerations by Orientation")
+    st.caption(
+        "These considerations support the diagnostic steps of the policy and "
+        "managerial roadmaps. They are not definitive recommendations."
+    )
     top_orientations = sorted(summary["orientation_counts"].items(), key=lambda x: -x[1])[:2]
-    policy_tab, manager_tab = st.tabs(["Policy Focus", "Managerial Focus"])
+    policy_tab, manager_tab = st.tabs(["Policy Diagnostic Considerations", "Managerial Diagnostic Considerations"])
 
     with policy_tab:
         for ori, cnt in top_orientations:
@@ -1820,11 +1899,11 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
             cfg = ORIENTATIONS.get(ori, {})
             pct_val = round(cnt / n * 100, 1)
             st.markdown(f"**{ori}** ({pct_val}% of segments) -- \"{cfg.get('tagline','')}\"")
-            st.markdown(f"*General implications:* {guidance.get('implications','--')}")
+            st.markdown(f"*Could indicate:* {guidance.get('implications','--')}")
             st.markdown(f"*Monitor for:* {guidance.get('monitor','--')}")
             st.markdown(f"*Objective:* {guidance.get('objective','--')}")
-            for inst in guidance.get("instruments", []):
-                st.markdown(f"- {inst}")
+            for q in guidance.get("questions_and_evidence", []):
+                st.markdown(f"- {q}")
             st.markdown("")
 
     with manager_tab:
@@ -1833,11 +1912,11 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
             cfg = ORIENTATIONS.get(ori, {})
             pct_val = round(cnt / n * 100, 1)
             st.markdown(f"**{ori}** ({pct_val}% of segments) -- \"{cfg.get('tagline','')}\"")
-            st.markdown(f"*General implications:* {guidance.get('implications','--')}")
+            st.markdown(f"*Could indicate:* {guidance.get('implications','--')}")
             st.markdown(f"*Monitor for:* {guidance.get('monitor','--')}")
             st.markdown(f"*Objective:* {guidance.get('objective','--')}")
-            for interv in guidance.get("interventions", []):
-                st.markdown(f"- {interv}")
+            for issue in guidance.get("issues_to_investigate", []):
+                st.markdown(f"- {issue}")
             avoid_list = guidance.get("avoid", [])
             if avoid_list:
                 st.markdown(f"*Avoid:* {', '.join(avoid_list)}")
@@ -1848,14 +1927,15 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
     st.markdown("---")
     st.markdown("### Segment-Level Detail")
     df = build_results_dataframe(results)
-    display_cols = ["segment", "text_preview", "orientation", "activity",
-                     "subtype", "potential_challenge", "likely_opposing_orientation"]
+    display_cols = ["segment_index", "main_orientation", "main_activity",
+                     "main_subtype", "potential_challenge_pathways",
+                     "theoretically_contrasting_orientation", "input_scope_warning"]
     display_cols = [c for c in display_cols if c in df.columns]
     st.dataframe(df[display_cols] if display_cols else df, use_container_width=True, height=350)
 
     csv_bytes = df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        "Download full results as CSV (includes complete rationale text)",
+        "Download full results as CSV (includes complete text and all rationale fields)",
         data=csv_bytes,
         file_name="future_making_document_analysis.csv",
         mime="text/csv"
@@ -1864,15 +1944,15 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
     st.markdown("---")
     st.markdown("### Segment Rationale Explorer")
     st.caption(
-        "Select an individual segment below to see its full orientation "
-        "rationale, activity rationale, and challenge rationale, presented "
-        "the same way as in the single-comment analysis view."
+        "Select an individual segment below to see its full classification, "
+        "secondary classifications, and rationale, presented the same way as "
+        "in the single-comment analysis view."
     )
 
     valid_indexed = [(i, r) for i, r in enumerate(results) if r and "_error" not in r]
     if valid_indexed:
         option_labels = [
-            f"Segment {i + 1}: {r.get('_chunk_text', '')[:90]}..."
+            f"Segment (original index {r.get('_chunk_index', i)}): {r.get('_chunk_text', '')[:90]}..."
             for i, r in valid_indexed
         ]
         chosen_pos = st.selectbox(
@@ -1883,7 +1963,7 @@ def show_document_summary(results: list, prescribed_future: str, intervention_ty
         chosen_idx, chosen_result = valid_indexed[chosen_pos]
         st.markdown("**Full segment text:**")
         st.info(chosen_result.get("_chunk_text", ""))
-        show_results(chosen_result, prescribed_future)
+        show_results(chosen_result, prescribed_future, show_interpretive_note=False)
     else:
         st.caption("No valid segments available to explore.")
 
@@ -1919,13 +1999,18 @@ def show_example_badge(ex_data: dict):
     """, unsafe_allow_html=True)
 
 
-def show_results(result: dict, prescribed_future: str):
-    orientation = _clean_enum((result.get("main_orientation") or "")).upper().strip()
-    main_act    = _clean_enum((result.get("main_activity") or "")).upper().strip()
-    act_sub     = _clean_enum((result.get("activity_subtype") or "N/A")).upper().strip()
+def show_results(result: dict, prescribed_future: str, show_interpretive_note: bool = True):
+    orientation = _clean_enum(result.get("main_orientation", "")).upper().strip()
+    main_act    = _clean_enum(result.get("main_activity", "")).upper().strip()
+    act_sub     = _clean_enum(result.get("activity_subtype", "N/A")).upper().strip()
 
-    challenge = derive_potential_challenge(main_act)
-    chg = CHALLENGES.get(challenge, CHALLENGES["N/A"])
+    secondary = get_secondary_classifications(result)
+    pathways = derive_challenge_pathways(main_act, secondary)
+    primary_pathway_key = pathways[0] if pathways else "N/A"
+    chg = CHALLENGE_PATHWAYS.get(primary_pathway_key, CHALLENGE_PATHWAYS["N/A"])
+
+    if show_interpretive_note:
+        st.info(INTERPRETIVE_USE_NOTE)
 
     st.markdown(f"""
     <div style="background:#EBF5FB;border-left:5px solid #2980B9;border-radius:8px;
@@ -1934,6 +2019,10 @@ def show_results(result: dict, prescribed_future: str):
         <em style="color:#333;">{prescribed_future}</em>
     </div>
     """, unsafe_allow_html=True)
+
+    warning_text = get_input_scope_warning(result)
+    if warning_text:
+        st.warning(f"Input-scope note: {warning_text}")
 
     if result.get("_consistency_note"):
         st.caption(f"Note: {result['_consistency_note']}")
@@ -1968,43 +2057,48 @@ def show_results(result: dict, prescribed_future: str):
             <h3 style="color:{ameta.get('color','#555')};margin:0;font-size:20px;">
                 {main_act}
             </h3>
-            <p style="color:#555;margin:4px 0 3px;font-size:12px;"><strong>Main Future-Making Activity</strong></p>
+            <p style="color:#555;margin:4px 0 3px;font-size:12px;"><strong>Primary Future-Making Activity</strong></p>
             <span style="background:{sub_cfg.get('bg','#f5f5f5')};border:1.5px solid {sub_cfg.get('color','#555')};
                          color:{sub_cfg.get('color','#555')};border-radius:12px;
                          padding:3px 10px;font-weight:bold;font-size:12px;">
                 -> {act_sub}
             </span>
             <p style="color:#777;margin:8px 0 0;font-size:11px;font-style:italic;">
-                {ameta.get('definition','')[:180]}...
+                {ameta.get('definition','')[:180]}
             </p>
         </div>
         """, unsafe_allow_html=True)
 
     with col3:
+        pathway_labels = [CHALLENGE_PATHWAYS.get(p, {}).get("label", p) for p in pathways]
         st.markdown(f"""
         <div style="background:{chg['bg']};border-left:6px solid {chg['color']};
                     border-radius:10px;padding:16px 18px;min-height:230px;">
             <h3 style="color:{chg['color']};margin:0;font-size:20px;">{chg['label']}</h3>
-            <p style="color:#555;margin:4px 0 3px;font-size:12px;"><strong>Potential Challenge Contribution</strong></p>
-            <p style="color:#999;margin:0 0 4px;font-size:10px;">(if this comment meets an opposing orientation, Fragile Futures risk)</p>
+            <p style="color:#555;margin:4px 0 3px;font-size:12px;"><strong>Potential Challenge Pathway</strong></p>
+            <p style="color:#999;margin:0 0 4px;font-size:10px;">(potential only -- requires a clash with a differently oriented performance)</p>
             <p style="color:#777;margin:3px 0;font-size:11px;">{chg['description']}</p>
+            {"<p style='color:#999;margin:4px 0 0;font-size:10px;'>Additional signals: " + ", ".join(pathway_labels[1:]) + "</p>" if len(pathway_labels) > 1 else ""}
         </div>
         """, unsafe_allow_html=True)
 
-    opp_ori = _clean_enum((result.get("likely_opposing_orientation") or "")).upper()
-    opp_cfg = ORIENTATIONS.get(opp_ori)
-    if opp_cfg:
+    contrast_ori = get_contrasting_orientation(result)
+    contrast_cfg = ORIENTATIONS.get(contrast_ori)
+    if contrast_cfg:
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown(f"""
         <div style="background:#FFF8F0;border:2px dashed #E67E22;border-radius:10px;
                     padding:16px 18px;">
             <h4 style="color:#E67E22;margin:0 0 8px;font-size:16px;">
-                Likely Friction Point
+                Theoretically Contrasting Orientation
             </h4>
             <p style="font-size:13px;color:#555;margin:0 0 6px;">
-                If this comment met an opposing consumer, it would most likely clash with a
-                <strong style="color:{opp_cfg['color']};">{opp_ori}</strong>
-                orientation, a dynamic that could contribute to Fragile Futures.
+                This segment's configuration of narrative, goal, emotion, and
+                temporality most theoretically contrasts with a
+                <strong style="color:{contrast_cfg['color']};">{contrast_ori}</strong>
+                orientation. This is a theoretical contrast inferred from the
+                framework, not an observed interaction, unless the source data
+                preserve an actual exchange between speakers.
             </p>
             <p style="font-size:12px;color:#777;font-style:italic;margin:0;">
                 "{result.get('potential_challenge_rationale','--')}"
@@ -2012,12 +2106,39 @@ def show_results(result: dict, prescribed_future: str):
         </div>
         """, unsafe_allow_html=True)
 
+    if secondary:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("#### Secondary Classification(s)")
+        st.caption(
+            "Substantive, separable content also detected in this segment, "
+            "captured alongside the primary classification rather than "
+            "discarded."
+        )
+        for sec in secondary:
+            sec_ori = sec.get("orientation", "")
+            sec_act = sec.get("activity", "")
+            sec_sub = sec.get("activity_subtype", "")
+            sec_cfg = ORIENTATIONS.get(sec_ori, {})
+            sec_ameta = ACTIVITY_META.get(sec_act, {})
+            st.markdown(f"""
+            <div style="border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin-bottom:8px;background:#fafafa;">
+                <span style="background:{sec_cfg.get('bg','#eee')};border:1.5px solid {sec_cfg.get('border','#999')};
+                             color:{sec_cfg.get('color','#555')};border-radius:14px;padding:3px 10px;
+                             font-weight:bold;font-size:12px;">{sec_ori or 'N/A'}</span>
+                &nbsp;-> &nbsp;
+                <span style="background:{sec_ameta.get('bg','#eee')};border:1.5px solid {sec_ameta.get('color','#999')};
+                             color:{sec_ameta.get('color','#555')};border-radius:14px;padding:3px 10px;
+                             font-weight:bold;font-size:12px;">{sec_act or 'N/A'} / {sec_sub or 'N/A'}</span>
+                <p style="font-size:12px;color:#666;margin:6px 0 0;">{sec.get('rationale','')}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
     st.markdown("<br>", unsafe_allow_html=True)
 
-    tab_ori, tab_act, tab_chg = st.tabs(["Orientation Rationale", "Activity Rationale", "Challenge Rationale"])
+    tab_ori, tab_act, tab_chg = st.tabs(["Orientation Rationale", "Activity Rationale", "Challenge Pathway Rationale"])
 
     with tab_ori:
-        st.markdown("**Why this orientation? (applied coding criteria)**")
+        st.markdown("**Why this orientation? (configuration of narrative, goal, emotion, temporality)**")
         st.write(result.get("orientation_rationale", "--"))
         c1, c2, c3, c4 = st.columns(4)
         with c1:
@@ -2032,11 +2153,8 @@ def show_results(result: dict, prescribed_future: str):
     with tab_act:
         st.markdown("**Why this activity is primary? (Decision Procedure applied)**")
         st.write(result.get("activity_rationale", "--"))
-        sec = result.get("secondary_activities", [])
-        if sec:
-            st.markdown(f"**Secondary activities also present (informational):** {', '.join(sec)}")
         st.markdown("---")
-        st.markdown("**Coding Criteria Applied**")
+        st.markdown("**Activity Definitions**")
         for act_name, meta in ACTIVITY_META.items():
             is_main = (act_name == main_act)
             border  = f"3px solid {meta['color']}" if is_main else "1px solid #ddd"
@@ -2052,30 +2170,37 @@ def show_results(result: dict, prescribed_future: str):
             """, unsafe_allow_html=True)
 
     with tab_chg:
-        st.markdown("**How could this comment contribute to a future-making challenge (Fragile Futures)?**")
+        st.markdown("**How could this comment contribute to a future-making challenge?**")
         st.write(result.get("potential_challenge_rationale", "--"))
+        pathway_labels_full = [CHALLENGE_PATHWAYS.get(p, {}).get("label", p) for p in pathways]
         st.caption(
-            f"Deterministic mapping applied: {main_act} -> {chg['label']}."
+            f"Deterministic mapping applied (primary + secondary activities): "
+            f"{', '.join(pathway_labels_full) if pathway_labels_full else 'N/A'}. "
+            f"These are potential pathways, not confirmed challenges."
         )
 
     st.markdown("---")
-    st.markdown("## Policy and Managerial Implications")
-    policy_tab, manager_tab = st.tabs(["Policy Roadmap", "Managerial Roadmap"])
+    st.markdown("## Diagnostic Support (Policy and Managerial)")
+    st.caption(
+        "These outputs support the diagnostic steps of the roadmaps below. "
+        "They are not definitive recommendations from a single text segment."
+    )
+    policy_tab, manager_tab = st.tabs(["Policy Diagnostic Considerations", "Managerial Diagnostic Considerations"])
 
     with policy_tab:
-        policy = result.get("policy_recommendations", {}) or {}
-        st.markdown(f"**Most Relevant Step:** {policy.get('step','--')}")
-        st.markdown(f"**Policy Objective:** {policy.get('objective','--')}")
+        policy = get_policy_considerations(result)
+        st.markdown(f"**Most Relevant Roadmap Step:** {policy.get('step','--')}")
+        st.markdown(f"**Diagnostic Objective:** {policy.get('objective','--')}")
         pc1, pc2 = st.columns(2)
         with pc1:
-            st.markdown("**Recommended Policy Instruments**")
-            for inst in policy.get("instruments", []) or []:
-                st.markdown(f"- {inst}")
+            st.markdown("**Questions and Evidence for Policy Diagnosis**")
+            for q in policy.get("questions_and_evidence", []) or []:
+                st.markdown(f"- {q}")
         with pc2:
-            st.markdown("**Additional Actions**")
-            for action in policy.get("additional_actions", []) or []:
+            st.markdown("**Additional Considerations**")
+            for action in policy.get("additional_considerations", []) or []:
                 st.markdown(f"- {action}")
-        with st.expander("Full Policy Roadmap (7 Steps)"):
+        with st.expander("Full Policy Roadmap (7 Steps, diagnostic support only)"):
             st.markdown("""
 | Step | Action |
 |:----:|--------|
@@ -2089,21 +2214,21 @@ def show_results(result: dict, prescribed_future: str):
             """)
 
     with manager_tab:
-        manager = result.get("manager_recommendations", {}) or {}
-        st.markdown(f"**Most Relevant Step:** {manager.get('step','--')}")
-        st.markdown(f"**Managerial Objective:** {manager.get('objective','--')}")
+        manager = get_manager_considerations(result)
+        st.markdown(f"**Most Relevant Roadmap Step:** {manager.get('step','--')}")
+        st.markdown(f"**Diagnostic Objective:** {manager.get('objective','--')}")
         mc1, mc2 = st.columns(2)
         with mc1:
-            st.markdown("**Recommended Interventions**")
-            for interv in manager.get("interventions", []) or []:
-                st.markdown(f"- {interv}")
+            st.markdown("**Managerial Issues to Investigate**")
+            for issue in manager.get("issues_to_investigate", []) or []:
+                st.markdown(f"- {issue}")
         with mc2:
             st.markdown("**Avoid**")
             for av in manager.get("avoid", []) or []:
                 st.markdown(f"- {av}")
-        st.markdown("**Messaging Tip**")
-        st.info(manager.get("messaging_tip", "--"))
-        with st.expander("Full Managerial Roadmap (6 Steps)"):
+        st.markdown("**Potential Communication Consideration**")
+        st.info(manager.get("communication_consideration", "--"))
+        with st.expander("Full Managerial Roadmap (6 Steps, diagnostic support only)"):
             st.markdown("""
 | Step | Action |
 |:----:|--------|
@@ -2147,14 +2272,19 @@ def render_breadcrumb(*items, current=None):
 def render_intervention_type_selector(key_suffix: str):
     st.markdown("**Intervention type**")
     st.caption(
-        "Purpose: tells the model whether this intervention is narrow or "
-        "broad in scope, and how prescriptive it is. The model uses this to "
-        "calibrate which future-making challenges are more likely (e.g., "
-        "Bounded interventions tend to generate Convoluted Evaluations, "
-        "Confrontational Negotiations, AND Competing Enactments "
-        "simultaneously; Open interventions tend to generate more Convoluted "
-        "Evaluations and Expander critique). If you select a type, it is "
-        "appended to your prescribed future text before the analysis runs."
+        "Intervention type describes the scope of intended change to "
+        "consumer practices and how prescriptive the intervention is. This "
+        "context helps interpret what the prescribed future requires, but "
+        "it does not predetermine which orientations, activities, or "
+        "challenge pathways will appear in the data."
+    )
+    st.caption(
+        "Note: classification depends on the specific intervention you "
+        "describe below, not on the general domain. For example, generic, "
+        "decentralized adoption of AI in healthcare is typically an Open "
+        "intervention, while a specific mandate requiring all primary-care "
+        "patients to use AI-supported triage by a stated date may be a "
+        "Bounded intervention."
     )
     it_key = st.selectbox(
         "Choose the intervention type:",
@@ -2166,7 +2296,7 @@ def render_intervention_type_selector(key_suffix: str):
     if it_key is None:
         st.warning(
             "No intervention type selected. The analysis will proceed "
-            "without this contextual calibration."
+            "without this contextual information."
         )
     else:
         it_data = INTERVENTION_TYPES[it_key]
@@ -2268,17 +2398,9 @@ def render_mode_selector():
 # ─────────────────────────────────────────
 
 def main():
-    st.title("Future-Making Orientation Analyzer")
+    st.title("Future-Making Analyzer")
     render_breadcrumb("Home")
-    st.markdown(f"""
-    Identify **future-making orientations**, **activities**, and **potential
-    challenges** -- either for a single comment, or aggregated across an
-    entire document or corpus -- grounded in the coding criteria of a
-    consumer research framework validated across domains (Zero Emission
-    Vehicles and AI-integrated healthcare).
-
-    *Based on:* **"{PAPER_TITLE}"**
-    """)
+    st.markdown(HOMEPAGE_DESCRIPTION)
     st.divider()
 
     api_key = None
@@ -2296,8 +2418,6 @@ def main():
     # MODE 1: SINGLE COMMENT
     # ═══════════════════════════════════════
     if mode == MODE_SINGLE:
-        render_breadcrumb("Home", MODE_SINGLE_LABEL)
-
         render_breadcrumb("Home", MODE_SINGLE_LABEL, "Step 1: Prescribed Future")
         st.markdown("### Step 1 -- Define the Prescribed Future")
 
@@ -2312,16 +2432,27 @@ def main():
 
         render_breadcrumb("Home", MODE_SINGLE_LABEL, "Step 2: Comment")
         st.markdown("### Step 2 -- Enter a Consumer Comment")
+        st.caption(
+            "Suitable inputs include consumer, citizen, patient, "
+            "consultation, forum, interview, and market-actor discourse. "
+            "Institutional and policy documents can be used to define the "
+            "prescribed future above; they should not be classified as "
+            "consumer orientations unless the analyzed text clearly "
+            "contains consumer, citizen, patient, or other relevant actor "
+            "discourse."
+        )
+        st.info(INTERPRETIVE_USE_NOTE)
+
         input_method = st.radio(
             "Input method:",
-            ["Type or paste text", "Try a generalization test", "Upload a .txt file"],
+            ["Type or paste text", "Upload a .txt file"],
             horizontal=True
         )
 
         comment = ""
         if input_method == "Type or paste text":
             selected_ex = st.selectbox(
-                "Or try a built-in coded example:", list(EXAMPLES.keys())
+                "Or try a built-in benchmark example:", list(EXAMPLES.keys())
             )
             ex_data = EXAMPLES.get(selected_ex, {"prescribed": "", "comment": "", "activity": "", "subtype": "", "orientation": ""})
             if selected_ex != "Select an example":
@@ -2336,18 +2467,6 @@ def main():
                 "Comment:", value=ex_data.get("comment", ""), height=220,
                 placeholder="Paste or type a consumer comment here...", label_visibility="collapsed"
             )
-        elif input_method == "Try a generalization test":
-            selected_test = st.selectbox(
-                "Choose a test comment not used to build the app:",
-                list(GENERALIZATION_TESTS.keys())
-            )
-            test_data = GENERALIZATION_TESTS.get(selected_test, {"comment": "", "note": "", "prescribed": ""})
-            if test_data.get("note"):
-                st.info(test_data['note'])
-            if test_data.get("prescribed") and st.button("Use suggested prescribed future for this test", type="secondary"):
-                st.session_state["pf_prefill"] = test_data["prescribed"]
-                st.rerun()
-            comment = st.text_area("Comment:", value=test_data.get("comment", ""), height=150, label_visibility="collapsed")
         else:
             uploaded_file = st.file_uploader("Upload .txt file:", type=["txt"])
             if uploaded_file:
@@ -2387,12 +2506,20 @@ def main():
     else:
         render_breadcrumb("Home", MODE_DOC_LABEL)
         st.caption(
-            "Upload or paste a larger text (e.g., forum export, survey open-ends, "
-            "public consultation submissions, social media export, or a policy "
-            "document) to get an aggregate assessment of future-making "
-            "orientations, activities, and potential challenges across many "
-            "segments at once, plus a full rationale explorer for individual "
+            "Upload or paste a larger text (e.g., forum export, survey "
+            "open-ends, public consultation submissions, or a social media "
+            "export) to get an aggregate view of future-making orientations, "
+            "activities, and potential challenge signals across selected "
+            "segments, plus a full rationale explorer for individual "
             "segments."
+        )
+        st.info(
+            "Institutional and policy documents can be used to define the "
+            "prescribed future (Step 1 below) and to examine institutional "
+            "framing, but should not be classified as consumer orientations "
+            "unless the analyzed text clearly contains consumer, citizen, "
+            "patient, or other relevant actor discourse. This version does "
+            "not build a separate institutional-framing model."
         )
 
         render_breadcrumb("Home", MODE_DOC_LABEL, "Step 1: Prescribed Future")
@@ -2478,7 +2605,7 @@ def main():
                 st.info(f"Document split into {len(chunks)} analyzable segments.")
                 with st.expander(f"Preview first segments (of {len(chunks)} total)"):
                     for i, c in enumerate(chunks[:10]):
-                        st.caption(f"[{i+1}] {c[:200]}{'...' if len(c) > 200 else ''}")
+                        st.caption(f"[{i}] {c[:200]}{'...' if len(c) > 200 else ''}")
             else:
                 st.warning(
                     "No analyzable segments found with the current segmentation "
@@ -2486,16 +2613,17 @@ def main():
                     "text below."
                 )
 
-            # ── STEP 4: RUN ANALYSIS -- always rendered once text is provided ──
             render_breadcrumb("Home", MODE_DOC_LABEL, "Step 4: Run Analysis")
             st.markdown("### Step 4 -- Run Analysis")
 
-            max_possible = max(1, min(len(chunks), 300)) if chunks else 1
+            total_analyzable = len(chunks)
+            max_possible = max(1, min(total_analyzable, 300)) if chunks else 1
             default_val = min(30, max_possible) if chunks else 1
             max_chunks = st.slider(
-                "Maximum segments to analyze (controls cost and time)",
+                "Number of segments to analyze (evenly sampled across the full "
+                "set if fewer than all are selected)",
                 min_value=1, max_value=max_possible, value=default_val,
-                disabled=(len(chunks) == 0)
+                disabled=(total_analyzable == 0)
             )
             est_seconds = round(max_chunks / DOC_MAX_WORKERS * 2.5)
             est_cost = round(max_chunks * 0.00075, 3)
@@ -2505,26 +2633,50 @@ def main():
                 f"Estimated cost: ~${est_cost}"
             )
 
+            if total_analyzable > 0:
+                if max_chunks >= total_analyzable:
+                    sampling_preview = "Full set of analyzable segments."
+                else:
+                    sampling_preview = (
+                        f"Evenly distributed sample of {max_chunks} from "
+                        f"{total_analyzable} analyzable segments."
+                    )
+                st.caption(f"**Sampling method:** {sampling_preview}")
+
             run_doc_analysis = st.button(
                 "Analyze Document", type="primary", use_container_width=True,
-                disabled=(not api_key or len(chunks) == 0)
+                disabled=(not api_key or total_analyzable == 0)
             )
             if not api_key:
                 st.warning("Please configure your OpenAI API key above.")
-            if not chunks:
+            if total_analyzable == 0:
                 st.caption("The Analyze Document button is disabled until at least one valid segment is found.")
 
             if run_doc_analysis and chunks:
                 final_pf_doc = augment_prescribed_future(prescribed_future_doc, it_key_doc)
-                chunks_to_run = chunks[:max_chunks]
+
+                if max_chunks >= total_analyzable:
+                    sample_indices = list(range(total_analyzable))
+                    sampling_description = "Full set of analyzable segments."
+                else:
+                    sample_indices = compute_evenly_spaced_sample_indices(total_analyzable, max_chunks)
+                    sampling_description = (
+                        f"Evenly distributed sample of {len(sample_indices)} from "
+                        f"{total_analyzable} analyzable segments."
+                    )
+
+                indexed_chunks = [(idx, chunks[idx]) for idx in sample_indices]
+
                 progress_bar = st.progress(0, text="Starting analysis...")
                 doc_results = analyze_document(
-                    chunks_to_run, final_pf_doc, api_key, progress_bar
+                    indexed_chunks, final_pf_doc, api_key, progress_bar
                 )
                 progress_bar.empty()
                 st.session_state["doc_results"] = doc_results
                 st.session_state["doc_prescribed_future"] = final_pf_doc
                 st.session_state["doc_intervention_type"] = it_key_doc
+                st.session_state["doc_total_analyzable"] = total_analyzable
+                st.session_state["doc_sampling_description"] = sampling_description
 
         if "doc_results" in st.session_state:
             st.divider()
@@ -2533,7 +2685,9 @@ def main():
             show_document_summary(
                 st.session_state["doc_results"],
                 st.session_state.get("doc_prescribed_future", PF_EV),
-                st.session_state.get("doc_intervention_type")
+                st.session_state.get("doc_intervention_type"),
+                total_analyzable=st.session_state.get("doc_total_analyzable"),
+                sampling_description=st.session_state.get("doc_sampling_description", "")
             )
             if st.button("Clear document results"):
                 del st.session_state["doc_results"]
@@ -2545,27 +2699,37 @@ def main():
     st.markdown("---")
     with st.expander("Advanced / Developer Tools"):
         st.caption(
-            "Internal quality-control tool. Not needed for regular use. "
-            "Run this after any change to the model, prompt, or temperature "
-            "to confirm the app still matches the intended coding categories."
+            "Internal quality-control tool. Not needed for regular use."
         )
-        if st.button("Run Validation Suite"):
+        st.markdown("#### Coding Consistency Check")
+        st.caption(
+            "Agreement with built-in benchmark examples tests whether the "
+            "current prompt reproduces predetermined coding decisions. It "
+            "does NOT constitute empirical validation, intercoder "
+            "reliability, or evidence of generalizability."
+        )
+        if st.button("Run Coding Consistency Check"):
             if not api_key:
                 st.warning("Configure your API key above first.")
             else:
-                with st.spinner("Running validation across all built-in examples..."):
-                    report = run_validation_suite(api_key)
+                with st.spinner("Running consistency check across benchmark examples..."):
+                    report = run_consistency_suite(api_key)
                 if report["results"]:
-                    st.metric("Overall Accuracy", f"{report['overall_accuracy']*100:.1f}%")
+                    st.metric("Agreement with Benchmark Examples", f"{report['overall_agreement']*100:.1f}%")
                     for r in report["results"]:
                         status = "PASS" if r["match"] else "FAIL"
                         with st.expander(f"[{status}] {r['example']}"):
-                            st.write("**Expected:**", r["expected"])
-                            st.write("**Predicted:**", r["predicted"])
+                            st.write("**Expected (primary):**", r["expected"])
+                            st.write("**Predicted (primary):**", r["predicted"])
+                            if r.get("secondary_expected"):
+                                sec_status = "PASS" if r.get("secondary_match") else "FAIL"
+                                st.write(f"**Secondary check [{sec_status}]:** expected "
+                                         f"{r['secondary_expected']} among predicted secondary "
+                                         f"classifications.")
                             if r.get("error"):
                                 st.error(r["error"])
                 else:
-                    st.info("No labeled examples found to validate.")
+                    st.info("No labeled benchmark examples found.")
 
 
 if __name__ == "__main__":
