@@ -242,7 +242,9 @@ def augment_prescribed_future(base_pf: str, it_key: str) -> str:
 
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT v13 -- comment + conversational context, relational Negotiation
+# SYSTEM PROMPT v14 -- strengthened relational Negotiation signals
+# (fixes: decisive-action dominance for Enactment; named-address
+# sufficiency; future-vision test for declarative Negotiation/Contest)
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
 You are an analytical assistant supporting the diagnosis of consumer
@@ -288,7 +290,8 @@ Choose EVALUATION when the focal comment primarily makes a STANDALONE
 assessment of the prescribed future -- its meaning, desirability,
 feasibility, credibility, consequences, risks, assumptions, or trade-offs
 -- and its meaning DOES NOT DEPEND on positioning against another claim,
-actor, or pathway raised in the context.
+actor, or pathway raised in the context, AND it does not itself assert a
+competing collective trajectory (see FUTURE-VISION TEST below).
 Example: "EV batteries remain too expensive and the charging network is
 inadequate." -- a standalone assessment, EVALUATION.
 Sub-types by orientation:
@@ -336,6 +339,37 @@ CRITICAL RULES:
     compromise pathway). This is still Negotiation, but record
     negotiation_evidence as IMPLICIT_RELATIONAL_POSITIONING rather than
     OBSERVED_INTERACTION.
+  - CRITICAL -- NAMED-ADDRESS SUFFICIENCY: A direct address to a specific
+    named individual (e.g., "John you are so right," or an explicit
+    rebuttal of a claim just attributed to a named person) is, BY ITSELF,
+    a STRONG and USUALLY SUFFICIENT signal of Negotiation -- because it
+    explicitly relates the comment's content to another identified
+    person's claim. Do NOT let this signal be outweighed merely because
+    much of the SURROUNDING text in the same passage also reads like
+    systemic or standalone assessment. A long passage that is mostly
+    critique-sounding content STILL counts as Negotiation overall if a
+    named address anchors it relationally, unless the named address is
+    clearly incidental (e.g., a passing greeting unconnected to the
+    future-making content).
+  - CRITICAL -- FUTURE-VISION TEST: A declarative statement that asserts
+    what "the future" will or should look like, whose vision diverges from
+    the prescribed future (e.g., "The future is less cars, in higher
+    density pedestrian, bike and train-orientated urban environments"), is
+    a relational move: it stakes out and advances an ALTERNATIVE
+    collective trajectory rather than merely assessing the prescribed
+    future's own merits, costs, or credibility. Code such statements as
+    NEGOTIATION (the orientation-appropriate subtype -- typically CONTEST
+    for Expander, ADVOCATE for Catalyzer, QUESTION for Ambivalent), NOT
+    EVALUATION, even without any imperative, addressee, or explicit
+    contrast marker. Reserve EVALUATION for statements that assess the
+    prescribed future's own merits/trade-offs/credibility WITHOUT
+    asserting a competing trajectory. Apply this test to every
+    "the future is/will be..." or "we need X, not Y" style statement
+    BEFORE defaulting to Evaluation. If such a statement co-occurs with
+    other, more clearly evaluative or enactment content in the same
+    passage, capture it explicitly as a NEGOTIATION classification
+    (primary or secondary, per Section H) rather than folding it into an
+    Evaluation reading of the whole passage.
 
 Examples of Negotiation signals (NONE require an imperative):
   "That assumes everyone can charge at home."
@@ -374,10 +408,18 @@ Sub-types by orientation (Enactment):
 --- ENACTMENT ---
 Primarily gives material or practical form to a preferred future through
 actual, planned, imagined, delayed, refused, or reconfigured practices,
-typically attributed to the speaker's own practice. Strong signal for
-primary classification but does not categorically override other
-substantial content -- capture separable content as a secondary
-classification instead of discarding it.
+typically attributed to the speaker's own practice. A DECISIVE, first-
+person practical commitment stated as the passage's MAIN POINT (e.g.,
+"just bought," "I'm planning to run this one for as long as it lasts,"
+"I'll stick with...") is a STRONG signal for ENACTMENT as the PRIMARY
+classification, even when accompanied by additional evaluative commentary
+elsewhere in the passage -- UNLESS the action is clearly a minor,
+incidental aside buried within predominantly evaluative content (in which
+case Evaluation may remain primary with Enactment captured as secondary).
+When in doubt, ask: does the passage exist mainly to justify/explain a
+decisive action already taken or firmly planned (-> ENACTMENT primary),
+or does it exist mainly to weigh an open question, with an action
+mentioned only in passing (-> EVALUATION primary, ENACTMENT secondary)?
 
 ====================================================================
 C. FUTURE-MAKING ORIENTATIONS
@@ -468,7 +510,7 @@ be immediate." negotiation_evidence: OBSERVED_INTERACTION (context was
 available and the relation is explicit).
 
 Example 3 (declarative Negotiation/Contest with NO imperative and NO
-context -- implicit relational positioning):
+context -- implicit relational positioning; see FUTURE-VISION TEST):
 FOCAL: "The future is fewer cars, not simply electric cars."
 CONTEXT: none.
 This is declarative, but it stakes out an alternative trajectory relative
@@ -494,12 +536,20 @@ of car we can have."
 -> NEGOTIATION / REJECT / RESISTANT. negotiation_evidence:
 IMPLICIT_RELATIONAL_POSITIONING.
 
-Example 6 (ENACTMENT with separable EVALUATION secondary):
-FOCAL: "I am wanting to upgrade the car and I am umming and aahing over
-PHEV or EV. Just bought a new petrol car as the infrastructure still
-isn't in place. I plan to drive my current 10 year old hybrid as long as
-I can."
--> Primary: ENACTMENT / DELAY / AMBIVALENT.
+Example 6 (ENACTMENT with separable EVALUATION secondary -- decisive
+action is the passage's main point):
+FOCAL: "Just bought a new petrol car last month because the EV charging
+infrastructure still isn't in place near me, and I'm planning to run this
+one for as long as it lasts before I even reconsider switching. I'm not
+anti-EV -- I like the idea in principle -- but the upfront cost is still a
+huge hurdle for me, and I don't expect that to change in the next few
+years."
+The passage's MAIN POINT is the decisive action already taken and firmly
+planned ("just bought," "planning to run this one for as long as it
+lasts"); the cost commentary is real but clearly secondary, explaining WHY
+the action was taken rather than being the passage's central concern.
+-> Primary: ENACTMENT / DELAY / AMBIVALENT (non-adoption tied to a
+   resolvable condition -- cost -- with an implied "for now").
 -> Secondary: EVALUATION / STALL / AMBIVALENT.
 
 Example 7 (EVALUATION/AVOID vs. EVALUATION/COMPLEXIFY contrast):
@@ -523,6 +573,54 @@ modification/compromise pathway) -- NEGOTIATION, not merely EVALUATION.
 OBSERVED_INTERACTION (the consultation prompt was available and the
 response explicitly engages it). context_type: CONSULTATION_PROMPT.
 
+Example 9 -- CRITICAL, HIGH-CONFUSION PATTERN -- named address BURIED
+inside a long passage that otherwise reads like systemic critique/
+Evaluation. Apply NAMED-ADDRESS SUFFICIENCY even when most of the
+surrounding text sounds evaluative:
+FOCAL: "Consumerism trumps facts. John you are so right but the first
+sentence prevails in modern society, why save the environment by keeping
+the car you already own and using it less, when you can join the Joneses,
+Smiths or whoever your neighbour is and spend money on that flash new
+hybrid/EV/hydrogen powered four wheeled status symbol that shows you earn
+more money than you need. Does it have to be a car? If your main priority
+was the environment, ride a bicycle. You're buying a 2-tonne metal box
+powered by a giant battery, let's not pretend we're saving the planet,
+we're just picking a lesser evil but it's still not good for the planet."
+CONTEXT: none provided.
+Reasoning: most of this passage (the final sentences about the "2-tonne
+metal box" and "picking a lesser evil") reads like a standalone systemic
+assessment, which could tempt a reading of EVALUATION/COMPLEXIFY. However,
+"John you are so right" is a NAMED DIRECT ADDRESS responding to a specific
+claim John apparently just made -- per NAMED-ADDRESS SUFFICIENCY, this
+alone establishes relational positioning for the passage as a whole. The
+imperatives that follow ("ride a bicycle," "does it have to be a car?")
+further confirm NEGOTIATION, proposing a systemic alternative (non-car
+mobility) -- hence CONTEST, not a standalone evaluative judgment. Do NOT
+let the volume of critique-sounding content at the end of the passage
+override the named-address signal near the beginning.
+-> Primary: NEGOTIATION / CONTEST / EXPANDER. negotiation_evidence:
+IMPLICIT_RELATIONAL_POSITIONING (no structured context was provided, but
+the named address and imperatives establish relational positioning within
+the focal comment itself).
+
+Example 10 -- FUTURE-VISION TEST applied within an action-heavy passage
+(secondary Negotiation/Contest alongside primary Enactment/Reroute):
+FOCAL: "We tend to do most of our shopping by bike rather than with the
+ute because the ute's inconvenient to park and navigate in small car
+parks. I am at the moment on a waiting list for a new electric cargo
+bike. The future is less cars, in higher density pedestrian, bike and
+train-orientated urban environments, where cars are secondary transport
+really only for those who really need it."
+The first two sentences describe decisive, ongoing practice changes
+(ENACTMENT/REROUTE, primary). The third sentence ("The future is less
+cars...") is a distinct, separable FUTURE-VISION statement that stakes out
+a competing collective trajectory -- per the Future-Vision Test, this
+should be captured explicitly as a SECONDARY Negotiation/Contest
+classification, not folded silently into the Enactment reading or
+mistaken for Evaluation.
+-> Primary: ENACTMENT / REROUTE / EXPANDER.
+-> Secondary: NEGOTIATION / CONTEST / EXPANDER.
+
 ====================================================================
 H. DECISION PROCEDURE -- Apply for EVERY focal comment
 ====================================================================
@@ -536,25 +634,40 @@ claim/actor/pathway -- explicit (via context) or implicit (via its own
 content) -- (NEGOTIATION), or (c) giving material/practical form to a
 preferred future through the speaker's own practice (ENACTMENT).
 
-STEP 3 -- If context is available, check explicitly whether the focal
-comment: responds to another position; agrees/reinforces/corrects/rejects
-a claim; asks for evidence; compares futures; attributes
-responsibility/authority; defends a pathway; contests legitimacy/scope; or
-attempts to influence which future should be pursued. Any of these ->
-NEGOTIATION, regardless of grammatical mood.
+STEP 3 -- BEFORE weighing overall passage tone or length, FIRST check for
+two strong, often-decisive relational signals, regardless of how much
+surrounding text reads as systemic assessment:
+  (i) a NAMED direct address to a specific individual (Section B,
+      Named-Address Sufficiency) -- if present anywhere in the passage
+      and not clearly incidental, this alone typically establishes
+      Negotiation;
+  (ii) a declarative "the future is/will be/should be..." (or "we need X,
+      not Y") statement that advances a trajectory different from the
+      prescribed future (Section B, Future-Vision Test) -- this alone
+      typically establishes Negotiation for that statement, whether as
+      primary or secondary.
+If context is available, ALSO check explicitly whether the focal comment:
+responds to another position; agrees/reinforces/corrects/rejects a claim;
+asks for evidence; compares futures; attributes responsibility/authority;
+defends a pathway; contests legitimacy/scope; or attempts to influence
+which future should be pursued. Any of these -> NEGOTIATION, regardless
+of grammatical mood.
 
-STEP 4 -- If NO context is available, still check the focal comment's OWN
-content for implicit relational positioning (a confident alternative
-trajectory, an implied correction, a proposed compromise). If present ->
-NEGOTIATION with negotiation_evidence = IMPLICIT_RELATIONAL_POSITIONING.
-If genuinely absent, and the comment is a self-contained assessment with
-no relational content -> EVALUATION.
+STEP 4 -- If NO context is available and neither signal in Step 3 is
+present, still check the focal comment's OWN content for other implicit
+relational positioning (a proposed compromise, an implied correction). If
+present -> NEGOTIATION with negotiation_evidence =
+IMPLICIT_RELATIONAL_POSITIONING. If genuinely absent, and the comment is a
+self-contained assessment with no relational content -> EVALUATION.
 
 STEP 5 -- If BOTH substantial evaluative/negotiating content AND
-substantial enactment content are present, the concrete, decisive action
-typically dominates (ENACTMENT primary), with the other content captured
-as a secondary classification -- but this is not an absolute rule; assess
-which constitutes the dominant analytical function of the passage.
+substantial enactment content are present, ask: does the passage exist
+mainly to justify/explain a decisive action already taken or firmly
+planned (-> ENACTMENT primary, per Section B's Enactment guidance), or
+does it exist mainly to weigh an open question with an action mentioned
+only in passing (-> EVALUATION primary, ENACTMENT secondary)? Capture
+whichever is not primary as a secondary classification -- do not discard
+it.
 
 STEP 6 -- Determine ORIENTATION for the primary and any secondary
 classification using Section C's full configuration, not sentiment alone.
@@ -572,7 +685,8 @@ STEP 7 -- Populate interaction fields:
   - interaction_rationale: how the focal comment relates to the context.
   - negotiation_evidence: OBSERVED_INTERACTION only if context was
     actually available AND used; IMPLICIT_RELATIONAL_POSITIONING if the
-    focal comment positions itself relationally without confirmed context;
+    focal comment positions itself relationally without confirmed context
+    (including via Named-Address Sufficiency or the Future-Vision Test);
     NO_NEGOTIATION_EVIDENCE if the comment is Evaluation/Enactment with no
     relational positioning at all.
 
@@ -610,7 +724,9 @@ OUTPUT RULES
 
 Select exactly ONE value for main_activity, activity_subtype, and
 main_orientation. Provide zero to two secondary_classifications ONLY when
-substantively supported.
+substantively supported -- including, per Steps 3 and 5 above, any
+separable Named-Address or Future-Vision Negotiation content, or any
+separable decisive Enactment/Evaluation content.
 
 MANDATORY ORIENTATION-SUBTYPE PAIRING (applies to primary AND every
 secondary classification):
@@ -628,7 +744,7 @@ OUTPUT FORMAT -- Return ONLY valid JSON
 
   "main_activity": "EVALUATION, NEGOTIATION, or ENACTMENT",
   "activity_subtype": "SIMPLIFY, STALL, AVOID, COMPLEXIFY, ADVOCATE, QUESTION, REJECT, CONTEST, ACCELERATE, DELAY, PREVENT, REROUTE",
-  "activity_rationale": "Which Decision Procedure step applied, citing specific phrases from the FOCAL comment",
+  "activity_rationale": "Which Decision Procedure step applied, citing specific phrases from the FOCAL comment, including whether Named-Address Sufficiency or the Future-Vision Test applied",
 
   "secondary_classifications": [
     {"activity": "...", "activity_subtype": "...", "orientation": "...", "rationale": "..."}
@@ -834,15 +950,18 @@ EXAMPLES = {
         "secondary_expected": None, "negotiation_evidence_expected": "IMPLICIT_RELATIONAL_POSITIONING",
         "comment": "We don't need politicians and their cronies telling us what sort of car we can have."
     },
-    "6. Enactment primary + Evaluation secondary": {
+    "6. Enactment primary + Evaluation secondary (decisive action is the main point)": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "DELAY", "orientation": "AMBIVALENT",
         "context": "", "context_type": "NONE", "is_consultation": False,
         "secondary_expected": ("AMBIVALENT", "EVALUATION", "STALL"),
         "negotiation_evidence_expected": "NO_NEGOTIATION_EVIDENCE",
         "comment": (
-            "I am wanting to upgrade the car and I am umming and aahing over PHEV or "
-            "EV. Just bought a new petrol car as the infrastructure still isn't in "
-            "place. I plan to drive my current 10 year old hybrid as long as I can."
+            "Just bought a new petrol car last month because the EV charging "
+            "infrastructure still isn't in place near me, and I'm planning to "
+            "run this one for as long as it lasts before I even reconsider "
+            "switching. I'm not anti-EV -- I like the idea in principle -- but "
+            "the upfront cost is still a huge hurdle for me, and I don't expect "
+            "that to change in the next few years."
         )
     },
     "7. EVALUATION/AVOID (narrow dismissal)": {
@@ -879,6 +998,37 @@ EXAMPLES = {
         "context": "", "context_type": "NONE", "is_consultation": False,
         "secondary_expected": None, "negotiation_evidence_expected": "NO_NEGOTIATION_EVIDENCE",
         "comment": "I won't be getting one, I'll stick to my V8 and my other diesel 4x4."
+    },
+    "11. Named address buried in heavy critique -> NEGOTIATION/CONTEST/EXPANDER": {
+        "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "CONTEST", "orientation": "EXPANDER",
+        "context": "", "context_type": "NONE", "is_consultation": False,
+        "secondary_expected": None, "negotiation_evidence_expected": "IMPLICIT_RELATIONAL_POSITIONING",
+        "comment": (
+            "Consumerism trumps facts. John you are so right but the first "
+            "sentence prevails in modern society, why save the environment by "
+            "keeping the car you already own and using it less, when you can "
+            "join the Joneses, Smiths or whoever your neighbour is and spend "
+            "money on that flash new hybrid/EV/hydrogen powered four wheeled "
+            "status symbol that shows you earn more money than you need. Does "
+            "it have to be a car? If your main priority was the environment, "
+            "ride a bicycle. You're buying a 2-tonne metal box powered by a "
+            "giant battery, let's not pretend we're saving the planet, we're "
+            "just picking a lesser evil but it's still not good for the planet."
+        )
+    },
+    "12. Future-vision statement inside action-heavy passage -> secondary Negotiation/Contest": {
+        "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "REROUTE", "orientation": "EXPANDER",
+        "context": "", "context_type": "NONE", "is_consultation": False,
+        "secondary_expected": ("EXPANDER", "NEGOTIATION", "CONTEST"),
+        "negotiation_evidence_expected": None,
+        "comment": (
+            "We tend to do most of our shopping by bike rather than with the ute "
+            "because the ute's inconvenient to park and navigate in small car "
+            "parks. I am at the moment on a waiting list for a new electric "
+            "cargo bike. The future is less cars, in higher density pedestrian, "
+            "bike and train-orientated urban environments, where cars are "
+            "secondary transport really only for those who really need it."
+        )
     },
 }
 
@@ -926,10 +1076,6 @@ def enforce_consistency(result: dict) -> dict:
 
 
 def enforce_interaction_consistency(result: dict, context_available: bool, context_type: str) -> dict:
-    """context_available and context_type are FACTS determined by the calling
-    application when it built the context -- they are overridden here rather
-    than trusted from the LLM, for the same reason challenge-pathway labels
-    are computed deterministically rather than asked of the LLM directly."""
     result["context_available"] = bool(context_available)
     result["context_type"] = context_type if context_type in VALID_CONTEXT_TYPES else "NONE"
 
@@ -993,11 +1139,13 @@ CONTEXT AVAILABLE: {context_available}
 Classify ONLY the focal comment/response above, using the context solely
 to interpret its relational positioning (Section H). Negotiation does NOT
 require an imperative or direct address -- apply the relational definition
-in Section B. If context is unavailable, still check the focal comment's
-own content for implicit relational positioning before defaulting to
-Evaluation. Populate interaction_detected, interaction_type,
-interaction_target, interaction_rationale, and negotiation_evidence
-consistent with whether context was actually available. Verify every
+in Section B, INCLUDING the Named-Address Sufficiency rule and the
+Future-Vision Test, BEFORE weighing overall passage tone or length. If
+context is unavailable, still check the focal comment's own content for
+implicit relational positioning before defaulting to Evaluation. If both
+substantial evaluative/negotiating content and substantial enactment
+content are present, decide which is the passage's main point per Section
+B/H and capture the other as a secondary classification. Verify every
 activity_subtype (primary and secondary) belongs to the valid pairing
 table for its own orientation. Populate policy_diagnostic_considerations
 and manager_diagnostic_considerations as hedged diagnostic support only.
@@ -1018,9 +1166,6 @@ and manager_diagnostic_considerations as hedged diagnostic support only.
 
 
 def run_consistency_suite(api_key: str) -> dict:
-    """Tests whether the current prompt reproduces predetermined coding
-    decisions for benchmark examples. Does NOT constitute empirical
-    validation, intercoder reliability, or evidence of generalizability."""
     results = []
     for name, ex in EXAMPLES.items():
         if not ex.get("comment"):
@@ -1079,10 +1224,6 @@ def run_consistency_suite(api_key: str) -> dict:
 # ─────────────────────────────────────────
 
 def build_comment_records_from_paragraphs(text: str, separator: str = None) -> list:
-    """Unstructured text: each paragraph separated by a blank line is one
-    comment, unless a custom separator is provided. No arbitrary grouping
-    of sentences is performed. All records share a single implicit thread
-    (the whole document), since no true thread/parent metadata exists."""
     text = (text or "").strip()
     if not text:
         return []
@@ -1102,8 +1243,6 @@ def build_comment_records_from_paragraphs(text: str, separator: str = None) -> l
 
 
 def build_comment_records_from_csv(df: pd.DataFrame) -> list:
-    """Structured input: expects a comment_text column, and optionally
-    thread_id, comment_id, parent_comment_id, author, timestamp columns."""
     cols = {c.lower().strip(): c for c in df.columns}
     text_col = cols.get("comment_text") or cols.get("text") or cols.get("comment")
     if not text_col:
@@ -1133,9 +1272,6 @@ def build_comment_records_from_csv(df: pd.DataFrame) -> list:
 
 
 def extract_public_consultation_responses(text: str, min_words: int = 4) -> list:
-    """Detects tabular public-consultation exports: each response starts
-    with a 6-7 digit ID, followed by 'Name withheld' (or a real name).
-    Returns a list of {"id": ..., "text": ...} dicts, preserving the ID."""
     text = re.sub(r'\s+', ' ', text.strip())
     matches = list(re.finditer(r'\b(\d{6,7})\s+(?:Name\s+withheld|[A-Z][a-z]+)', text))
     responses = []
@@ -1176,11 +1312,6 @@ def index_threads(records: list):
 
 def build_context(record: dict, by_id: dict, thread_order: dict,
                    consultation_prompt: str = None, is_consultation: bool = False):
-    """Builds context in the required priority order: (1) parent comment,
-    (2) up to two preceding comments from the same thread, (3) one
-    following reply that directly responds to the focal comment, (4) the
-    original post or consultation prompt. Never uses comments from
-    unrelated threads."""
     parts = []
     context_type = "NONE"
     focal_id = record["comment_id"]
@@ -1191,7 +1322,7 @@ def build_context(record: dict, by_id: dict, thread_order: dict,
     parent_id = record.get("parent_comment_id")
     parent_record = by_id.get(parent_id) if parent_id else None
     if parent_record and parent_record.get("thread_id") != thread_id:
-        parent_record = None  # never use unrelated threads
+        parent_record = None
 
     if parent_record:
         parts.append(f"PARENT COMMENT:\n{parent_record['comment_text']}")
@@ -1256,9 +1387,6 @@ def compute_evenly_spaced_sample_indices(total: int, k: int) -> list:
 
 
 def analyze_document(prepared_records: list, prescribed_future: str, api_key: str, progress_bar=None) -> list:
-    """prepared_records: list of dicts with comment_id, thread_id,
-    parent_comment_id, comment_text, original_index, context_text,
-    context_type, context_available, is_consultation."""
     total = len(prepared_records)
     results = [None] * total
     with concurrent.futures.ThreadPoolExecutor(max_workers=DOC_MAX_WORKERS) as executor:
@@ -1294,9 +1422,6 @@ def analyze_document(prepared_records: list, prescribed_future: str, api_key: st
 # ─────────────────────────────────────────
 
 def compute_observed_interaction_pairs(results: list) -> dict:
-    """Directional parent -> reply orientation pairs, using ONLY comments
-    where BOTH the focal comment and its parent were actually classified
-    (i.e., both appear among the analyzed results)."""
     by_comment_id = {r.get("_comment_id"): r for r in results if r and "_error" not in r and r.get("_comment_id")}
     pairs = {}
     for r in results:
@@ -1314,11 +1439,6 @@ def compute_observed_interaction_pairs(results: list) -> dict:
 
 
 def compute_observed_challenge_signals(results: list) -> dict:
-    """Requires: (1) at least two related comments from the same
-    interaction; (2) differently oriented performances; (3) same
-    prescribed future (guaranteed -- one prescribed future per run); (4)
-    evidence of divergence/non-concession (no AGREEMENT/REINFORCEMENT
-    interaction_type)."""
     by_comment_id = {r.get("_comment_id"): r for r in results if r and "_error" not in r and r.get("_comment_id")}
     signals = {"CONVOLUTED_EVALUATIONS": 0, "CONFRONTATIONAL_NEGOTIATIONS": 0, "COMPETING_ENACTMENTS": 0}
     detail = []
@@ -2374,9 +2494,12 @@ def main():
         st.caption(
             "Agreement with built-in benchmark examples tests whether the "
             "current prompt reproduces predetermined coding decisions, "
-            "including context-dependent Negotiation cases. It does NOT "
-            "constitute empirical validation, intercoder reliability, or "
-            "evidence of generalizability."
+            "including context-dependent Negotiation cases and previously "
+            "observed failure patterns (decisive-action dominance for "
+            "Enactment; named-address sufficiency and the future-vision "
+            "test for declarative Negotiation). It does NOT constitute "
+            "empirical validation, intercoder reliability, or evidence of "
+            "generalizability."
         )
         if st.button("Run Coding Consistency Check"):
             if not api_key:
